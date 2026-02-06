@@ -66,7 +66,7 @@ I've cleaned up the data a little, you will see the location and more descriptiv
 
 ![alt text](/image/output_cc_example.png)
 
-## API mode for Dime app (upload PDF -> CSV)
+## API mode for Dime app (upload PDF -> CSV or JSON)
 
 This folder now includes a deployable API:
 
@@ -96,10 +96,20 @@ uvicorn api_server:app --host 0.0.0.0 --port 8080
     - `cimb_debit`
     - `m2u_current_account_debit`
     - `rhb_flex`
+  - `response_format`:
+    - `csv` (default)
+    - `json`
   - `files`: one or more PDF files
 
-Response for `/process` is a CSV file download.
+`/process` response:
 
+- `response_format=csv`: CSV file download
+- `response_format=json`: JSON payload with:
+  - `import_id`
+  - `mode`
+  - `row_count`
+  - `rows` (structured transaction rows)
+  - `errors` (per-file parsing errors, if any)
 
 
 

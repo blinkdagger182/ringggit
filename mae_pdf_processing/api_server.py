@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import date, datetime
+from typing import Any
 
 import pandas as pd
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
@@ -42,10 +43,13 @@ def modes() -> dict[str, list[str]]:
 @app.post("/process")
 async def process_pdfs(
     mode: str = Form(...),
+    response_format: str = Form("csv"),
     files: list[UploadFile] = File(...),
 ) -> Response:
     if mode not in MODE_HANDLERS:
         raise HTTPException(status_code=400, detail=f"Unsupported mode '{mode}'. Use /modes.")
+    if response_format not in {"csv", "json"}:
+        raise HTTPException(status_code=400, detail="Invalid response_format. Use 'csv' or 'json'.")
     if not files:
         raise HTTPException(status_code=400, detail="No files uploaded.")
 
@@ -77,9 +81,32 @@ async def process_pdfs(
         return JSONResponse(status_code=422, content={"message": "No data extracted from uploaded PDFs.", "errors": errors})
 
     combined_df = pd.concat(all_dataframes, ignore_index=True)
+    import_id = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+
+    def normalize_for_json(value: Any) -> Any:
+        if value is None or pd.isna(value):
+            return None
+        if isinstance(value, (datetime, date, pd.Timestamp)):
+            return value.isoformat()
+        return value
+
+    if response_format == "json":
+        rows = []
+        for record in combined_df.to_dict(orient="records"):
+            rows.append({key: normalize_for_json(value) for key, value in record.items()})
+
+        return JSONResponse(
+            content={
+                "import_id": import_id,
+                "mode": mode,
+                "row_count": len(rows),
+                "rows": rows,
+                "errors": errors,
+            }
+        )
+
     csv_output = combined_df.to_csv(index=False)
-    timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
-    output_name = f"{mode}-{timestamp}.csv"
+    output_name = f"{mode}-{import_id}.csv"
 
     headers = {"Content-Disposition": f'attachment; filename="{output_name}"'}
     if errors:
