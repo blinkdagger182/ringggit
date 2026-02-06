@@ -38,5 +38,8 @@ dist/
 # Common binary/archive outputs
 *.exe
 
+# Local release artifact (do not commit)
+mae_pdf_processing/MAE_PDF_File_Processor.zip
+
 # Logs
 *.log
