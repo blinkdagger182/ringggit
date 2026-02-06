@@ -12,6 +12,10 @@
 venv/
 env/
 .venv-brew/
+**/.venv/
+**/venv/
+**/env/
+**/.venv-brew/
 
 # Python cache / tooling
 __pycache__/
@@ -28,6 +32,11 @@ build/
 dist/
 *.egg-info/
 *.spec
+**/build/
+**/dist/
+
+# Common binary/archive outputs
+*.exe
 
 # Logs
 *.log
