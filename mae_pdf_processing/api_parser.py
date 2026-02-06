@@ -153,7 +153,16 @@ def _parse_m2u_debit(pdf_bytes: bytes, filename: str) -> pd.DataFrame:
     if df.empty:
         raise ValueError("No transactions were extracted from the PDF")
 
-    df["Entry Date"] = pd.to_datetime(df["Entry Date"] + "/" + year_statement, format="%d/%m/%y", dayfirst=True)
+    def parse_entry_date(raw: object) -> pd.Timestamp:
+        text = str(raw).strip()
+        if re.fullmatch(r"\d{2}/\d{2}/\d{2}", text):
+            return pd.to_datetime(text, format="%d/%m/%y", dayfirst=True)
+        if re.fullmatch(r"\d{2}/\d{2}", text):
+            return pd.to_datetime(f"{text}/{year_statement}", format="%d/%m/%y", dayfirst=True)
+        return pd.NaT
+
+    df["Entry Date"] = df["Entry Date"].apply(parse_entry_date)
+    df = df.dropna(subset=["Entry Date"])
 
     def clean_amount(val: object) -> str | None:
         if pd.isna(val) or val in (None, ""):
