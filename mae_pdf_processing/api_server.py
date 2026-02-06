@@ -19,6 +19,16 @@ app.add_middleware(
 )
 
 
+@app.get("/")
+def root() -> dict[str, object]:
+    return {"service": "mae-pdf-processing-api", "status": "ok", "health": "/health", "modes": "/modes", "process": "/process"}
+
+
+@app.get("/favicon.ico")
+def favicon() -> Response:
+    return Response(status_code=204)
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
