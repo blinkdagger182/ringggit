@@ -267,7 +267,7 @@ def _parse_maybank_debit(pdf_bytes: bytes, _: str) -> pd.DataFrame:
         structured_data.append(temp_entry)
 
     for entry in structured_data:
-        entry["Transaction Description"] = entry["Transaction Description"].rstrip(", ")
+        entry["Transaction Description"] = str(entry.get("Transaction Description", "")).rstrip(", ")
 
     df = pd.DataFrame(structured_data)
     if df.empty:
