@@ -28,19 +28,65 @@ final class MaybankStatementImporter {
         }
 
         let baseURLString = (Bundle.main.object(forInfoDictionaryKey: "MaybankImportAPIBaseURL") as? String) ?? fallbackBaseURL
-        let mode = (Bundle.main.object(forInfoDictionaryKey: "MaybankImportMode") as? String) ?? fallbackMode
 
         guard let endpointURL = URL(string: baseURLString)?.appendingPathComponent("process") else {
             throw MaybankStatementImportError.malformedResponse
         }
 
+        let filename = url.lastPathComponent.isEmpty ? "statement.pdf" : url.lastPathComponent
+        let configuredMode = (Bundle.main.object(forInfoDictionaryKey: "MaybankImportMode") as? String) ?? fallbackMode
+        let candidateModes = orderedUniqueModes([
+            configuredMode,
+            fallbackMode,
+            "maybank_debit",
+            "m2u_current_account_debit",
+            "maybank_credit"
+        ])
+
+        var lastNetworkError: MaybankStatementImportError?
+
+        for mode in candidateModes {
+            do {
+                let data = try await processRequest(
+                    endpointURL: endpointURL,
+                    mode: mode,
+                    fileData: fileData,
+                    filename: filename
+                )
+
+                let rows = try extractRows(from: data)
+                let transactions = rows.compactMap(mapRowToTransaction)
+
+                if !transactions.isEmpty {
+                    return MaybankStatementImportResult(transactions: transactions)
+                }
+            } catch let error as MaybankStatementImportError {
+                if case .network = error {
+                    lastNetworkError = error
+                }
+            } catch {
+                continue
+            }
+        }
+
+        if let lastNetworkError {
+            throw lastNetworkError
+        }
+
+        throw MaybankStatementImportError.noTransactions
+    }
+
+    private static func processRequest(
+        endpointURL: URL,
+        mode: String,
+        fileData: Data,
+        filename: String
+    ) async throws -> Data {
         let boundary = "Boundary-\(UUID().uuidString)"
         var request = URLRequest(url: endpointURL)
         request.httpMethod = "POST"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-
-        let filename = url.lastPathComponent.isEmpty ? "statement.pdf" : url.lastPathComponent
         request.httpBody = buildMultipartBody(
             boundary: boundary,
             mode: mode,
@@ -56,18 +102,29 @@ final class MaybankStatementImporter {
         }
 
         guard (200 ... 299).contains(httpResponse.statusCode) else {
+            let responseBody = String(data: data, encoding: .utf8) ?? "<non-utf8 response body>"
+            print("[MaybankImport] HTTP \(httpResponse.statusCode) for mode=\(mode). Raw body: \(responseBody)")
             let message = parseErrorMessage(from: data)
             throw MaybankStatementImportError.network(statusCode: httpResponse.statusCode, message: message)
         }
 
-        let rows = try extractRows(from: data)
-        let transactions = rows.compactMap(mapRowToTransaction)
+        return data
+    }
 
-        guard !transactions.isEmpty else {
-            throw MaybankStatementImportError.noTransactions
+    private static func orderedUniqueModes(_ modes: [String]) -> [String] {
+        var seen = Set<String>()
+        var ordered = [String]()
+
+        for mode in modes {
+            let trimmed = mode.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.isEmpty || seen.contains(trimmed) {
+                continue
+            }
+            seen.insert(trimmed)
+            ordered.append(trimmed)
         }
 
-        return MaybankStatementImportResult(transactions: transactions)
+        return ordered
     }
 
     private static func buildMultipartBody(
@@ -112,7 +169,21 @@ final class MaybankStatementImporter {
             return detail
         }
 
+        if let detailObject = object["detail"] {
+            if let detailData = try? JSONSerialization.data(withJSONObject: detailObject),
+               let detailText = String(data: detailData, encoding: .utf8),
+               !detailText.isEmpty {
+                return detailText
+            }
+        }
+
         if let message = object["message"] as? String, !message.isEmpty {
+            if let errors = object["errors"] as? [[String: Any]],
+               let first = errors.first,
+               let detail = first["error"] as? String,
+               !detail.isEmpty {
+                return "\(message) \(detail)"
+            }
             return message
         }
 
@@ -227,6 +298,24 @@ final class MaybankStatementImporter {
     }
 
     private static func parseAmountAndDirection(from row: [String: Any]) -> (amount: Double, isCredit: Bool)? {
+        if let numericAmount = numericValue(for: ["Transaction Amount", "Amount", "amount"], in: row),
+           numericAmount > 0 {
+            if let flow = stringValue(for: ["flow", "output"], in: row)?.lowercased() {
+                if flow.contains("inflow") || flow.contains("deposit") || flow.contains("credit") {
+                    return (numericAmount, true)
+                }
+                if flow.contains("outflow") || flow.contains("withdrawal") || flow.contains("debit") {
+                    return (numericAmount, false)
+                }
+            }
+
+            if let boolCredit = row["isCredit"] as? Bool {
+                return (numericAmount, boolCredit)
+            }
+
+            return (numericAmount, false)
+        }
+
         let raw = stringValue(
             for: [
                 "Transaction Amount",

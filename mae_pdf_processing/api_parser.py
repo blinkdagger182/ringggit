@@ -273,7 +273,13 @@ def _parse_maybank_debit(pdf_bytes: bytes, _: str) -> pd.DataFrame:
     if df.empty:
         raise ValueError("No Maybank debit transactions extracted")
 
+    required_columns = ["Entry Date", "Transaction Amount", "Transaction Description", "Statement Balance"]
+    for column in required_columns:
+        if column not in df.columns:
+            df[column] = ""
+
     df["Entry Date"] = pd.to_datetime(df["Entry Date"], format="%d/%m/%y", dayfirst=True).dt.date
+    df["Transaction Description"] = df["Transaction Description"].fillna("").astype(str)
     df["Statement Balance 2"] = df["Transaction Description"].str.extract(r"(\d+,\d+\.\d+)")[0]
     df["Statement Balance 2"] = df["Statement Balance 2"].str.replace(",", "").astype(float)
     df["Transaction Description"] = df["Transaction Description"].str.replace(r"\d+,\d+\.\d+, ", "", regex=True)
