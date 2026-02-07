@@ -25,7 +25,19 @@ COMMON_STRINGS_TO_REMOVE = [
 def _read_pdf_text(pdf_bytes: bytes) -> str:
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
     try:
-        return "".join(page.get_text() for page in doc)
+        if doc.needs_pass:
+            # MAE/email-exported statements are often password protected.
+            if not doc.authenticate(""):
+                raise ValueError(
+                    "PDF is password-protected. Download the statement directly from the banking app/portal (not email attachment)."
+                )
+
+        text = "".join(page.get_text() for page in doc)
+        if len(text.strip()) < 20:
+            raise ValueError(
+                "PDF has no extractable text (likely scanned/image-only or protected). Use a text-based statement PDF from the bank app."
+            )
+        return text
     finally:
         doc.close()
 
