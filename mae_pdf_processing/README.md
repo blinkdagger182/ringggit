@@ -85,6 +85,12 @@ pip install -r requirements.txt
 uvicorn api_server:app --host 0.0.0.0 --port 8080
 ```
 
+For the Dime iOS app's local `DEBUG` importer flow in this repo, run the API on `127.0.0.1:8081` instead:
+
+```bash
+uvicorn api_server:app --host 127.0.0.1 --port 8081
+```
+
 ### Endpoints
 
 - `GET /health`
@@ -110,7 +116,6 @@ uvicorn api_server:app --host 0.0.0.0 --port 8080
   - `row_count`
   - `rows` (structured transaction rows)
   - `errors` (per-file parsing errors, if any)
-
 
 
 

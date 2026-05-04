@@ -1,0 +1,2216 @@
+{
+  "source_folder": "/Users/rizhanruslan/Downloads/statements/debit",
+  "generated_at_utc": "2026-02-06T17:29:11.395274Z",
+  "files": [
+    {
+      "file": "dec2025.pdf",
+      "row_count": 78,
+      "rows": [
+        {
+          "entry_date_raw": "01/12/25",
+          "entry_date": "2025-12-01",
+          "transaction_amount": 49.9,
+          "statement_balance": 172.61,
+          "flow": "outflow",
+          "description": "PRE-AUTH DEBIT NETFLIX.COM        * Singapore, SG SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "01/12/25",
+          "entry_date": "2025-12-01",
+          "transaction_amount": 5.99,
+          "statement_balance": 166.62,
+          "flow": "outflow",
+          "description": "FPX PAYMENT FR A/ 20251201M0000041861* ShopeePay Top Up 2512011955293951"
+        },
+        {
+          "entry_date_raw": "02/12/25",
+          "entry_date": "2025-12-02",
+          "transaction_amount": 16.4,
+          "statement_balance": 150.22,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C AGWK SUBANG        * MBBQR111112806368341 223351737Q"
+        },
+        {
+          "entry_date_raw": "02/12/25",
+          "entry_date": "2025-12-02",
+          "transaction_amount": 4.8,
+          "statement_balance": 145.42,
+          "flow": "outflow",
+          "description": "SALE DEBIT SUBANG JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "02/12/25",
+          "entry_date": "2025-12-02",
+          "transaction_amount": 19.6,
+          "statement_balance": 125.82,
+          "flow": "outflow",
+          "description": "SALE DEBIT GM USJ17           * SELANGOR, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "03/12/25",
+          "entry_date": "2025-12-03",
+          "transaction_amount": 5.0,
+          "statement_balance": 120.82,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRAB RIDES-EC      * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "03/12/25",
+          "entry_date": "2025-12-03",
+          "transaction_amount": 10.5,
+          "statement_balance": 110.32,
+          "flow": "outflow",
+          "description": "PYMT FROM A/C Restoran Al Safuan * 309955759Q QR PAY SALES"
+        },
+        {
+          "entry_date_raw": "03/12/25",
+          "entry_date": "2025-12-03",
+          "transaction_amount": 3.0,
+          "statement_balance": 107.32,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C MBBQR2391352       * 11112810680429 338026673Q"
+        },
+        {
+          "entry_date_raw": "04/12/25",
+          "entry_date": "2025-12-04",
+          "transaction_amount": 10.0,
+          "statement_balance": 97.32,
+          "flow": "outflow",
+          "description": "PYMT FROM A/C Restoran Al Safuan * 399988011Q QR PAY SALES"
+        },
+        {
+          "entry_date_raw": "04/12/25",
+          "entry_date": "2025-12-04",
+          "transaction_amount": 14.5,
+          "statement_balance": 82.82,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C AZHAR              * QR77180873 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "04/12/25",
+          "entry_date": "2025-12-04",
+          "transaction_amount": 13.0,
+          "statement_balance": 69.82,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C Chef Ewan Cafe     * MBBQR111112814129926 427226478Q"
+        },
+        {
+          "entry_date_raw": "05/12/25",
+          "entry_date": "2025-12-05",
+          "transaction_amount": 19.0,
+          "statement_balance": 50.82,
+          "flow": "outflow",
+          "description": "PYMT FROM A/C Restoran Al Safuan * 484707098Q QR PAY SALES"
+        },
+        {
+          "entry_date_raw": "05/12/25",
+          "entry_date": "2025-12-05",
+          "transaction_amount": 14.0,
+          "statement_balance": 36.82,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C MBBQR1286668       * 11112816561471 490071610Q"
+        },
+        {
+          "entry_date_raw": "06/12/25",
+          "entry_date": "2025-12-06",
+          "transaction_amount": 18.0,
+          "statement_balance": 18.82,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C ZHENGNENGLIANGHAINA* QR72515972 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "08/12/25",
+          "entry_date": "2025-12-08",
+          "transaction_amount": 2.0,
+          "statement_balance": 16.82,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C RESTORANRSZSIGNATUR* QR85636838 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "08/12/25",
+          "entry_date": "2025-12-08",
+          "transaction_amount": 250.0,
+          "statement_balance": 266.82,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C MUHAMMAD AZHAN RIZH* Fund Transfer MBB CT-"
+        },
+        {
+          "entry_date_raw": "08/12/25",
+          "entry_date": "2025-12-08",
+          "transaction_amount": 7.0,
+          "statement_balance": 259.82,
+          "flow": "outflow",
+          "description": "SALE DEBIT SHAH ALAM, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "08/12/25",
+          "entry_date": "2025-12-08",
+          "transaction_amount": 149.0,
+          "statement_balance": 110.82,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C TRHINE TRADING     * 769239912Q MAE QR"
+        },
+        {
+          "entry_date_raw": "10/12/25",
+          "entry_date": "2025-12-10",
+          "transaction_amount": 9.0,
+          "statement_balance": 101.82,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRAB RIDES-EC      * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "10/12/25",
+          "entry_date": "2025-12-10",
+          "transaction_amount": 17.0,
+          "statement_balance": 84.82,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C MUHAMMAD SYAHID BIN* QR81169496 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "10/12/25",
+          "entry_date": "2025-12-10",
+          "transaction_amount": 200.0,
+          "statement_balance": 284.82,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C MUHAMMAD AZHAN RIZH* Fund Transfer MBB CT-"
+        },
+        {
+          "entry_date_raw": "10/12/25",
+          "entry_date": "2025-12-10",
+          "transaction_amount": 200.0,
+          "statement_balance": 84.82,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C NOR AFIQAH WAJIHAH *"
+        },
+        {
+          "entry_date_raw": "10/12/25",
+          "entry_date": "2025-12-10",
+          "transaction_amount": 30.07,
+          "statement_balance": 54.75,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRAB-EC            * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "10/12/25",
+          "entry_date": "2025-12-10",
+          "transaction_amount": 500.0,
+          "statement_balance": 554.75,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C MUHAMMAD AZHAN RIZH* Fund Transfer MBB CT-"
+        },
+        {
+          "entry_date_raw": "10/12/25",
+          "entry_date": "2025-12-10",
+          "transaction_amount": 377.8,
+          "statement_balance": 176.95,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C EXSIM CREDIT SDN. B* House cc MBB CT"
+        },
+        {
+          "entry_date_raw": "10/12/25",
+          "entry_date": "2025-12-10",
+          "transaction_amount": 18.74,
+          "statement_balance": 158.21,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRAB-EC            * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "12/12/25",
+          "entry_date": "2025-12-12",
+          "transaction_amount": 7.0,
+          "statement_balance": 151.21,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C BREWBUZZENTERPRISE * QR77608001 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "12/12/25",
+          "entry_date": "2025-12-12",
+          "transaction_amount": 7.0,
+          "statement_balance": 144.21,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C ANAS SYAHMI BIN SAI* 086186598Q MAE QR"
+        },
+        {
+          "entry_date_raw": "13/12/25",
+          "entry_date": "2025-12-13",
+          "transaction_amount": 15.0,
+          "statement_balance": 129.21,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C MBBQR2436018       * 11112844376074 152372230Q"
+        },
+        {
+          "entry_date_raw": "14/12/25",
+          "entry_date": "2025-12-14",
+          "transaction_amount": 87.0,
+          "statement_balance": 42.21,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C NUR ZULAIKHA BINTI * 188459936Q MAE QR"
+        },
+        {
+          "entry_date_raw": "16/12/25",
+          "entry_date": "2025-12-16",
+          "transaction_amount": 15.0,
+          "statement_balance": 27.21,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C VH GLOBAL VENTURES * QR76037991 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "16/12/25",
+          "entry_date": "2025-12-16",
+          "transaction_amount": 44.0,
+          "statement_balance": 71.21,
+          "flow": "inflow",
+          "description": "FUND TRANSFER TO A/ PUTERI NOR AMIRA BI* 370327017Q MAE QR"
+        },
+        {
+          "entry_date_raw": "18/12/25",
+          "entry_date": "2025-12-18",
+          "transaction_amount": 1800.0,
+          "statement_balance": 1871.21,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C IMMORTAL ARENA SDN.* Rental MBB CT-"
+        },
+        {
+          "entry_date_raw": "18/12/25",
+          "entry_date": "2025-12-18",
+          "transaction_amount": 1800.0,
+          "statement_balance": 71.21,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C MUHAMMAD AZHAN RIZH* House"
+        },
+        {
+          "entry_date_raw": "18/12/25",
+          "entry_date": "2025-12-18",
+          "transaction_amount": 5.5,
+          "statement_balance": 65.71,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRAB RIDES-EC      * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "18/12/25",
+          "entry_date": "2025-12-18",
+          "transaction_amount": 12.5,
+          "statement_balance": 53.21,
+          "flow": "outflow",
+          "description": "PYMT FROM A/C Restoran Al Safuan * 505673414Q QR PAY SALES"
+        },
+        {
+          "entry_date_raw": "19/12/25",
+          "entry_date": "2025-12-19",
+          "transaction_amount": 8.0,
+          "statement_balance": 45.21,
+          "flow": "outflow",
+          "description": "PYMT FROM A/C Mmm'Bawang Cafe @ U* 553671945Q QR PAY SALES"
+        },
+        {
+          "entry_date_raw": "19/12/25",
+          "entry_date": "2025-12-19",
+          "transaction_amount": 100.0,
+          "statement_balance": 145.21,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C MUHAMMAD AZHAN RIZH* Fund Transfer MBB CT-"
+        },
+        {
+          "entry_date_raw": "19/12/25",
+          "entry_date": "2025-12-19",
+          "transaction_amount": 84.87,
+          "statement_balance": 60.34,
+          "flow": "outflow",
+          "description": "PRE-AUTH DEBIT OPENAI *CHATGPT SUB* +14158799686, US SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "20/12/25",
+          "entry_date": "2025-12-20",
+          "transaction_amount": 13.0,
+          "statement_balance": 73.34,
+          "flow": "inflow",
+          "description": "FUND TRANSFER TO A/ AHMAD AREEF BIN AMR* 642872542Q MAE QR"
+        },
+        {
+          "entry_date_raw": "20/12/25",
+          "entry_date": "2025-12-20",
+          "transaction_amount": 13.0,
+          "statement_balance": 86.34,
+          "flow": "inflow",
+          "description": "FUND TRANSFER TO A/ MUHAMAD BAZLI NABIL* 642874224Q MAE QR"
+        },
+        {
+          "entry_date_raw": "20/12/25",
+          "entry_date": "2025-12-20",
+          "transaction_amount": 13.0,
+          "statement_balance": 99.34,
+          "flow": "inflow",
+          "description": "FUND TRANSFER TO A/ WAN MUHAMMAD ARIEF * 642875934Q MAE QR"
+        },
+        {
+          "entry_date_raw": "20/12/25",
+          "entry_date": "2025-12-20",
+          "transaction_amount": 3.0,
+          "statement_balance": 96.34,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C STADIUMCURRYHOUSE  * QR81793913 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "22/12/25",
+          "entry_date": "2025-12-22",
+          "transaction_amount": 100.0,
+          "statement_balance": 196.34,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C MUHAMMAD AZHAN RIZH* Fund Transfer MBB CT-"
+        },
+        {
+          "entry_date_raw": "22/12/25",
+          "entry_date": "2025-12-22",
+          "transaction_amount": 83.66,
+          "statement_balance": 112.68,
+          "flow": "outflow",
+          "description": "PRE-AUTH DEBIT CLUELY INC         * +14709192464, US SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "22/12/25",
+          "entry_date": "2025-12-22",
+          "transaction_amount": 15.0,
+          "statement_balance": 97.68,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C VH GLOBAL VENTURES * QR86546976 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "23/12/25",
+          "entry_date": "2025-12-23",
+          "transaction_amount": 83.66,
+          "statement_balance": 181.34,
+          "flow": "inflow",
+          "description": "PRE-AUTH REFUND CLUELY INC WWW.CLUELY.COUS PRE-AUTH REFUND"
+        },
+        {
+          "entry_date_raw": "23/12/25",
+          "entry_date": "2025-12-23",
+          "transaction_amount": 82.84,
+          "statement_balance": 98.5,
+          "flow": "outflow",
+          "description": "SALE DEBIT CLUELY INC WWW.CLUELY.COUS SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "23/12/25",
+          "entry_date": "2025-12-23",
+          "transaction_amount": 50.0,
+          "statement_balance": 148.5,
+          "flow": "inflow",
+          "description": "FUND TRANSFER TO A/ MUHAMMAD AZHAN RIZH* Hdhdhd"
+        },
+        {
+          "entry_date_raw": "23/12/25",
+          "entry_date": "2025-12-23",
+          "transaction_amount": 100.0,
+          "statement_balance": 48.5,
+          "flow": "outflow",
+          "description": "PRE-AUTH DEBIT Polymarket-Paybis  * SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "23/12/25",
+          "entry_date": "2025-12-23",
+          "transaction_amount": 40.0,
+          "statement_balance": 8.5,
+          "flow": "outflow",
+          "description": "PRE-AUTH DEBIT TRANSAK*METAMASK PD* London, GB SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "24/12/25",
+          "entry_date": "2025-12-24",
+          "transaction_amount": 65.0,
+          "statement_balance": 73.5,
+          "flow": "inflow",
+          "description": "FUND TRANSFER TO A/ LIM QIU SHI        * Shopee Naruko"
+        },
+        {
+          "entry_date_raw": "25/12/25",
+          "entry_date": "2025-12-25",
+          "transaction_amount": 200.0,
+          "statement_balance": 273.5,
+          "flow": "inflow",
+          "description": "FUND TRANSFER TO A/ NUR ZAHRAH FARIDA B* Chilis"
+        },
+        {
+          "entry_date_raw": "25/12/25",
+          "entry_date": "2025-12-25",
+          "transaction_amount": 134.2,
+          "statement_balance": 139.3,
+          "flow": "outflow",
+          "description": "SALE DEBIT CHILI'S PARADIGM   * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "25/12/25",
+          "entry_date": "2025-12-25",
+          "transaction_amount": 55.0,
+          "statement_balance": 84.3,
+          "flow": "outflow",
+          "description": "SALE DEBIT GAJETO-6           * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "25/12/25",
+          "entry_date": "2025-12-25",
+          "transaction_amount": 10.3,
+          "statement_balance": 74.0,
+          "flow": "outflow",
+          "description": "SALE DEBIT G2U PPM            * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "25/12/25",
+          "entry_date": "2025-12-25",
+          "transaction_amount": 21.2,
+          "statement_balance": 52.8,
+          "flow": "outflow",
+          "description": "SALE DEBIT GKS*PAPPAROTI      * SELANGOR, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "25/12/25",
+          "entry_date": "2025-12-25",
+          "transaction_amount": 8.0,
+          "statement_balance": 44.8,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C MAISARAH BINTI RAML* 103293170Q MAE QR"
+        },
+        {
+          "entry_date_raw": "26/12/25",
+          "entry_date": "2025-12-26",
+          "transaction_amount": 6889.15,
+          "statement_balance": 6933.95,
+          "flow": "inflow",
+          "description": "SVG GIRO CR COMPASIA SDN. BHD. ( CAMY575"
+        },
+        {
+          "entry_date_raw": "26/12/25",
+          "entry_date": "2025-12-26",
+          "transaction_amount": 3885.76,
+          "statement_balance": 3048.19,
+          "flow": "outflow",
+          "description": "PYMT FROM A/C MAYBANK VISA CARD  * XXXX-XXXX-XXXX-4164 00"
+        },
+        {
+          "entry_date_raw": "26/12/25",
+          "entry_date": "2025-12-26",
+          "transaction_amount": 375.0,
+          "statement_balance": 2673.19,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C EXSIM CREDIT SDN. B* House MBB CT"
+        },
+        {
+          "entry_date_raw": "26/12/25",
+          "entry_date": "2025-12-26",
+          "transaction_amount": 1062.0,
+          "statement_balance": 1611.19,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C MUHAMMAD AZHAN RIZH* House MBB CT"
+        },
+        {
+          "entry_date_raw": "26/12/25",
+          "entry_date": "2025-12-26",
+          "transaction_amount": 233.0,
+          "statement_balance": 1378.19,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C MUHAMMAD AZHAN RIZH* Cc loan MBB CT"
+        },
+        {
+          "entry_date_raw": "26/12/25",
+          "entry_date": "2025-12-26",
+          "transaction_amount": 1000.0,
+          "statement_balance": 378.19,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C LIM QIU SHI        * Rizz civic"
+        },
+        {
+          "entry_date_raw": "26/12/25",
+          "entry_date": "2025-12-26",
+          "transaction_amount": 16.4,
+          "statement_balance": 361.79,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C AGWK SUBANG        * MBBQR111112883120021 151968385Q"
+        },
+        {
+          "entry_date_raw": "26/12/25",
+          "entry_date": "2025-12-26",
+          "transaction_amount": 14.0,
+          "statement_balance": 347.79,
+          "flow": "outflow",
+          "description": "SALE DEBIT BIJOU              * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "26/12/25",
+          "entry_date": "2025-12-26",
+          "transaction_amount": 31.6,
+          "statement_balance": 316.19,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C LIEWCHOIHAR        * QR72503763 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "28/12/25",
+          "entry_date": "2025-12-28",
+          "transaction_amount": 3.8,
+          "statement_balance": 312.39,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C MBBQR2224909       * 11112888350825 289152015Q"
+        },
+        {
+          "entry_date_raw": "28/12/25",
+          "entry_date": "2025-12-28",
+          "transaction_amount": 23.0,
+          "statement_balance": 289.39,
+          "flow": "outflow",
+          "description": "SALE DEBIT PSS-USJ 4          * SUBANG JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "28/12/25",
+          "entry_date": "2025-12-28",
+          "transaction_amount": 30.9,
+          "statement_balance": 258.49,
+          "flow": "outflow",
+          "description": "PRE-AUTH DEBIT Spotify P3DDD62A4D * Stockholm, SE SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "28/12/25",
+          "entry_date": "2025-12-28",
+          "transaction_amount": 100.0,
+          "statement_balance": 158.49,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C sudylie abdullah   * 320704775Q MAE QR"
+        },
+        {
+          "entry_date_raw": "28/12/25",
+          "entry_date": "2025-12-28",
+          "transaction_amount": 12.0,
+          "statement_balance": 146.49,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C THENIISHAA/PSUBRAMA* QR00487716 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "28/12/25",
+          "entry_date": "2025-12-28",
+          "transaction_amount": 13.9,
+          "statement_balance": 132.59,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C BREWBUZZENTERPRISE * QR00741950 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "29/12/25",
+          "entry_date": "2025-12-29",
+          "transaction_amount": 15.0,
+          "statement_balance": 117.59,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C VH GLOBAL VENTURES * QR80548684 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "29/12/25",
+          "entry_date": "2025-12-29",
+          "transaction_amount": 10.6,
+          "statement_balance": 106.99,
+          "flow": "outflow",
+          "description": "SALE DEBIT GM USJ17           * SELANGOR, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "31/12/25",
+          "entry_date": "2025-12-31",
+          "transaction_amount": 23.5,
+          "statement_balance": 83.49,
+          "flow": "outflow",
+          "description": "SALE DEBIT TEXAS CHICKEN-JAYA * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "31/12/25",
+          "entry_date": "2025-12-31",
+          "transaction_amount": 12.7,
+          "statement_balance": 70.79,
+          "flow": "outflow",
+          "description": "SALE DEBIT BILABILA MART-H2O  * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "31/12/25",
+          "entry_date": "2025-12-31",
+          "transaction_amount": 0.34,
+          "statement_balance": 71.13,
+          "flow": "inflow",
+          "description": "PROFIT PAID ENDING BALANCE : 71.13 TOTAL CREDIT : 10,321.15 TOTAL DEBIT : 10,472.53"
+        }
+      ]
+    },
+    {
+      "file": "nov2025.pdf",
+      "row_count": 106,
+      "rows": [
+        {
+          "entry_date_raw": "01/11/25",
+          "entry_date": "2025-11-01",
+          "transaction_amount": 49.9,
+          "statement_balance": 122.35,
+          "flow": "outflow",
+          "description": "PRE-AUTH DEBIT Netflix.com        * Los Gatos, SG SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "02/11/25",
+          "entry_date": "2025-11-02",
+          "transaction_amount": 92.9,
+          "statement_balance": 29.45,
+          "flow": "outflow",
+          "description": "PRE-AUTH DEBIT OPENAI *CHATGPT SUB* +14158799686, US SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "02/11/25",
+          "entry_date": "2025-11-02",
+          "transaction_amount": 92.9,
+          "statement_balance": 122.35,
+          "flow": "inflow",
+          "description": "PRE-AUTH REFUND OPENAI *CHATGPT SUB* +14158799686, US SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "04/11/25",
+          "entry_date": "2025-11-04",
+          "transaction_amount": 83.79,
+          "statement_balance": 38.56,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C NORATIQAH BINTI ADI* Azhan youtube"
+        },
+        {
+          "entry_date_raw": "09/11/25",
+          "entry_date": "2025-11-09",
+          "transaction_amount": 16.9,
+          "statement_balance": 21.66,
+          "flow": "outflow",
+          "description": "SALE DEBIT AUNTEA JENNY-KLIA 2* SEPANG, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "09/11/25",
+          "entry_date": "2025-11-09",
+          "transaction_amount": 70.0,
+          "statement_balance": 91.66,
+          "flow": "inflow",
+          "description": "FUND TRANSFER TO A/ LIM QIU SHI        * 379942582Q MAE QR"
+        },
+        {
+          "entry_date_raw": "09/11/25",
+          "entry_date": "2025-11-09",
+          "transaction_amount": 65.16,
+          "statement_balance": 26.5,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRAB RIDES-EC      * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "09/11/25",
+          "entry_date": "2025-11-09",
+          "transaction_amount": 4.43,
+          "statement_balance": 22.07,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRAB RIDES-EC      * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "11/11/25",
+          "entry_date": "2025-11-11",
+          "transaction_amount": 9.2,
+          "statement_balance": 12.87,
+          "flow": "outflow",
+          "description": "PYMT FROM A/C Restoran Al Safuan * 519189920Q QR PAY SALES"
+        },
+        {
+          "entry_date_raw": "11/11/25",
+          "entry_date": "2025-11-11",
+          "transaction_amount": 20.0,
+          "statement_balance": 32.87,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C MUHAMMAD AZHAN RIZH* Fund Transfer MBB CT-"
+        },
+        {
+          "entry_date_raw": "11/11/25",
+          "entry_date": "2025-11-11",
+          "transaction_amount": 14.61,
+          "statement_balance": 18.26,
+          "flow": "outflow",
+          "description": "FPX PAYMENT FR A/ 20251111M0000041861* ShopeePay Top Up 2511111839163750"
+        },
+        {
+          "entry_date_raw": "12/11/25",
+          "entry_date": "2025-11-12",
+          "transaction_amount": 13.5,
+          "statement_balance": 4.76,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRAB RIDES-EC      * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "12/11/25",
+          "entry_date": "2025-11-12",
+          "transaction_amount": 2.0,
+          "statement_balance": 6.76,
+          "flow": "inflow",
+          "description": "FUND TRANSFER TO A/ MUHAMMAD SYAHMI BIN* 588674144Q MAE QR"
+        },
+        {
+          "entry_date_raw": "12/11/25",
+          "entry_date": "2025-11-12",
+          "transaction_amount": 10.0,
+          "statement_balance": 16.76,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C MUHAMMAD AZHAN RIZH* Fund Transfer MBB CT-"
+        },
+        {
+          "entry_date_raw": "12/11/25",
+          "entry_date": "2025-11-12",
+          "transaction_amount": 4.0,
+          "statement_balance": 12.76,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRAB RIDES-EC      * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "12/11/25",
+          "entry_date": "2025-11-12",
+          "transaction_amount": 100.0,
+          "statement_balance": 112.76,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C MUHAMMAD AZHAN RIZH* Fund Transfer MBB CT-"
+        },
+        {
+          "entry_date_raw": "12/11/25",
+          "entry_date": "2025-11-12",
+          "transaction_amount": 4.0,
+          "statement_balance": 108.76,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRAB RIDES-EC      * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "12/11/25",
+          "entry_date": "2025-11-12",
+          "transaction_amount": 92.01,
+          "statement_balance": 16.75,
+          "flow": "outflow",
+          "description": "PRE-AUTH DEBIT OPENAI *CHATGPT SUB* +14158799686, US SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "12/11/25",
+          "entry_date": "2025-11-12",
+          "transaction_amount": 92.01,
+          "statement_balance": 108.76,
+          "flow": "inflow",
+          "description": "PRE-AUTH REFUND OPENAI *CHATGPT SUB* +14158799686, US SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "12/11/25",
+          "entry_date": "2025-11-12",
+          "transaction_amount": 1.25,
+          "statement_balance": 107.51,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C MBBQR2117413       * 11112743756306 613370128Q"
+        },
+        {
+          "entry_date_raw": "12/11/25",
+          "entry_date": "2025-11-12",
+          "transaction_amount": 1.25,
+          "statement_balance": 106.26,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C MBBQR2117413       * 11112743762286 613499968Q"
+        },
+        {
+          "entry_date_raw": "12/11/25",
+          "entry_date": "2025-11-12",
+          "transaction_amount": 22.9,
+          "statement_balance": 83.36,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C MBBQR2434380       * 11112744009140 618506472Q"
+        },
+        {
+          "entry_date_raw": "12/11/25",
+          "entry_date": "2025-11-12",
+          "transaction_amount": 20.0,
+          "statement_balance": 63.36,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C Rass Empire Lembah * QR82110134 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "13/11/25",
+          "entry_date": "2025-11-13",
+          "transaction_amount": 5005.49,
+          "statement_balance": 5068.85,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C Webull Securities (* WB2PVQ61PQD6GW MBB CT-"
+        },
+        {
+          "entry_date_raw": "13/11/25",
+          "entry_date": "2025-11-13",
+          "transaction_amount": 5000.0,
+          "statement_balance": 68.85,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C LIM QIU SHI        * webull invest"
+        },
+        {
+          "entry_date_raw": "13/11/25",
+          "entry_date": "2025-11-13",
+          "transaction_amount": 23.1,
+          "statement_balance": 45.75,
+          "flow": "outflow",
+          "description": "SALE DEBIT MCDONALD'S SUBANG D* SUBANG JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "14/11/25",
+          "entry_date": "2025-11-14",
+          "transaction_amount": 8.5,
+          "statement_balance": 37.25,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C SRZ14SHOP          * QR77629721 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "14/11/25",
+          "entry_date": "2025-11-14",
+          "transaction_amount": 3.0,
+          "statement_balance": 34.25,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C ROSMANBINMAMAT     * QR77632516 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "14/11/25",
+          "entry_date": "2025-11-14",
+          "transaction_amount": 8.5,
+          "statement_balance": 25.75,
+          "flow": "outflow",
+          "description": "PYMT FROM A/C Restoran Al Safuan * 772702519Q QR PAY SALES"
+        },
+        {
+          "entry_date_raw": "14/11/25",
+          "entry_date": "2025-11-14",
+          "transaction_amount": 13.0,
+          "statement_balance": 12.75,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C MUHAMMAD SYAHID BIN* QR85773735 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "16/11/25",
+          "entry_date": "2025-11-16",
+          "transaction_amount": 100.0,
+          "statement_balance": 112.75,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C MUHAMMAD AZHAN RIZH* Fund Transfer MBB CT-"
+        },
+        {
+          "entry_date_raw": "16/11/25",
+          "entry_date": "2025-11-16",
+          "transaction_amount": 36.15,
+          "statement_balance": 76.6,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C TKAY FOOD & CATERIN* 887814591Q MAE QR"
+        },
+        {
+          "entry_date_raw": "16/11/25",
+          "entry_date": "2025-11-16",
+          "transaction_amount": 7500.0,
+          "statement_balance": 7576.6,
+          "flow": "inflow",
+          "description": "FUND TRANSFER TO A/ LIM QIU SHI        * Trf for CC and"
+        },
+        {
+          "entry_date_raw": "16/11/25",
+          "entry_date": "2025-11-16",
+          "transaction_amount": 6415.91,
+          "statement_balance": 1160.69,
+          "flow": "outflow",
+          "description": "PYMT FROM A/C MAYBANK VISA CARD  * XXXX-XXXX-XXXX-4164 00"
+        },
+        {
+          "entry_date_raw": "16/11/25",
+          "entry_date": "2025-11-16",
+          "transaction_amount": 847.93,
+          "statement_balance": 312.76,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C MUHAMMAD AZHAN RIZH* House MBB CT"
+        },
+        {
+          "entry_date_raw": "16/11/25",
+          "entry_date": "2025-11-16",
+          "transaction_amount": 15.1,
+          "statement_balance": 297.66,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C BUTTER & OLIVE PAST* QR73790473 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "16/11/25",
+          "entry_date": "2025-11-16",
+          "transaction_amount": 15.1,
+          "statement_balance": 282.56,
+          "flow": "outflow",
+          "description": "SALE DEBIT FRUITY CAKE & BAKER* KLANG, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "16/11/25",
+          "entry_date": "2025-11-16",
+          "transaction_amount": 68.3,
+          "statement_balance": 214.26,
+          "flow": "outflow",
+          "description": "SALE DEBIT Dominos Malaysia   * Selangor, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "16/11/25",
+          "entry_date": "2025-11-16",
+          "transaction_amount": 200.0,
+          "statement_balance": 414.26,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C RUSLAN BIN HASSAN  * internet MBB CT-"
+        },
+        {
+          "entry_date_raw": "16/11/25",
+          "entry_date": "2025-11-16",
+          "transaction_amount": 13.1,
+          "statement_balance": 401.16,
+          "flow": "outflow",
+          "description": "SALE DEBIT BILABILA MART-D'QUI* PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "16/11/25",
+          "entry_date": "2025-11-16",
+          "transaction_amount": 179.15,
+          "statement_balance": 222.01,
+          "flow": "outflow",
+          "description": "SALE DEBIT TM TECH ONLINE (EC)* KUALA LUMPUR, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "17/11/25",
+          "entry_date": "2025-11-17",
+          "transaction_amount": 11.0,
+          "statement_balance": 211.01,
+          "flow": "outflow",
+          "description": "PYMT FROM A/C Restoran Al Safuan * 954971559Q QR PAY SALES"
+        },
+        {
+          "entry_date_raw": "17/11/25",
+          "entry_date": "2025-11-17",
+          "transaction_amount": 17.5,
+          "statement_balance": 193.51,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C MUHAMMAD SYAHID BIN* QR75317020 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "17/11/25",
+          "entry_date": "2025-11-17",
+          "transaction_amount": 66.87,
+          "statement_balance": 126.64,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRAB-EC            * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "18/11/25",
+          "entry_date": "2025-11-18",
+          "transaction_amount": 49.5,
+          "statement_balance": 77.14,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C Guan's             * MBBQR111112762028193 033382474Q"
+        },
+        {
+          "entry_date_raw": "18/11/25",
+          "entry_date": "2025-11-18",
+          "transaction_amount": 15.0,
+          "statement_balance": 62.14,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C CHANGCHUNGWON      * QR83407090 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "19/11/25",
+          "entry_date": "2025-11-19",
+          "transaction_amount": 100.0,
+          "statement_balance": 162.14,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C MUHAMMAD AZHAN RIZH* Fund Transfer MBB CT-"
+        },
+        {
+          "entry_date_raw": "19/11/25",
+          "entry_date": "2025-11-19",
+          "transaction_amount": 80.0,
+          "statement_balance": 82.14,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C NADEEMATIF         * QR70763686 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "19/11/25",
+          "entry_date": "2025-11-19",
+          "transaction_amount": 10.0,
+          "statement_balance": 72.14,
+          "flow": "outflow",
+          "description": "PYMT FROM A/C Restoran Al Safuan * 111449794Q QR PAY SALES"
+        },
+        {
+          "entry_date_raw": "20/11/25",
+          "entry_date": "2025-11-20",
+          "transaction_amount": 23.2,
+          "statement_balance": 48.94,
+          "flow": "outflow",
+          "description": "FPX PAYMENT FR A/ 133712990          * TENAGA NASIONAL BERH 2511201057250106"
+        },
+        {
+          "entry_date_raw": "20/11/25",
+          "entry_date": "2025-11-20",
+          "transaction_amount": 6.0,
+          "statement_balance": 42.94,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRAB RIDES-EC      * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "20/11/25",
+          "entry_date": "2025-11-20",
+          "transaction_amount": 4.5,
+          "statement_balance": 38.44,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRAB RIDES-EC      * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "21/11/25",
+          "entry_date": "2025-11-21",
+          "transaction_amount": 13.4,
+          "statement_balance": 25.04,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C AGWK SUBANG        * MBBQR111112771836404 286560860Q"
+        },
+        {
+          "entry_date_raw": "21/11/25",
+          "entry_date": "2025-11-21",
+          "transaction_amount": 3.3,
+          "statement_balance": 21.74,
+          "flow": "outflow",
+          "description": "SALE DEBIT SUBANG BUSINESS CEN* SUBANG, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "22/11/25",
+          "entry_date": "2025-11-22",
+          "transaction_amount": 50.0,
+          "statement_balance": 71.74,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C MUHAMMAD AZHAN RIZH* Fund Transfer MBB CT-"
+        },
+        {
+          "entry_date_raw": "22/11/25",
+          "entry_date": "2025-11-22",
+          "transaction_amount": 32.0,
+          "statement_balance": 39.74,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C WAN MUHAMMAD ARIEF * 333177046Q MAE QR"
+        },
+        {
+          "entry_date_raw": "22/11/25",
+          "entry_date": "2025-11-22",
+          "transaction_amount": 12.0,
+          "statement_balance": 27.74,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C Rass Empire Lembah * QR76845332 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "22/11/25",
+          "entry_date": "2025-11-22",
+          "transaction_amount": 11.0,
+          "statement_balance": 16.74,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C MBBQR2092977       * 11112775843024 382681940Q"
+        },
+        {
+          "entry_date_raw": "22/11/25",
+          "entry_date": "2025-11-22",
+          "transaction_amount": 7.0,
+          "statement_balance": 9.74,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C izwankeropok 1     * MBBQR111112775852689 382877814Q"
+        },
+        {
+          "entry_date_raw": "24/11/25",
+          "entry_date": "2025-11-24",
+          "transaction_amount": 4656.0,
+          "statement_balance": 4665.74,
+          "flow": "inflow",
+          "description": "SVG GIRO CR EUM REALTY SDN BHD ELOCR 4904"
+        },
+        {
+          "entry_date_raw": "24/11/25",
+          "entry_date": "2025-11-24",
+          "transaction_amount": 4200.0,
+          "statement_balance": 465.74,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C MUHAMMAD AZHAN RIZH* House depo"
+        },
+        {
+          "entry_date_raw": "24/11/25",
+          "entry_date": "2025-11-24",
+          "transaction_amount": 50.0,
+          "statement_balance": 515.74,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C RUSLAN BIN HASSAN  * Roti MBB CT-"
+        },
+        {
+          "entry_date_raw": "24/11/25",
+          "entry_date": "2025-11-24",
+          "transaction_amount": 50.0,
+          "statement_balance": 465.74,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C LIM QIU SHI        * Pizzahut"
+        },
+        {
+          "entry_date_raw": "24/11/25",
+          "entry_date": "2025-11-24",
+          "transaction_amount": 11.89,
+          "statement_balance": 453.85,
+          "flow": "outflow",
+          "description": "FPX PAYMENT FR A/ 20251124M0000041861* ShopeePay Top Up 2511242121383869"
+        },
+        {
+          "entry_date_raw": "24/11/25",
+          "entry_date": "2025-11-24",
+          "transaction_amount": 30.5,
+          "statement_balance": 423.35,
+          "flow": "outflow",
+          "description": "SALE DEBIT Four Beans Ventures* Taman Megah, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "25/11/25",
+          "entry_date": "2025-11-25",
+          "transaction_amount": 50.9,
+          "statement_balance": 372.45,
+          "flow": "outflow",
+          "description": "SALE DEBIT TNG-EWALLET ECOM 2-* KUALA LUMPUR, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "25/11/25",
+          "entry_date": "2025-11-25",
+          "transaction_amount": 19.88,
+          "statement_balance": 352.57,
+          "flow": "outflow",
+          "description": "FPX PAYMENT FR A/ 20251125M0000041861* ShopeePay Top Up 2511251332413932"
+        },
+        {
+          "entry_date_raw": "26/11/25",
+          "entry_date": "2025-11-26",
+          "transaction_amount": 91.88,
+          "statement_balance": 444.45,
+          "flow": "inflow",
+          "description": "PRE-AUTH REFUND OPENAI *CHATGPT SUB* +14158799686, US SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "26/11/25",
+          "entry_date": "2025-11-26",
+          "transaction_amount": 91.88,
+          "statement_balance": 352.57,
+          "flow": "outflow",
+          "description": "PRE-AUTH DEBIT OPENAI *CHATGPT SUB* +14158799686, US SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "26/11/25",
+          "entry_date": "2025-11-26",
+          "transaction_amount": 4900.85,
+          "statement_balance": 5253.42,
+          "flow": "inflow",
+          "description": "SVG GIRO CR COMPASIA SDN. BHD. ( CAMY575"
+        },
+        {
+          "entry_date_raw": "26/11/25",
+          "entry_date": "2025-11-26",
+          "transaction_amount": 74.1,
+          "statement_balance": 5179.32,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C RESTORANALEHSANPJ  * QR75888182 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "26/11/25",
+          "entry_date": "2025-11-26",
+          "transaction_amount": 11.3,
+          "statement_balance": 5190.62,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C SREEDARAN A/L MAKEE* DUITNOW QR-"
+        },
+        {
+          "entry_date_raw": "26/11/25",
+          "entry_date": "2025-11-26",
+          "transaction_amount": 12.0,
+          "statement_balance": 5202.62,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C MUHAMMAD SYAHID BIN* DUITNOW QR-"
+        },
+        {
+          "entry_date_raw": "26/11/25",
+          "entry_date": "2025-11-26",
+          "transaction_amount": 180.0,
+          "statement_balance": 5022.62,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C MUHAMMAD AZHAN RIZH* Cc balance trans MBB CT"
+        },
+        {
+          "entry_date_raw": "26/11/25",
+          "entry_date": "2025-11-26",
+          "transaction_amount": 1062.0,
+          "statement_balance": 3960.62,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C MUHAMMAD AZHAN RIZH* House installment MBB CT"
+        },
+        {
+          "entry_date_raw": "26/11/25",
+          "entry_date": "2025-11-26",
+          "transaction_amount": 3307.49,
+          "statement_balance": 653.13,
+          "flow": "outflow",
+          "description": "PYMT FROM A/C MAYBANK VISA CARD  * XXXX-XXXX-XXXX-4164 00"
+        },
+        {
+          "entry_date_raw": "26/11/25",
+          "entry_date": "2025-11-26",
+          "transaction_amount": 205.45,
+          "statement_balance": 447.68,
+          "flow": "outflow",
+          "description": "SALE DEBIT ecommunity*MOMENTUM* KUALA LUMPUR, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "26/11/25",
+          "entry_date": "2025-11-26",
+          "transaction_amount": 370.0,
+          "statement_balance": 77.68,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C EXSIM CREDIT SDN. B* House cc MBB CT"
+        },
+        {
+          "entry_date_raw": "27/11/25",
+          "entry_date": "2025-11-27",
+          "transaction_amount": 5.0,
+          "statement_balance": 72.68,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRAB RIDES-EC      * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "27/11/25",
+          "entry_date": "2025-11-27",
+          "transaction_amount": 5.0,
+          "statement_balance": 67.68,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C EXSIM CREDIT SDN. B* House downpayment MBB CT"
+        },
+        {
+          "entry_date_raw": "27/11/25",
+          "entry_date": "2025-11-27",
+          "transaction_amount": 4.0,
+          "statement_balance": 63.68,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C MUHAMMAD SYAHID BIN* QR77637368 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "27/11/25",
+          "entry_date": "2025-11-27",
+          "transaction_amount": 11.3,
+          "statement_balance": 74.98,
+          "flow": "inflow",
+          "description": "FUND TRANSFER TO A/ MUHAMMAD EMAD KHAN * 742152126Q MAE QR"
+        },
+        {
+          "entry_date_raw": "27/11/25",
+          "entry_date": "2025-11-27",
+          "transaction_amount": 1500.0,
+          "statement_balance": 1574.98,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C MUHAMMAD AZHAN RIZH* Transfer MBB CT-"
+        },
+        {
+          "entry_date_raw": "27/11/25",
+          "entry_date": "2025-11-27",
+          "transaction_amount": 800.0,
+          "statement_balance": 774.98,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C LIM QIU SHI        * Rizz (+ lunch"
+        },
+        {
+          "entry_date_raw": "27/11/25",
+          "entry_date": "2025-11-27",
+          "transaction_amount": 300.0,
+          "statement_balance": 474.98,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C NADIRAH BINTI YAHYA* Yann MBB CT"
+        },
+        {
+          "entry_date_raw": "28/11/25",
+          "entry_date": "2025-11-28",
+          "transaction_amount": 7.5,
+          "statement_balance": 467.48,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRAB RIDES-EC      * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "28/11/25",
+          "entry_date": "2025-11-28",
+          "transaction_amount": 1.5,
+          "statement_balance": 465.98,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRAB RIDES-EC      * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "28/11/25",
+          "entry_date": "2025-11-28",
+          "transaction_amount": 7.5,
+          "statement_balance": 458.48,
+          "flow": "outflow",
+          "description": "SALE DEBIT 781-MY-3 TWO SQ    * SELANGOR, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "28/11/25",
+          "entry_date": "2025-11-28",
+          "transaction_amount": 30.9,
+          "statement_balance": 427.58,
+          "flow": "outflow",
+          "description": "PRE-AUTH DEBIT Spotify P3CD9FC77E * Stockholm, SE SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "28/11/25",
+          "entry_date": "2025-11-28",
+          "transaction_amount": 7.97,
+          "statement_balance": 419.61,
+          "flow": "outflow",
+          "description": "PRE-AUTH DEBIT KIRO PRO           * +18336629873, US SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "29/11/25",
+          "entry_date": "2025-11-29",
+          "transaction_amount": 40.0,
+          "statement_balance": 459.61,
+          "flow": "inflow",
+          "description": "FUND TRANSFER TO A/ WAN MUHAMMAD ARIEF * 906596461Q MAE QR"
+        },
+        {
+          "entry_date_raw": "29/11/25",
+          "entry_date": "2025-11-29",
+          "transaction_amount": 13.0,
+          "statement_balance": 446.61,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C MUHAMMAD AFIQ BIN I* 904611469Q MAE QR"
+        },
+        {
+          "entry_date_raw": "29/11/25",
+          "entry_date": "2025-11-29",
+          "transaction_amount": 9.8,
+          "statement_balance": 436.81,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C RESTORANRSZSIGNATUR* QR85098665 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "29/11/25",
+          "entry_date": "2025-11-29",
+          "transaction_amount": 7.89,
+          "statement_balance": 428.92,
+          "flow": "outflow",
+          "description": "SALE DEBIT KIRO PRO KIRO.DEV     US SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "29/11/25",
+          "entry_date": "2025-11-29",
+          "transaction_amount": 7.97,
+          "statement_balance": 436.89,
+          "flow": "inflow",
+          "description": "PRE-AUTH REFUND KIRO PRO KIRO.DEV     US PRE-AUTH REFUND"
+        },
+        {
+          "entry_date_raw": "29/11/25",
+          "entry_date": "2025-11-29",
+          "transaction_amount": 16.9,
+          "statement_balance": 419.99,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C RESTORANRSZSIGNATUR* QR73962822 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "29/11/25",
+          "entry_date": "2025-11-29",
+          "transaction_amount": 9.1,
+          "statement_balance": 410.89,
+          "flow": "outflow",
+          "description": "SALE DEBIT Loob Intergrated Sd* Damansara Uta, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "29/11/25",
+          "entry_date": "2025-11-29",
+          "transaction_amount": 15.0,
+          "statement_balance": 395.89,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C VH GLOBAL VENTURES * QR74168003 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "29/11/25",
+          "entry_date": "2025-11-29",
+          "transaction_amount": 300.0,
+          "statement_balance": 695.89,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C MUHAMMAD SYAHID BIN* DUITNOW QR-"
+        },
+        {
+          "entry_date_raw": "29/11/25",
+          "entry_date": "2025-11-29",
+          "transaction_amount": 150.0,
+          "statement_balance": 545.89,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C MBBQR1531550       * 11112796951310 956031077Q"
+        },
+        {
+          "entry_date_raw": "29/11/25",
+          "entry_date": "2025-11-29",
+          "transaction_amount": 900.0,
+          "statement_balance": 1445.89,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C MUHAMMAD AZHAN RIZH* Fund Transfer MBB CT-"
+        },
+        {
+          "entry_date_raw": "29/11/25",
+          "entry_date": "2025-11-29",
+          "transaction_amount": 1000.0,
+          "statement_balance": 445.89,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C MUHAMMAD AZHAN RIZH* Hdhd"
+        },
+        {
+          "entry_date_raw": "29/11/25",
+          "entry_date": "2025-11-29",
+          "transaction_amount": 1.5,
+          "statement_balance": 444.39,
+          "flow": "outflow",
+          "description": "SALE DEBIT KK SUPER MART-JS   * KUALA LUMPUR, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "30/11/25",
+          "entry_date": "2025-11-30",
+          "transaction_amount": 120.0,
+          "statement_balance": 324.39,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C MUHAMAD BAZLI NABIL* 019391693Q MAE QR"
+        },
+        {
+          "entry_date_raw": "30/11/25",
+          "entry_date": "2025-11-30",
+          "transaction_amount": 62.89,
+          "statement_balance": 261.5,
+          "flow": "outflow",
+          "description": "FPX PAYMENT FR A/ 20251130M0000041861* ShopeePay Top Up 2511301525593276"
+        },
+        {
+          "entry_date_raw": "30/11/25",
+          "entry_date": "2025-11-30",
+          "transaction_amount": 38.99,
+          "statement_balance": 222.51,
+          "flow": "outflow",
+          "description": "PRE-AUTH DEBIT OPENAI *CHATGPT SUB* +14158799686, US SALE DEBIT ENDING BALANCE : 222.51 TOTAL CREDIT : 25,823.70 TOTAL DEBIT : 25,773.44"
+        }
+      ]
+    },
+    {
+      "file": "oct2025.pdf",
+      "row_count": 90,
+      "rows": [
+        {
+          "entry_date_raw": "01/10/25",
+          "entry_date": "2025-10-01",
+          "transaction_amount": 1000.0,
+          "statement_balance": 1111.36,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C MUHAMMAD AZHAN RIZH* Transfer MBB CT-"
+        },
+        {
+          "entry_date_raw": "01/10/25",
+          "entry_date": "2025-10-01",
+          "transaction_amount": 49.9,
+          "statement_balance": 1061.46,
+          "flow": "outflow",
+          "description": "PRE-AUTH DEBIT Netflix.com        * Los Gatos, SG SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "01/10/25",
+          "entry_date": "2025-10-01",
+          "transaction_amount": 1010.0,
+          "statement_balance": 51.46,
+          "flow": "outflow",
+          "description": "FPX PAYMENT FR A/ A9739213-1C9E-F011-* PHILLIP CAPITAL SDN 2510010056040216"
+        },
+        {
+          "entry_date_raw": "01/10/25",
+          "entry_date": "2025-10-01",
+          "transaction_amount": 8.2,
+          "statement_balance": 43.26,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C RESTORANRSZSIGNATUR* QR72908874 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "01/10/25",
+          "entry_date": "2025-10-01",
+          "transaction_amount": 3.5,
+          "statement_balance": 39.76,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRAB RIDES-EC      * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "01/10/25",
+          "entry_date": "2025-10-01",
+          "transaction_amount": 27.9,
+          "statement_balance": 11.86,
+          "flow": "outflow",
+          "description": "SALE DEBIT TNG-EWALLET ECOM 2-* KUALA LUMPUR, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "01/10/25",
+          "entry_date": "2025-10-01",
+          "transaction_amount": 4.5,
+          "statement_balance": 7.36,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRAB RIDES-EC      * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "02/10/25",
+          "entry_date": "2025-10-02",
+          "transaction_amount": 250.0,
+          "statement_balance": 257.36,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C MUHAMMAD AZHAN RIZH* Transfer MBB CT-"
+        },
+        {
+          "entry_date_raw": "02/10/25",
+          "entry_date": "2025-10-02",
+          "transaction_amount": 5.0,
+          "statement_balance": 252.36,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRAB RIDES-EC      * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "02/10/25",
+          "entry_date": "2025-10-02",
+          "transaction_amount": 12.0,
+          "statement_balance": 240.36,
+          "flow": "outflow",
+          "description": "PYMT FROM A/C Restoran Al Safuan * 194343370Q QR PAY SALES"
+        },
+        {
+          "entry_date_raw": "02/10/25",
+          "entry_date": "2025-10-02",
+          "transaction_amount": 9.0,
+          "statement_balance": 231.36,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRAB RIDES-EC      * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "03/10/25",
+          "entry_date": "2025-10-03",
+          "transaction_amount": 150.0,
+          "statement_balance": 381.36,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C MUHAMMAD AZHAN RIZH* Transfer MBB CT-"
+        },
+        {
+          "entry_date_raw": "03/10/25",
+          "entry_date": "2025-10-03",
+          "transaction_amount": 3.9,
+          "statement_balance": 377.46,
+          "flow": "outflow",
+          "description": "PAYMENT VIA MYDEBIT 781-MY-3 TWO SQ    * SELANGOR PAYMENT VIA MYDEBIT"
+        },
+        {
+          "entry_date_raw": "03/10/25",
+          "entry_date": "2025-10-03",
+          "transaction_amount": 7.9,
+          "statement_balance": 369.56,
+          "flow": "outflow",
+          "description": "PYMT FROM A/C MLaboori PJ        * T045837582725 QR PAY SALES"
+        },
+        {
+          "entry_date_raw": "03/10/25",
+          "entry_date": "2025-10-03",
+          "transaction_amount": 26.8,
+          "statement_balance": 342.76,
+          "flow": "outflow",
+          "description": "PYMT FROM A/C Murni PJ           * T045837712925 QR PAY SALES"
+        },
+        {
+          "entry_date_raw": "03/10/25",
+          "entry_date": "2025-10-03",
+          "transaction_amount": 5.2,
+          "statement_balance": 337.56,
+          "flow": "outflow",
+          "description": "PAYMENT VIA MYDEBIT BERRYS CAKE HOUSE S* PETALING JAYA PAYMENT VIA MYDEBIT"
+        },
+        {
+          "entry_date_raw": "03/10/25",
+          "entry_date": "2025-10-03",
+          "transaction_amount": 30.7,
+          "statement_balance": 306.86,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C Aftermeal          * MBBQR111112615630900 324655628Q"
+        },
+        {
+          "entry_date_raw": "04/10/25",
+          "entry_date": "2025-10-04",
+          "transaction_amount": 140.0,
+          "statement_balance": 166.86,
+          "flow": "outflow",
+          "description": "SALE DEBIT TNG-EWALLET ECOM 2-* KUALA LUMPUR, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "04/10/25",
+          "entry_date": "2025-10-04",
+          "transaction_amount": 80.85,
+          "statement_balance": 86.01,
+          "flow": "outflow",
+          "description": "PAYMENT VIA MYDEBIT HOMETOWN HAINAN COF* PETALING JAYA, MYS PAYMENT VIA MYDEBIT"
+        },
+        {
+          "entry_date_raw": "04/10/25",
+          "entry_date": "2025-10-04",
+          "transaction_amount": 17.3,
+          "statement_balance": 68.71,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C THAQWA CLASSIC - SU* QR72193258 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "04/10/25",
+          "entry_date": "2025-10-04",
+          "transaction_amount": 20.0,
+          "statement_balance": 48.71,
+          "flow": "outflow",
+          "description": "SALE DEBIT TNG-EWALLET ECOM 2-* KUALA LUMPUR, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "05/10/25",
+          "entry_date": "2025-10-05",
+          "transaction_amount": 3.0,
+          "statement_balance": 45.71,
+          "flow": "outflow",
+          "description": "PAYMENT VIA MYDEBIT MONKEYS CANOPY     * SELANGOR PAYMENT VIA MYDEBIT"
+        },
+        {
+          "entry_date_raw": "05/10/25",
+          "entry_date": "2025-10-05",
+          "transaction_amount": 10.4,
+          "statement_balance": 35.31,
+          "flow": "outflow",
+          "description": "PAYMENT VIA MYDEBIT KK SUPER MART - SJ1* SUBANG JAYA PAYMENT VIA MYDEBIT"
+        },
+        {
+          "entry_date_raw": "05/10/25",
+          "entry_date": "2025-10-05",
+          "transaction_amount": 4.0,
+          "statement_balance": 31.31,
+          "flow": "outflow",
+          "description": "PAYMENT VIA MYDEBIT Lumi PJ Seksyen 13 * PETALING JAYA PAYMENT VIA MYDEBIT"
+        },
+        {
+          "entry_date_raw": "07/10/25",
+          "entry_date": "2025-10-07",
+          "transaction_amount": 12.8,
+          "statement_balance": 18.51,
+          "flow": "outflow",
+          "description": "PAYMENT VIA MYDEBIT KEY ZONE ENTERPRISE* PETALING JAYA PAYMENT VIA MYDEBIT"
+        },
+        {
+          "entry_date_raw": "07/10/25",
+          "entry_date": "2025-10-07",
+          "transaction_amount": 5.2,
+          "statement_balance": 13.31,
+          "flow": "outflow",
+          "description": "PAYMENT VIA MYDEBIT NINSO-PALAZZO 19   * SUBANG JAYA, MYS PAYMENT VIA MYDEBIT"
+        },
+        {
+          "entry_date_raw": "07/10/25",
+          "entry_date": "2025-10-07",
+          "transaction_amount": 5000.0,
+          "statement_balance": 5013.31,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C LIM QIU SHI        * Inbesmen MBB CT-"
+        },
+        {
+          "entry_date_raw": "07/10/25",
+          "entry_date": "2025-10-07",
+          "transaction_amount": 5000.0,
+          "statement_balance": 13.31,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C Webull Securities (* Rizhan MBB CT"
+        },
+        {
+          "entry_date_raw": "08/10/25",
+          "entry_date": "2025-10-08",
+          "transaction_amount": 20.0,
+          "statement_balance": 33.31,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C MUHAMMAD AZHAN RIZH* Fund Transfer MBB CT-"
+        },
+        {
+          "entry_date_raw": "08/10/25",
+          "entry_date": "2025-10-08",
+          "transaction_amount": 13.5,
+          "statement_balance": 19.81,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRAB RIDES-EC      * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "08/10/25",
+          "entry_date": "2025-10-08",
+          "transaction_amount": 6.0,
+          "statement_balance": 13.81,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRAB RIDES-EC      * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "09/10/25",
+          "entry_date": "2025-10-09",
+          "transaction_amount": 20.0,
+          "statement_balance": 33.81,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C MUHAMMAD AZHAN RIZH* Fund Transfer MBB CT-"
+        },
+        {
+          "entry_date_raw": "09/10/25",
+          "entry_date": "2025-10-09",
+          "transaction_amount": 16.0,
+          "statement_balance": 17.81,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRAB RIDES-EC      * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "09/10/25",
+          "entry_date": "2025-10-09",
+          "transaction_amount": 1.0,
+          "statement_balance": 16.81,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C PHILLIP CAPITAL SDN* Philip capital"
+        },
+        {
+          "entry_date_raw": "09/10/25",
+          "entry_date": "2025-10-09",
+          "transaction_amount": 8.0,
+          "statement_balance": 8.81,
+          "flow": "outflow",
+          "description": "PYMT FROM A/C Restoran Al Safuan * 785779353Q QR PAY SALES"
+        },
+        {
+          "entry_date_raw": "10/10/25",
+          "entry_date": "2025-10-10",
+          "transaction_amount": 50.0,
+          "statement_balance": 58.81,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C MUHAMMAD AZHAN RIZH* Fund Transfer MBB CT-"
+        },
+        {
+          "entry_date_raw": "10/10/25",
+          "entry_date": "2025-10-10",
+          "transaction_amount": 11.0,
+          "statement_balance": 47.81,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRAB RIDES-EC      * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "10/10/25",
+          "entry_date": "2025-10-10",
+          "transaction_amount": 563.11,
+          "statement_balance": 610.92,
+          "flow": "inflow",
+          "description": "SVG GIRO CR KWSP - CTRL A/C 2025101023968169 970904106033"
+        },
+        {
+          "entry_date_raw": "11/10/25",
+          "entry_date": "2025-10-11",
+          "transaction_amount": 15.9,
+          "statement_balance": 595.02,
+          "flow": "outflow",
+          "description": "PAYMENT VIA MYDEBIT WESTERN - SENSO    * PETALING JAYA PAYMENT VIA MYDEBIT"
+        },
+        {
+          "entry_date_raw": "13/10/25",
+          "entry_date": "2025-10-13",
+          "transaction_amount": 60.0,
+          "statement_balance": 535.02,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRABPAY-EC         * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "13/10/25",
+          "entry_date": "2025-10-13",
+          "transaction_amount": 17.4,
+          "statement_balance": 517.62,
+          "flow": "outflow",
+          "description": "PAYMENT VIA MYDEBIT JAYA GROCER-THE MAI* SUBANG JAYA, MYS PAYMENT VIA MYDEBIT"
+        },
+        {
+          "entry_date_raw": "14/10/25",
+          "entry_date": "2025-10-14",
+          "transaction_amount": 179.15,
+          "statement_balance": 338.47,
+          "flow": "outflow",
+          "description": "SALE DEBIT TM TECH UNIFI RPS  * KUALA LUMPUR, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "14/10/25",
+          "entry_date": "2025-10-14",
+          "transaction_amount": 200.0,
+          "statement_balance": 538.47,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C RUSLAN BIN HASSAN  * wifi MBB CT-"
+        },
+        {
+          "entry_date_raw": "15/10/25",
+          "entry_date": "2025-10-15",
+          "transaction_amount": 5.5,
+          "statement_balance": 532.97,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRAB RIDES-EC      * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "15/10/25",
+          "entry_date": "2025-10-15",
+          "transaction_amount": 6.5,
+          "statement_balance": 526.47,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRAB RIDES-EC      * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "16/10/25",
+          "entry_date": "2025-10-16",
+          "transaction_amount": 67.05,
+          "statement_balance": 459.42,
+          "flow": "outflow",
+          "description": "PAYMENT VIA MYDEBIT OMI-THE EXCHANGE TR* KUALA LUMPUR PAYMENT VIA MYDEBIT"
+        },
+        {
+          "entry_date_raw": "16/10/25",
+          "entry_date": "2025-10-16",
+          "transaction_amount": 28.0,
+          "statement_balance": 431.42,
+          "flow": "outflow",
+          "description": "PAYMENT VIA MYDEBIT ALL ABOUT CHEW - TR* KUALA LUMPUR, MYS PAYMENT VIA MYDEBIT"
+        },
+        {
+          "entry_date_raw": "16/10/25",
+          "entry_date": "2025-10-16",
+          "transaction_amount": 110.0,
+          "statement_balance": 321.42,
+          "flow": "outflow",
+          "description": "SALE DEBIT BON APPETIT        * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "17/10/25",
+          "entry_date": "2025-10-17",
+          "transaction_amount": 1.2,
+          "statement_balance": 320.22,
+          "flow": "outflow",
+          "description": "PAYMENT VIA MYDEBIT MYDIN SUBANG JAYA M* SELANGOR PAYMENT VIA MYDEBIT"
+        },
+        {
+          "entry_date_raw": "17/10/25",
+          "entry_date": "2025-10-17",
+          "transaction_amount": 22.0,
+          "statement_balance": 298.22,
+          "flow": "outflow",
+          "description": "PAYMENT VIA MYDEBIT RICHEESE FACTORY   * PETALING JAYA, MYS PAYMENT VIA MYDEBIT"
+        },
+        {
+          "entry_date_raw": "17/10/25",
+          "entry_date": "2025-10-17",
+          "transaction_amount": 10.9,
+          "statement_balance": 287.32,
+          "flow": "outflow",
+          "description": "SALE DEBIT WATSON'S SUNWAY GIZ* SELANGOR, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "17/10/25",
+          "entry_date": "2025-10-17",
+          "transaction_amount": 3.3,
+          "statement_balance": 284.02,
+          "flow": "outflow",
+          "description": "PAYMENT VIA MYDEBIT PARKING-SUBANG PARA* SELANGOR PAYMENT VIA MYDEBIT"
+        },
+        {
+          "entry_date_raw": "18/10/25",
+          "entry_date": "2025-10-18",
+          "transaction_amount": 96.89,
+          "statement_balance": 187.13,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C MUHAMMAD AZHAN RIZH* Cc plan MBB CT"
+        },
+        {
+          "entry_date_raw": "18/10/25",
+          "entry_date": "2025-10-18",
+          "transaction_amount": 1.0,
+          "statement_balance": 186.13,
+          "flow": "outflow",
+          "description": "SALE DEBIT AirAsia 3D Secure  * KLIA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "18/10/25",
+          "entry_date": "2025-10-18",
+          "transaction_amount": 1.0,
+          "statement_balance": 187.13,
+          "flow": "inflow",
+          "description": "REFUND SALE AirAsia 3D Secure  * KLIA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "18/10/25",
+          "entry_date": "2025-10-18",
+          "transaction_amount": 29.0,
+          "statement_balance": 158.13,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRAB RIDES-EC      * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "18/10/25",
+          "entry_date": "2025-10-18",
+          "transaction_amount": 15.8,
+          "statement_balance": 142.33,
+          "flow": "outflow",
+          "description": "PAYMENT VIA MYDEBIT 99 SPEEDMART-1196  * SELANGOR PAYMENT VIA MYDEBIT"
+        },
+        {
+          "entry_date_raw": "19/10/25",
+          "entry_date": "2025-10-19",
+          "transaction_amount": 94.9,
+          "statement_balance": 47.43,
+          "flow": "outflow",
+          "description": "SALE DEBIT TNG-EWALLET ECOM 2-* KUALA LUMPUR, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "20/10/25",
+          "entry_date": "2025-10-20",
+          "transaction_amount": 14.4,
+          "statement_balance": 33.03,
+          "flow": "outflow",
+          "description": "PYMT FROM A/C Mmm'Bawang Cafe @ U* 681563723Q QR PAY SALES"
+        },
+        {
+          "entry_date_raw": "21/10/25",
+          "entry_date": "2025-10-21",
+          "transaction_amount": 243.0,
+          "statement_balance": 276.03,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C MUHAMMAD AZHAN RIZH* Fund Transfer MBB CT-"
+        },
+        {
+          "entry_date_raw": "21/10/25",
+          "entry_date": "2025-10-21",
+          "transaction_amount": 233.0,
+          "statement_balance": 43.03,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C MUHAMMAD AZHAN RIZH* Cc payment MBB CT"
+        },
+        {
+          "entry_date_raw": "21/10/25",
+          "entry_date": "2025-10-21",
+          "transaction_amount": 12.0,
+          "statement_balance": 31.03,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C CARWASHUSJ9        * QR84110938 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "22/10/25",
+          "entry_date": "2025-10-22",
+          "transaction_amount": 11.8,
+          "statement_balance": 19.23,
+          "flow": "outflow",
+          "description": "PYMT FROM A/C Restoran Al Safuan * 809834134Q QR PAY SALES"
+        },
+        {
+          "entry_date_raw": "24/10/25",
+          "entry_date": "2025-10-24",
+          "transaction_amount": 4980.85,
+          "statement_balance": 5000.08,
+          "flow": "inflow",
+          "description": "SVG GIRO CR COMPASIA SDN. BHD. ( CAMY575"
+        },
+        {
+          "entry_date_raw": "24/10/25",
+          "entry_date": "2025-10-24",
+          "transaction_amount": 4488.15,
+          "statement_balance": 511.93,
+          "flow": "outflow",
+          "description": "PYMT FROM A/C MAYBANK VISA CARD  * XXXX-XXXX-XXXX-4164 00"
+        },
+        {
+          "entry_date_raw": "24/10/25",
+          "entry_date": "2025-10-24",
+          "transaction_amount": 1000.0,
+          "statement_balance": 1511.93,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C MUHAMMAD AZHAN RIZH* Fund Transfer MBB CT-"
+        },
+        {
+          "entry_date_raw": "24/10/25",
+          "entry_date": "2025-10-24",
+          "transaction_amount": 82.26,
+          "statement_balance": 1429.67,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C MUHAMMAD AZHAN RIZH* House loan MBB CT"
+        },
+        {
+          "entry_date_raw": "24/10/25",
+          "entry_date": "2025-10-24",
+          "transaction_amount": 1000.0,
+          "statement_balance": 429.67,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C LIM QIU SHI        * Civic pbb"
+        },
+        {
+          "entry_date_raw": "24/10/25",
+          "entry_date": "2025-10-24",
+          "transaction_amount": 200.0,
+          "statement_balance": 229.67,
+          "flow": "outflow",
+          "description": "PRE-AUTH DEBIT PETRONAS JALAN SS 2* SELANGOR, MY PREAUTH DEBIT"
+        },
+        {
+          "entry_date_raw": "24/10/25",
+          "entry_date": "2025-10-24",
+          "transaction_amount": 200.0,
+          "statement_balance": 429.67,
+          "flow": "inflow",
+          "description": "PRE-AUTH REFUND PETRONAS JALAN SS 2* SELANGOR, MY PREAUTH DEBIT"
+        },
+        {
+          "entry_date_raw": "24/10/25",
+          "entry_date": "2025-10-24",
+          "transaction_amount": 20.0,
+          "statement_balance": 409.67,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C Rass Empire Lembah * QR81167077 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "25/10/25",
+          "entry_date": "2025-10-25",
+          "transaction_amount": 9076.0,
+          "statement_balance": 9485.67,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C CARSOME SDN. BHD.  * WA1309M-PAY WA1309M-PAY"
+        },
+        {
+          "entry_date_raw": "25/10/25",
+          "entry_date": "2025-10-25",
+          "transaction_amount": 9076.0,
+          "statement_balance": 409.67,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C LIM QIU SHI        * Jetta carsome"
+        },
+        {
+          "entry_date_raw": "25/10/25",
+          "entry_date": "2025-10-25",
+          "transaction_amount": 93.47,
+          "statement_balance": 316.2,
+          "flow": "outflow",
+          "description": "PRE-AUTH DEBIT OPENAI *CHATGPT SUB* +14158799686, US SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "26/10/25",
+          "entry_date": "2025-10-26",
+          "transaction_amount": 90.0,
+          "statement_balance": 226.2,
+          "flow": "outflow",
+          "description": "TRANSFER FROM A/C MUHAMMAD HAZIM BIN * 154147309Q MAE QR"
+        },
+        {
+          "entry_date_raw": "26/10/25",
+          "entry_date": "2025-10-26",
+          "transaction_amount": 4.9,
+          "statement_balance": 221.3,
+          "flow": "outflow",
+          "description": "PYMT FROM A/C Mmm'Bawang Cafe @ U* 167043762Q QR PAY SALES"
+        },
+        {
+          "entry_date_raw": "26/10/25",
+          "entry_date": "2025-10-26",
+          "transaction_amount": 2.0,
+          "statement_balance": 219.3,
+          "flow": "outflow",
+          "description": "PAYMENT VIA MYDEBIT SONICBOOM PLATFOR  * KUALA LUMPUR, MYS PAYMENT VIA MYDEBIT"
+        },
+        {
+          "entry_date_raw": "27/10/25",
+          "entry_date": "2025-10-27",
+          "transaction_amount": 93.47,
+          "statement_balance": 312.77,
+          "flow": "inflow",
+          "description": "PRE-AUTH REFUND OPENAI *CHATGPT SUBS OPENAI.COM   US PRE-AUTH REFUND"
+        },
+        {
+          "entry_date_raw": "27/10/25",
+          "entry_date": "2025-10-27",
+          "transaction_amount": 92.56,
+          "statement_balance": 220.21,
+          "flow": "outflow",
+          "description": "SALE DEBIT OPENAI *CHATGPT SUBS OPENAI.COM   US SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "27/10/25",
+          "entry_date": "2025-10-27",
+          "transaction_amount": 9.5,
+          "statement_balance": 210.71,
+          "flow": "outflow",
+          "description": "PYMT FROM A/C Restoran Al Safuan * 222808679Q QR PAY SALES"
+        },
+        {
+          "entry_date_raw": "27/10/25",
+          "entry_date": "2025-10-27",
+          "transaction_amount": 10.0,
+          "statement_balance": 220.71,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C AHMAD HANIS AIMAN B* DUITNOW QR-"
+        },
+        {
+          "entry_date_raw": "27/10/25",
+          "entry_date": "2025-10-27",
+          "transaction_amount": 20.0,
+          "statement_balance": 200.71,
+          "flow": "outflow",
+          "description": "SALE DEBIT TNG-EWALLET ECOM 2-* KUALA LUMPUR, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "27/10/25",
+          "entry_date": "2025-10-27",
+          "transaction_amount": 500.0,
+          "statement_balance": 700.71,
+          "flow": "inflow",
+          "description": "IBK FUND TFR TO A/C MUHAMMAD AZHAN RIZH* Fund Transfer MBB CT-"
+        },
+        {
+          "entry_date_raw": "27/10/25",
+          "entry_date": "2025-10-27",
+          "transaction_amount": 374.0,
+          "statement_balance": 326.71,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C EXSIM CREDIT SDN. B* Dp house MBB CT"
+        },
+        {
+          "entry_date_raw": "28/10/25",
+          "entry_date": "2025-10-28",
+          "transaction_amount": 30.9,
+          "statement_balance": 295.81,
+          "flow": "outflow",
+          "description": "PRE-AUTH DEBIT Spotify P3BE3B5D55 * Stockholm, SE SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "29/10/25",
+          "entry_date": "2025-10-29",
+          "transaction_amount": 15.0,
+          "statement_balance": 280.81,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C VH GLOBAL VENTURES * QR81520229 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "29/10/25",
+          "entry_date": "2025-10-29",
+          "transaction_amount": 15.0,
+          "statement_balance": 265.81,
+          "flow": "outflow",
+          "description": "IBK FUND TFR FR A/C VH GLOBAL VENTURES * QR70983252 DUITNOW QR"
+        },
+        {
+          "entry_date_raw": "29/10/25",
+          "entry_date": "2025-10-29",
+          "transaction_amount": 27.9,
+          "statement_balance": 237.91,
+          "flow": "outflow",
+          "description": "SALE DEBIT TNG-EWALLET ECOM 2-* KUALA LUMPUR, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "30/10/25",
+          "entry_date": "2025-10-30",
+          "transaction_amount": 60.0,
+          "statement_balance": 177.91,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRAB RIDES-EC      * PETALING JAYA, MY SALE DEBIT"
+        },
+        {
+          "entry_date_raw": "30/10/25",
+          "entry_date": "2025-10-30",
+          "transaction_amount": 5.66,
+          "statement_balance": 172.25,
+          "flow": "outflow",
+          "description": "SALE DEBIT GRAB RIDES-EC      * PETALING JAYA, MY SALE DEBIT ENDING BALANCE : 172.25 TOTAL CREDIT : 23,357.43 TOTAL DEBIT : 23,296.54"
+        }
+      ]
+    }
+  ]
+}

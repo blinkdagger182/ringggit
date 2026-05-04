@@ -19,8 +19,17 @@ enum MaybankStatementImportError: Error {
 }
 
 final class MaybankStatementImporter {
-    private static let fallbackBaseURL = "https://ringggit-mae-pdf-api-szzk9.ondigitalocean.app"
+    private static let releaseBaseURL = "https://ringggit-mae-pdf-api-szzk9.ondigitalocean.app"
+    private static let debugLocalBaseURL = "http://127.0.0.1:8081"
     private static let fallbackMode = "m2u_current_account_debit"
+
+    private static var fallbackBaseURL: String {
+#if DEBUG
+        return debugLocalBaseURL
+#else
+        return releaseBaseURL
+#endif
+    }
 
     static func importTransactions(from url: URL) async throws -> MaybankStatementImportResult {
         guard let fileData = try? Data(contentsOf: url), !fileData.isEmpty else {
