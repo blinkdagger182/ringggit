@@ -32,6 +32,7 @@ struct HomeView: View {
     @StateObject var toastPresenter = OverallToastPresenter()
     @StateObject var transactionManager = OverallTransactionManager()
     @StateObject private var homeAIAssistantViewModel = HomeAIAssistantViewModel()
+    @StateObject private var keyboardHeightHelper = KeyboardHeightHelper()
     @Environment(\.managedObjectContext) var moc
     @EnvironmentObject var dataController: DataController
 
@@ -288,10 +289,22 @@ struct HomeView: View {
 
                     if homeAIAssistantViewModel.isPresented {
                         guard value.startLocation.y <= homeAISheetOffset + topEdge + 72 else { return }
+                        let isKeyboardPresented = keyboardHeightHelper.keyboardHeight > 0
+
+                        if isKeyboardPresented {
+                            if value.translation.height > 8 {
+                                UIApplication.shared.endEditing()
+                            }
+                            return
+                        }
 
                         if value.translation.height < 0 {
+                            UIApplication.shared.endEditing()
                             homeAISheetOffset = max(0, openOffset - collapseRubberBandDistance(for: -value.translation.height))
                         } else {
+                            if value.translation.height > 8 {
+                                UIApplication.shared.endEditing()
+                            }
                             homeAISheetOffset = min(openOffset + (rubberBandPullDistance(for: value.translation.height) * 0.08), openOffset + 18)
                         }
                         return
@@ -310,7 +323,13 @@ struct HomeView: View {
                 .onEnded { value in
                     withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
                         if homeAIAssistantViewModel.isPresented {
-                            let shouldCollapse = value.predictedEndTranslation.height < -120 || homeAISheetOffset < (openOffset * 0.72)
+                            guard keyboardHeightHelper.keyboardHeight == 0 else {
+                                homeAISheetOffset = openOffset
+                                return
+                            }
+
+                            let collapseDistance = max(0, openOffset - homeAISheetOffset)
+                            let shouldCollapse = value.predictedEndTranslation.height < -180 || collapseDistance > 180
 
                             if shouldCollapse {
                                 homeAISheetOffset = 0

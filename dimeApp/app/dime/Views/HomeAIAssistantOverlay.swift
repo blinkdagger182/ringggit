@@ -4,11 +4,14 @@
 //
 
 import SwiftUI
+import UIKit
 import WebKit
 
 struct HomeAIAssistantOverlay: View {
+    private let assistantTitle = "Dime Nova"
+
     @ObservedObject var viewModel: HomeAIAssistantViewModel
-    @ObservedObject private var keyboardHeightHelper = KeyboardHeightHelper()
+    @StateObject private var keyboardHeightHelper = KeyboardHeightHelper()
 
     let namespace: Namespace.ID
     let topInset: CGFloat
@@ -18,7 +21,9 @@ struct HomeAIAssistantOverlay: View {
     let onCollapse: () -> Void
     let collapseGesture: AnyGesture<DragGesture.Value>?
 
-    @FocusState private var composerFocused: Bool
+    @State private var composerFocused = false
+    @State private var composerFocusRequestID = 0
+    @State private var chatScrollRequestID = 0
 
     var body: some View {
         GeometryReader { proxy in
@@ -29,7 +34,6 @@ struct HomeAIAssistantOverlay: View {
             ZStack(alignment: .bottom) {
                 Color(hex: "0A0A0A")
                     .ignoresSafeArea()
-                    .modifier(HomeAICollapseGestureModifier(dragGesture: collapseGesture))
 
                 HomeAIAnimatedGradientBackground()
                     .opacity(max(0, revealProgress * 0.92))
@@ -41,12 +45,11 @@ struct HomeAIAssistantOverlay: View {
                         )
                     )
                     .ignoresSafeArea()
-                    .modifier(HomeAICollapseGestureModifier(dragGesture: collapseGesture))
 
                 VStack(spacing: 0) {
                     previewHeader
                         .padding(.horizontal, 24)
-                        .padding(.top, max(topInset, 12) + 18)
+                        .padding(.top, max(topInset, proxy.safeAreaInsets.top) + 10)
                         .opacity(revealProgress)
 
                     messageArea(
@@ -76,13 +79,11 @@ struct HomeAIAssistantOverlay: View {
                         )
                     )
                     .zIndex(2)
-                    .modifier(HomeAICollapseGestureModifier(dragGesture: collapseGesture))
 
-                if isExpanded {
+                if isExpanded && keyboardOverlap == 0 {
                     collapseHandle
                         .padding(.bottom, activeComposerBottomPadding + 104)
                         .opacity(revealProgress)
-                        .offset(y: -keyboardOverlap)
                         .zIndex(1)
                         .modifier(HomeAICollapseGestureModifier(dragGesture: collapseGesture))
                 }
@@ -90,8 +91,11 @@ struct HomeAIAssistantOverlay: View {
             .ignoresSafeArea(.keyboard, edges: .bottom)
             .onChange(of: isExpanded) { expanded in
                 guard expanded else { return }
-                withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) {
-                    composerFocused = viewModel.messages.isEmpty
+                guard viewModel.messages.isEmpty else { return }
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.38) {
+                    guard isExpanded else { return }
+                    focusComposer()
                 }
             }
         }
@@ -114,7 +118,7 @@ struct HomeAIAssistantOverlay: View {
                 Image(systemName: "sparkles")
                     .font(.system(size: 15, weight: .semibold))
 
-                Text("Ryt AI")
+                Text(assistantTitle)
                     .font(.system(size: 21, weight: .semibold, design: .rounded))
 
                 Text("beta")
@@ -151,35 +155,60 @@ struct HomeAIAssistantOverlay: View {
 
                         if viewModel.isResponding {
                             typingIndicator
+                                .id("typing-indicator")
                         }
                     }
 
-                    Color.clear
-                        .frame(height: 1)
-                        .id("bottom-anchor")
+                    nonBubbleDragArea(
+                        height: bottomScrollSpacerHeight(
+                            keyboardOverlap: keyboardOverlap,
+                            composerBottomPadding: composerBottomPadding
+                        )
+                    )
+                    .id("bottom-anchor")
                 }
+                .background(
+                    Color.black.opacity(0.001)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            dismissKeyboard()
+                        }
+                )
                 .padding(.horizontal, 24)
                 .padding(.top, 16)
-                .padding(.bottom, 120 + composerBottomPadding + keyboardOverlap)
             }
+            .modifier(HomeAIInteractiveKeyboardDismissModifier())
+            .background(
+                nonBubbleDragArea(height: 1)
+            )
             .onChange(of: viewModel.messages.count) { _ in
-                scrollToBottom(proxy, animated: true)
+                requestScrollToChatEnd(proxy, animated: false)
             }
             .onChange(of: viewModel.isResponding) { _ in
-                scrollToBottom(proxy, animated: true)
+                requestScrollToChatEnd(proxy, animated: false)
             }
             .onChange(of: keyboardHeightHelper.keyboardHeight) { _ in
-                scrollToBottom(proxy, animated: true)
+                requestScrollToChatEnd(proxy, animated: false, delay: 0.26)
             }
             .onChange(of: composerFocused) { focused in
                 guard focused else { return }
-                scrollToBottom(proxy, animated: true)
+                requestScrollToChatEnd(proxy, animated: false, delay: 0.26)
             }
             .onAppear {
                 guard !viewModel.messages.isEmpty else { return }
-                scrollToBottom(proxy, animated: false)
+                requestScrollToChatEnd(proxy, animated: false, delay: 0)
             }
         }
+    }
+
+    private func nonBubbleDragArea(height: CGFloat) -> some View {
+        Color.black.opacity(0.001)
+            .frame(maxWidth: .infinity, minHeight: height, maxHeight: height)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                dismissKeyboard()
+            }
+            .modifier(HomeAICollapseGestureModifier(dragGesture: collapseGesture))
     }
 
     private var emptyState: some View {
@@ -207,44 +236,47 @@ struct HomeAIAssistantOverlay: View {
                     .foregroundColor(.white.opacity(0.42))
             }
 
-            LazyVGrid(columns: [
-                GridItem(.flexible(), spacing: 14),
-                GridItem(.flexible(), spacing: 14)
-            ], spacing: 14) {
-                ForEach(viewModel.quickActions) { quickAction in
-                    Button {
-                        viewModel.triggerQuickAction(quickAction)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Image(systemName: quickAction.systemImage)
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(.white.opacity(0.72))
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(viewModel.quickActions) { quickAction in
+                        Button {
+                            viewModel.triggerQuickAction(quickAction)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Image(systemName: quickAction.systemImage)
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(.white.opacity(0.72))
 
-                            Text(quickAction.title)
-                                .font(.system(.headline, design: .rounded).weight(.medium))
-                                .foregroundColor(.white.opacity(0.92))
-                                .lineLimit(2)
-                                .multilineTextAlignment(.leading)
+                                Spacer(minLength: 0)
 
-                            Text(quickActionSubtitle(for: quickAction.title))
-                                .font(.system(.footnote, design: .rounded))
-                                .foregroundColor(.white.opacity(0.46))
-                                .lineLimit(2)
+                                Text(quickAction.title)
+                                    .font(.system(.headline, design: .rounded).weight(.medium))
+                                    .foregroundColor(.white.opacity(0.92))
+                                    .lineLimit(2)
+                                    .multilineTextAlignment(.leading)
+
+                                Text(quickActionSubtitle(for: quickAction.title))
+                                    .font(.system(.footnote, design: .rounded))
+                                    .foregroundColor(.white.opacity(0.46))
+                                    .lineLimit(2)
+                            }
+                            .padding(16)
+                            .frame(width: 146, height: 146, alignment: .leading)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .fill(Color(hex: "141414").opacity(0.96))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                            .stroke(Color(hex: "222222"), lineWidth: 1)
+                                    )
+                            )
                         }
-                        .padding(16)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(Color(hex: "141414").opacity(0.96))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .stroke(Color(hex: "222222"), lineWidth: 1)
-                                )
-                        )
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
+                .padding(.trailing, 24)
             }
+            .scrollClipDisabledIfAvailable()
         }
     }
 
@@ -318,33 +350,21 @@ struct HomeAIAssistantOverlay: View {
 
     private var composer: some View {
         HStack(alignment: .center, spacing: 10) {
-            TextField("Ask anything about your money...", text: $viewModel.draftMessage)
-                .font(.system(.body, design: .rounded))
-                .foregroundColor(.white.opacity(0.95))
-                .frame(maxHeight: .infinity, alignment: .center)
-                .focused($composerFocused)
-                .submitLabel(.send)
-                .onSubmit {
-                    viewModel.sendDraftMessage()
-                }
-
-            Button {
-                viewModel.sendDraftMessage()
-            } label: {
-                Image(systemName: "arrow.up")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(viewModel.draftMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .white.opacity(0.34) : .white)
-                    .frame(width: 34, height: 34)
-                    .background(
-                        Circle()
-                            .fill(viewModel.draftMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.white.opacity(0.08) : Color.white.opacity(0.14))
-                    )
-            }
-            .buttonStyle(.plain)
-            .disabled(viewModel.draftMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isResponding)
+            HomeAIComposerTextField(
+                text: $viewModel.draftMessage,
+                isFocused: composerFocusBinding,
+                focusRequestID: composerFocusRequestID,
+                placeholder: "Ask anything about your money...",
+                onSubmit: sendComposerMessage
+            )
+            .frame(maxWidth: .infinity, minHeight: 24, maxHeight: 24, alignment: .leading)
         }
         .frame(height: 56)
         .padding(.horizontal, 18)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            focusComposer()
+        }
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(Color(hex: "1A1A1A"))
@@ -354,40 +374,81 @@ struct HomeAIAssistantOverlay: View {
                 )
                 .shadow(color: composerFocused ? Color.white.opacity(0.08) : Color.black.opacity(0.12), radius: composerFocused ? 18 : 12, y: 8)
         )
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 4)
+                .onChanged { value in
+                    guard value.translation.height > 8 else { return }
+                    dismissKeyboard()
+                }
+        )
     }
 
     private var collapseHandle: some View {
-        Image(systemName: "chevron.compact.up")
-            .font(.system(size: 24, weight: .medium))
-            .foregroundColor(.white.opacity(0.42))
-            .frame(width: 44, height: 28)
-            .contentShape(Rectangle())
+        ZStack {
+            Image(systemName: "chevron.up")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundColor(.white.opacity(0.46))
+                .frame(width: 48, height: 28)
+        }
+        .frame(width: 112, height: 64)
+        .contentShape(Rectangle())
+        .accessibilityLabel("Swipe up to return Home")
     }
 
-    private func scrollToBottom(_ proxy: ScrollViewProxy, animated: Bool) {
-        let action = {
-            proxy.scrollTo("bottom-anchor", anchor: .bottom)
+    private func requestScrollToChatEnd(_ proxy: ScrollViewProxy, animated: Bool, delay: TimeInterval = 0.04) {
+        chatScrollRequestID += 1
+        let requestID = chatScrollRequestID
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            guard requestID == chatScrollRequestID else { return }
+
+            let action = {
+                proxy.scrollTo("bottom-anchor", anchor: .bottom)
+            }
+
+            if animated {
+                withAnimation(.easeOut(duration: 0.2)) {
+                    action()
+                }
+            } else {
+                action()
+            }
         }
+    }
+
+    private func sendComposerMessage() {
+        guard !viewModel.draftMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        guard !viewModel.isResponding else { return }
+
+        focusComposer()
+        viewModel.sendDraftMessage()
+        focusComposer()
 
         DispatchQueue.main.async {
-            if animated {
-                withAnimation(.easeOut(duration: 0.22)) {
-                    action()
-                }
-            } else {
-                action()
-            }
+            focusComposer()
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-            if animated {
-                withAnimation(.easeOut(duration: 0.18)) {
-                    action()
-                }
-            } else {
-                action()
-            }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            focusComposer()
         }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+            focusComposer()
+        }
+    }
+
+    private func dismissKeyboard() {
+        composerFocused = false
+        UIApplication.shared.endEditing()
+    }
+
+    private func bottomScrollSpacerHeight(keyboardOverlap: CGFloat, composerBottomPadding: CGFloat) -> CGFloat {
+        72 + composerBottomPadding + keyboardOverlap
+    }
+
+    private func focusComposer() {
+        composerFocused = true
+        composerFocusRequestID += 1
     }
 
     private func quickActionSubtitle(for title: String) -> String {
@@ -404,6 +465,13 @@ struct HomeAIAssistantOverlay: View {
             return "Start with a suggested prompt"
         }
     }
+
+    private var composerFocusBinding: Binding<Bool> {
+        Binding(
+            get: { composerFocused },
+            set: { composerFocused = $0 }
+        )
+    }
 }
 
 private struct HomeAICollapseGestureModifier: ViewModifier {
@@ -415,6 +483,127 @@ private struct HomeAICollapseGestureModifier: ViewModifier {
         } else {
             content
         }
+    }
+}
+
+private struct HomeAIInteractiveKeyboardDismissModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 16.0, *) {
+            content.scrollDismissesKeyboard(.interactively)
+        } else {
+            content
+        }
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func scrollClipDisabledIfAvailable() -> some View {
+        if #available(iOS 17.0, *) {
+            self.scrollClipDisabled()
+        } else {
+            self
+        }
+    }
+}
+
+private struct HomeAIComposerTextField: UIViewRepresentable {
+    @Binding var text: String
+    @Binding var isFocused: Bool
+
+    let focusRequestID: Int
+    let placeholder: String
+    let onSubmit: () -> Void
+
+    func makeUIView(context: Context) -> UITextField {
+        let textField = UITextField(frame: .zero)
+        textField.delegate = context.coordinator
+        textField.backgroundColor = .clear
+        textField.borderStyle = .none
+        textField.returnKeyType = .send
+        textField.textColor = UIColor.white.withAlphaComponent(0.95)
+        textField.tintColor = UIColor.white
+        textField.font = UIFont.roundedSystemFont(ofSize: 17, weight: .regular)
+        textField.autocorrectionType = .yes
+        textField.autocapitalizationType = .sentences
+        textField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        textField.addTarget(context.coordinator, action: #selector(Coordinator.textDidChange(_:)), for: .editingChanged)
+        updatePlaceholder(for: textField)
+        return textField
+    }
+
+    func updateUIView(_ textField: UITextField, context: Context) {
+        context.coordinator.parent = self
+
+        if textField.text != text {
+            textField.text = text
+        }
+
+        updatePlaceholder(for: textField)
+
+        if context.coordinator.lastFocusRequestID != focusRequestID {
+            context.coordinator.lastFocusRequestID = focusRequestID
+            DispatchQueue.main.async {
+                textField.becomeFirstResponder()
+            }
+        } else if isFocused && !textField.isFirstResponder {
+            DispatchQueue.main.async {
+                textField.becomeFirstResponder()
+            }
+        } else if !isFocused && textField.isFirstResponder {
+            textField.resignFirstResponder()
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(parent: self)
+    }
+
+    private func updatePlaceholder(for textField: UITextField) {
+        textField.attributedPlaceholder = NSAttributedString(
+            string: placeholder,
+            attributes: [
+                .foregroundColor: UIColor.white.withAlphaComponent(0.34),
+                .font: UIFont.roundedSystemFont(ofSize: 17, weight: .regular)
+            ]
+        )
+    }
+
+    final class Coordinator: NSObject, UITextFieldDelegate {
+        var parent: HomeAIComposerTextField
+        var lastFocusRequestID: Int
+
+        init(parent: HomeAIComposerTextField) {
+            self.parent = parent
+            self.lastFocusRequestID = parent.focusRequestID
+        }
+
+        @objc func textDidChange(_ textField: UITextField) {
+            parent.text = textField.text ?? ""
+        }
+
+        func textFieldDidBeginEditing(_ textField: UITextField) {
+            parent.isFocused = true
+        }
+
+        func textFieldDidEndEditing(_ textField: UITextField) {
+            parent.isFocused = false
+        }
+
+        func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+            parent.onSubmit()
+            return false
+        }
+    }
+}
+
+private extension UIFont {
+    static func roundedSystemFont(ofSize size: CGFloat, weight: UIFont.Weight) -> UIFont {
+        let systemFont = UIFont.systemFont(ofSize: size, weight: weight)
+        guard let descriptor = systemFont.fontDescriptor.withDesign(.rounded) else {
+            return systemFont
+        }
+        return UIFont(descriptor: descriptor, size: size)
     }
 }
 
@@ -452,16 +641,16 @@ private struct HomeAIAnimatedGradientBackground: UIViewRepresentable {
                 canvas#canvas {
                     position: absolute;
                     width: 100%;
-                    height: 60%;
+                    height: 100%;
                     transform-origin: 50% 0%;
-                    transform: rotate(-18deg) scale(1.9) translateY(-24%);
+                    transform: rotate(-18deg) scale(1.7) translateY(-12%);
                     --gradient-color-1: #0f172a;
                     --gradient-color-2: #163d66;
                     --gradient-color-3: #472066;
                     --gradient-color-4: #0b2640;
                     --gradient-speed: 0.000012;
                     filter: blur(26px);
-                    opacity: 0.72;
+                    opacity: 0.84;
                 }
             </style>
         </head>
@@ -484,7 +673,7 @@ private struct HomeAIAnimatedGradientBackground: UIViewRepresentable {
                     const moveY = Math.cos(time * 0.5) * 12;
                     const rotation = Math.sin(time * 0.45) * 20 - 18;
 
-                    canvas.style.transform = `rotate(${rotation}deg) scale(1.9) translateY(-24%) translateX(${moveX}%) translateY(${moveY}%)`;
+                    canvas.style.transform = `rotate(${rotation}deg) scale(1.7) translateY(-12%) translateX(${moveX}%) translateY(${moveY}%)`;
                     requestAnimationFrame(animatePosition);
                 }
 
