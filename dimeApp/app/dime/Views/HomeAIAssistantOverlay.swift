@@ -311,29 +311,32 @@ VStack(spacing: 0) {
                 Spacer(minLength: 42)
 
                 let hasText = !message.text.isEmpty && message.text != "Please extract all transactions from the attached image(s)."
-                let hasThumbnails = !message.attachmentThumbnails.isEmpty
+                let firstAttachment = message.attachments.first
 
                 VStack(alignment: .trailing, spacing: 0) {
-                    if hasThumbnails || hasText {
+                    if firstAttachment != nil || hasText {
                         VStack(alignment: .leading, spacing: 0) {
-                            if hasThumbnails {
-                                Image(uiImage: message.attachmentThumbnails[0])
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(maxWidth: 220, maxHeight: 160)
-                                    .clipped()
-                                    .overlay(alignment: .bottomLeading) {
-                                        if message.attachmentThumbnails.count > 1 {
-                                            Text("+\(message.attachmentThumbnails.count - 1) more")
-                                                .font(.system(size: 10, weight: .semibold, design: .rounded))
-                                                .foregroundColor(.white)
-                                                .padding(.horizontal, 6)
-                                                .padding(.vertical, 3)
-                                                .background(Color.black.opacity(0.55))
-                                                .clipShape(Capsule())
-                                                .padding(6)
+                            if let attachment = firstAttachment {
+                                Button { previewAttachment = attachment } label: {
+                                    Image(uiImage: attachment.thumbnail)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(maxWidth: 220, maxHeight: 160)
+                                        .clipped()
+                                        .overlay(alignment: .bottomLeading) {
+                                            if attachment.pages.count > 1 {
+                                                Text(attachment.label.components(separatedBy: "·").last?.trimmingCharacters(in: .whitespaces) ?? "")
+                                                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                                                    .foregroundColor(.white)
+                                                    .padding(.horizontal, 6)
+                                                    .padding(.vertical, 3)
+                                                    .background(Color.black.opacity(0.55))
+                                                    .clipShape(Capsule())
+                                                    .padding(6)
+                                            }
                                         }
-                                    }
+                                }
+                                .buttonStyle(.plain)
                             }
 
                             if hasText {
@@ -382,7 +385,7 @@ VStack(spacing: 0) {
     }
 
     private var composerSection: some View {
-        HStack(alignment: .center, spacing: 8) {
+        HStack(alignment: .bottom, spacing: 8) {
             if keyboardHeightHelper.keyboardHeight > 0 {
                 Button { showAttachmentSheet = true } label: {
                     ZStack {
@@ -395,6 +398,7 @@ VStack(spacing: 0) {
                     }
                 }
                 .buttonStyle(.plain)
+                .padding(.bottom, 3)
             }
 
             composer

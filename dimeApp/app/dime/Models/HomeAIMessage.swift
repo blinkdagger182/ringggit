@@ -16,13 +16,13 @@ struct HomeAIMessage: Identifiable {
     let role: Role
     let text: String
     let date: Date
-    let attachmentThumbnails: [UIImage]
+    let attachments: [AttachmentItem]
 
-    init(role: Role, text: String, date: Date, attachmentThumbnails: [UIImage] = []) {
+    init(role: Role, text: String, date: Date, attachments: [AttachmentItem] = []) {
         self.role = role
         self.text = text
         self.date = date
-        self.attachmentThumbnails = attachmentThumbnails
+        self.attachments = attachments
     }
 }
 

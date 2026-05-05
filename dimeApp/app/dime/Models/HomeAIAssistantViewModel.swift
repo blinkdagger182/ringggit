@@ -81,9 +81,8 @@ final class HomeAIAssistantViewModel: ObservableObject {
 
         let messageText = trimmed.isEmpty ? "Please extract all transactions from the attached image(s)." : trimmed
         let capturedAttachments = pendingAttachments
-        let thumbnails = capturedAttachments.map { $0.thumbnail }
 
-        appendUserMessage(messageText, thumbnails: thumbnails)
+        appendUserMessage(messageText, attachments: capturedAttachments)
         draftMessage = ""
         pendingAttachments = []
         isResponding = true
@@ -112,8 +111,8 @@ final class HomeAIAssistantViewModel: ObservableObject {
         }
     }
 
-    private func appendUserMessage(_ text: String, thumbnails: [UIImage] = []) {
-        messages.append(HomeAIMessage(role: .user, text: text, date: .now, attachmentThumbnails: thumbnails))
+    private func appendUserMessage(_ text: String, attachments: [AttachmentItem] = []) {
+        messages.append(HomeAIMessage(role: .user, text: text, date: .now, attachments: attachments))
     }
 
     // MARK: - AI Context
