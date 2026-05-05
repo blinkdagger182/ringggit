@@ -46,7 +46,7 @@ struct ContentView: View {
             let bottomEdge = proxy.safeAreaInsets.bottom
 
             HomeView(topEdge: topEdge, bottomEdge: bottomEdge == 0 ? 15 : bottomEdge)
-                .ignoresSafeArea(.all, edges: .bottom)
+                .ignoresSafeArea(.all)
                 .preferredColorScheme(colourScheme == 1 ? .light : colourScheme == 2 ? .dark : nil)
                 .fullScreenCover(isPresented: $showIntro) {
                     WelcomeSheetView()

@@ -3,6 +3,7 @@
 //  dime
 //
 
+import CoreData
 import Foundation
 import SwiftUI
 import UIKit
@@ -13,6 +14,8 @@ final class HomeAIAssistantViewModel: ObservableObject {
     @Published var draftMessage = ""
     @Published private(set) var messages: [HomeAIMessage] = []
     @Published private(set) var isResponding = false
+
+    var dataController: DataController?
 
     let quickActions: [HomeAIQuickAction] = [
         HomeAIQuickAction(title: "Add transaction", prompt: "Add transaction", systemImage: "plus.circle.fill"),
@@ -52,9 +55,19 @@ final class HomeAIAssistantViewModel: ObservableObject {
         isResponding = true
 
         Task {
-            try? await Task.sleep(nanoseconds: 350_000_000)
-            let response = mockResponse(for: trimmed)
-            messages.append(HomeAIMessage(role: .assistant, text: response, date: .now))
+            do {
+                let systemPrompt = buildSystemPrompt()
+                let response = try await AIService.send(
+                    systemPrompt: systemPrompt,
+                    conversationMessages: messages
+                )
+                executeActions(response.actions)
+                messages.append(HomeAIMessage(role: .assistant, text: response.reply, date: .now))
+            } catch AIServiceError.apiError(let msg) {
+                messages.append(HomeAIMessage(role: .assistant, text: "API error: \(msg)", date: .now))
+            } catch {
+                messages.append(HomeAIMessage(role: .assistant, text: "Couldn't connect. Check your API key and internet.", date: .now))
+            }
             isResponding = false
         }
     }
@@ -63,25 +76,107 @@ final class HomeAIAssistantViewModel: ObservableObject {
         messages.append(HomeAIMessage(role: .user, text: text, date: .now))
     }
 
-    private func mockResponse(for prompt: String) -> String {
-        let normalizedPrompt = prompt.lowercased()
+    // MARK: - AI Context
 
-        if normalizedPrompt.contains("add transaction") {
-            return "I can help you log a new expense or income. The next step is to capture the amount, note, date, and category, then save it."
+    private func buildSystemPrompt() -> String {
+        var categoriesText = "None configured"
+        var spendingSummary = ""
+
+        if let dc = dataController {
+            let context = dc.container.viewContext
+
+            let catRequest = NSFetchRequest<Category>(entityName: "Category")
+            catRequest.sortDescriptors = [NSSortDescriptor(key: "name", ascending: true)]
+            let categories = (try? context.fetch(catRequest)) ?? []
+
+            if !categories.isEmpty {
+                categoriesText = categories.map { cat in
+                    let type = cat.income ? "income" : "expense"
+                    let emoji = cat.emoji ?? ""
+                    let name = cat.name ?? "Unknown"
+                    return "\(emoji) \(name) (\(type))"
+                }.joined(separator: ", ")
+            }
+
+            let calendar = Calendar.current
+            if let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: .now)) {
+                let txRequest = NSFetchRequest<Transaction>(entityName: "Transaction")
+                txRequest.predicate = NSPredicate(format: "date >= %@", startOfMonth as NSDate)
+                let txs = (try? context.fetch(txRequest)) ?? []
+
+                let totalExpenses = txs.filter { !$0.income }.reduce(0.0) { $0 + $1.amount }
+                let totalIncome = txs.filter { $0.income }.reduce(0.0) { $0 + $1.amount }
+                spendingSummary = "This month so far: RM\(String(format: "%.2f", totalExpenses)) expenses, RM\(String(format: "%.2f", totalIncome)) income, \(txs.count) transactions."
+            }
         }
 
-        if normalizedPrompt.contains("where did my money go") {
-            return "I’d summarize your biggest categories first, then highlight unusual spending spikes and recurring charges once live transaction analysis is connected."
+        let dateStr = DateFormatter.localizedString(from: .now, dateStyle: .full, timeStyle: .none)
+
+        return """
+        You are Dime Nova, a smart financial assistant inside the Dime expense tracking app (Malaysia, currency MYR / RM).
+
+        Today: \(dateStr)
+        Available categories: \(categoriesText)
+        \(spendingSummary)
+
+        When the user pastes ANY text — receipts, WhatsApp messages, bank SMS, invoices, descriptions — parse ALL financial transactions and log them automatically.
+
+        Always respond with valid JSON only, exactly:
+        {
+          "reply": "friendly message confirming what you logged, or answering their question",
+          "actions": [
+            {
+              "type": "create_transaction",
+              "amount": 12.50,
+              "note": "Coffee at Starbucks",
+              "category_name": "Food & Drink",
+              "income": false,
+              "date": "YYYY-MM-DD"
+            }
+          ]
         }
 
-        if normalizedPrompt.contains("this month") || normalizedPrompt.contains("month's spending") {
-            return "I’m ready to surface this month’s spending summary here. The UI is wired for local mock responses now, and backend insights can plug into this view model later."
-        }
+        Rules:
+        - reply: confirm every transaction logged by name and amount, or answer the financial question naturally in English
+        - actions: array of create_transaction objects, empty [] if just answering a question
+        - category_name: must match one of the available category names exactly (use closest match)
+        - income: false for expenses/purchases, true for salary/transfers received/cashback
+        - date: YYYY-MM-DD format, default to today if not specified
+        - amount: always a positive number
+        - Extract ALL transactions from pasted content even if many
+        - If a category is unclear, pick the closest available one
+        """
+    }
 
-        if normalizedPrompt.contains("afford") {
-            return "I can turn this into an affordability check by comparing the purchase against your current budget, recurring bills, and recent cash flow."
-        }
+    // MARK: - Execute AI Actions
 
-        return "I can help explain spending patterns, suggest budget actions, and draft the next step for your finances once the live AI service is connected."
+    private func executeActions(_ actions: [AITransactionAction]) {
+        guard let dc = dataController, !actions.isEmpty else { return }
+
+        let context = dc.container.viewContext
+        let catRequest = NSFetchRequest<Category>(entityName: "Category")
+        let allCategories = (try? context.fetch(catRequest)) ?? []
+
+        for action in actions {
+            let category = matchCategory(name: action.categoryName, income: action.income, from: allCategories)
+            _ = dc.newTransaction(
+                note: action.note,
+                category: category,
+                income: action.income,
+                amount: action.amount,
+                date: action.date,
+                repeatType: 0,
+                repeatCoefficient: 1,
+                delay: false
+            )
+        }
+    }
+
+    private func matchCategory(name: String, income: Bool, from categories: [Category]) -> Category? {
+        let lower = name.lowercased()
+        return categories.first { $0.name?.lowercased() == lower }
+            ?? categories.first { $0.name?.lowercased().contains(lower) == true }
+            ?? categories.first { lower.contains($0.name?.lowercased() ?? "") && !($0.name?.isEmpty ?? true) }
+            ?? categories.first { $0.income == income }
     }
 }

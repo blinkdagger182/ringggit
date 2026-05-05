@@ -1,0 +1,109 @@
+//
+//  AIService.swift
+//  dime
+//
+
+import Foundation
+
+struct AIResponse {
+    let reply: String
+    let actions: [AITransactionAction]
+}
+
+struct AITransactionAction {
+    let amount: Double
+    let note: String
+    let categoryName: String
+    let income: Bool
+    let date: Date
+}
+
+enum AIServiceError: Error {
+    case invalidResponse
+    case invalidJSON
+    case apiError(String)
+}
+
+struct AIService {
+    static func send(systemPrompt: String, conversationMessages: [HomeAIMessage]) async throws -> AIResponse {
+        var messages: [[String: String]] = [
+            ["role": "system", "content": systemPrompt]
+        ]
+        for msg in conversationMessages {
+            messages.append(["role": msg.role == .user ? "user" : "assistant", "content": msg.text])
+        }
+
+        let body: [String: Any] = [
+            "model": AIConfig.model,
+            "messages": messages,
+            "response_format": ["type": "json_object"],
+            "temperature": 0.1
+        ]
+
+        var request = URLRequest(url: AIConfig.endpoint)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(AIConfig.openAIKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        request.timeoutInterval = 30
+
+        let (data, response): (Data, URLResponse) = try await URLSession.shared.data(for: request)
+
+        if let http = response as? HTTPURLResponse, http.statusCode != 200 {
+            let errorBody = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["error"] as? [String: Any]
+            let message = errorBody?["message"] as? String ?? "HTTP \(http.statusCode)"
+            throw AIServiceError.apiError(message)
+        }
+
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let choices = json["choices"] as? [[String: Any]],
+              let firstChoice = choices.first,
+              let message = firstChoice["message"] as? [String: Any],
+              let content = message["content"] as? String else {
+            throw AIServiceError.invalidResponse
+        }
+
+        return try parseContent(content)
+    }
+
+    private static func parseContent(_ content: String) throws -> AIResponse {
+        guard let data = content.data(using: .utf8),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw AIServiceError.invalidJSON
+        }
+
+        let reply = json["reply"] as? String ?? "Done."
+        var actions: [AITransactionAction] = []
+
+        if let actionsArray = json["actions"] as? [[String: Any]] {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+
+            for action in actionsArray {
+                guard (action["type"] as? String) == "create_transaction",
+                      let amount = (action["amount"] as? Double) ?? (action["amount"] as? Int).map(Double.init),
+                      let note = action["note"] as? String,
+                      let categoryName = action["category_name"] as? String,
+                      let income = action["income"] as? Bool else { continue }
+
+                let date: Date
+                if let dateStr = action["date"] as? String, let parsed = formatter.date(from: dateStr) {
+                    date = parsed
+                } else {
+                    date = .now
+                }
+
+                actions.append(AITransactionAction(
+                    amount: abs(amount),
+                    note: note,
+                    categoryName: categoryName,
+                    income: income,
+                    date: date
+                ))
+            }
+        }
+
+        return AIResponse(reply: reply, actions: actions)
+    }
+}

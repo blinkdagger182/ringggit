@@ -5,10 +5,9 @@
 
 import SwiftUI
 import UIKit
-import WebKit
 
 struct HomeAIAssistantOverlay: View {
-    private let assistantTitle = "Dime Nova"
+    private let assistantTitle = "Renvo AI"
 
     @ObservedObject var viewModel: HomeAIAssistantViewModel
     @StateObject private var keyboardHeightHelper = KeyboardHeightHelper()
@@ -32,21 +31,14 @@ struct HomeAIAssistantOverlay: View {
             let activeComposerBottomPadding = keyboardOverlap > 0 ? 12 : baseComposerBottomPadding
 
             ZStack(alignment: .bottom) {
-                Color(hex: "0A0A0A")
+                Color(hex: "1a0533")
                     .ignoresSafeArea()
 
                 HomeAIAnimatedGradientBackground()
-                    .opacity(max(0, revealProgress * 0.92))
-                    .mask(
-                        LinearGradient(
-                            colors: [.black, .black.opacity(0.88), .clear],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
+                    .opacity(max(0, revealProgress))
                     .ignoresSafeArea()
 
-                VStack(spacing: 0) {
+VStack(spacing: 0) {
                     previewHeader
                         .padding(.horizontal, 24)
                         .padding(.top, max(topInset, proxy.safeAreaInsets.top) + 10)
@@ -102,41 +94,24 @@ struct HomeAIAssistantOverlay: View {
     }
 
     private var previewHeader: some View {
-        HStack(spacing: 14) {
-            Button(action: onCollapse) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(.white.opacity(0.82))
-                    .frame(width: 36, height: 36)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Minimize AI Assistant")
+        HStack(spacing: 10) {
+            Image(systemName: "sparkles")
+                .font(.system(size: 15, weight: .semibold))
 
-            Spacer()
+            Text(assistantTitle)
+                .font(.system(size: 21, weight: .semibold, design: .rounded))
 
-            HStack(spacing: 10) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 15, weight: .semibold))
-
-                Text(assistantTitle)
-                    .font(.system(size: 21, weight: .semibold, design: .rounded))
-
-                Text("beta")
-                    .font(.system(.subheadline, design: .rounded).weight(.semibold))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .overlay(
-                        Capsule(style: .continuous)
-                            .stroke(Color.white.opacity(0.24), lineWidth: 1)
-                    )
-            }
-            .foregroundColor(.white.opacity(0.88))
-
-            Spacer()
-
-            Color.clear
-                .frame(width: 36, height: 36)
+            Text("beta")
+                .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .overlay(
+                    Capsule(style: .continuous)
+                        .stroke(Color.white.opacity(0.24), lineWidth: 1)
+                )
         }
+        .foregroundColor(.white.opacity(0.88))
+        .frame(maxWidth: .infinity)
     }
 
     private func messageArea(keyboardOverlap: CGFloat, composerBottomPadding: CGFloat) -> some View {
@@ -284,7 +259,7 @@ struct HomeAIAssistantOverlay: View {
         HStack {
             if message.role == .assistant {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Ryt AI")
+                    Text("Renvo")
                         .font(.system(.caption, design: .rounded).weight(.medium))
                         .foregroundColor(.white.opacity(0.38))
 
@@ -607,85 +582,43 @@ private extension UIFont {
     }
 }
 
-private struct HomeAIAnimatedGradientBackground: UIViewRepresentable {
-    func makeUIView(context: Context) -> WKWebView {
-        let webView = WKWebView()
-        webView.isOpaque = false
-        webView.backgroundColor = .clear
-        webView.scrollView.isScrollEnabled = false
-        webView.scrollView.bounces = false
-
-        let htmlString = """
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-            <style>
-                * { margin: 0; padding: 0; box-sizing: border-box; }
-                body, html {
-                    width: 100%;
-                    height: 100%;
-                    overflow: hidden;
-                    background: #0A0A0A;
-                }
-                .background--custom {
-                    background-color: #0A0A0A;
-                    width: 100vw;
-                    height: 100vh;
-                    position: absolute;
-                    overflow: hidden;
-                    top: 0;
-                    left: 0;
-                }
-                canvas#canvas {
-                    position: absolute;
-                    width: 100%;
-                    height: 100%;
-                    transform-origin: 50% 0%;
-                    transform: rotate(-18deg) scale(1.7) translateY(-12%);
-                    --gradient-color-1: #0f172a;
-                    --gradient-color-2: #163d66;
-                    --gradient-color-3: #472066;
-                    --gradient-color-4: #0b2640;
-                    --gradient-speed: 0.000012;
-                    filter: blur(26px);
-                    opacity: 0.84;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="background--custom">
-                <canvas id="canvas"></canvas>
-            </div>
-            <script src="https://cdn.jsdelivr.net/gh/greentfrapp/pocoloco@minigl/minigl.js"></script>
-            <script>
-                var gradient = new Gradient();
-                gradient.initGradient("#canvas");
-
-                const canvas = document.getElementById('canvas');
-                let time = 0;
-
-                function animatePosition() {
-                    time += 0.00042;
-
-                    const moveX = Math.sin(time * 0.7) * 10;
-                    const moveY = Math.cos(time * 0.5) * 12;
-                    const rotation = Math.sin(time * 0.45) * 20 - 18;
-
-                    canvas.style.transform = `rotate(${rotation}deg) scale(1.7) translateY(-12%) translateX(${moveX}%) translateY(${moveY}%)`;
-                    requestAnimationFrame(animatePosition);
-                }
-
-                animatePosition();
-            </script>
-        </body>
-        </html>
-        """
-
-        webView.loadHTMLString(htmlString, baseURL: nil)
-        return webView
+private struct HomeAIAnimatedGradientBackground: View {
+    var body: some View {
+        if #available(iOS 18.0, *) {
+            TimelineView(.animation) { timeline in
+                let t = Float(timeline.date.timeIntervalSinceReferenceDate)
+                MeshGradient(width: 3, height: 3, points: [
+                    [0, 0], [0.5, 0], [1, 0],
+                    [0, 0.5],
+                    [0.5 + 0.18 * sin(t * 0.45), 0.5 + 0.15 * cos(t * 0.37)],
+                    [1, 0.5],
+                    [0, 1],
+                    [0.5 + 0.12 * cos(t * 0.55), 1],
+                    [1, 1]
+                ], colors: [
+                    Color(red: 0.49, green: 0.18, blue: 0.58),
+                    Color(red: 0.15, green: 0.39, blue: 0.92),
+                    Color(red: 0.58, green: 0.20, blue: 0.92),
+                    Color(red: 0.31, green: 0.11, blue: 0.59),
+                    Color(red: 0.49, green: 0.23, blue: 0.93),
+                    Color(red: 0.11, green: 0.31, blue: 0.85),
+                    Color(red: 0.43, green: 0.16, blue: 0.85),
+                    Color(red: 0.22, green: 0.19, blue: 0.64),
+                    Color(red: 0.12, green: 0.11, blue: 0.29)
+                ])
+                .blur(radius: 6)
+            }
+        } else {
+            LinearGradient(
+                colors: [
+                    Color(red: 0.49, green: 0.18, blue: 0.58),
+                    Color(red: 0.15, green: 0.39, blue: 0.92),
+                    Color(red: 0.43, green: 0.16, blue: 0.85),
+                    Color(red: 0.12, green: 0.11, blue: 0.29)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
     }
-
-    func updateUIView(_ uiView: WKWebView, context: Context) {}
 }

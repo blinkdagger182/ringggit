@@ -244,6 +244,8 @@ struct HomeView: View {
         }
         .confettiCannon(counter: $counter, num: 50, openingAngle: Angle(degrees: 0), closingAngle: Angle(degrees: 360), radius: 200)
         .onAppear {
+            homeAIAssistantViewModel.dataController = dataController
+
             if appLockVM.isAppLockEnabled && fromURL1 {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     launchAdd.toggle()
@@ -277,6 +279,14 @@ struct HomeView: View {
                 currentTab = "Insights"
             } else if url.host == "budget" {
                 currentTab = "Budget"
+            } else if url.host == "aioverlay" {
+                currentTab = "Log"
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) {
+                        homeAIAssistantViewModel.expand()
+                        homeAISheetOffset = targetHomeAIOpenOffset(for: UIScreen.main.bounds.height)
+                    }
+                }
             }
         }
     }
