@@ -95,174 +95,146 @@ struct LogView: View {
 
         } else {
             VStack(spacing: 0) {
-                VStack(spacing: 18) {
-                    HStack {
-                        Button {
-                            searchMode = true
-                        } label: {
-                            Image(systemName: "magnifyingglass")
-//                                .font(.system(size: 23, weight: .regular))
-                                .font(.system(.title2, design: .rounded).weight(.regular))
-                                .dynamicTypeSize(...DynamicTypeSize.xxLarge)
-                                .foregroundColor(Color.DarkIcon)
-                                .padding(5)
-                                .contentShape(Rectangle())
-                                .background {
-                                    RoundedRectangle(cornerRadius: 7)
-                                        .fill(Color.SecondaryBackground)
-                                        .scaleEffect(progress == 1 ? 1.5 : 1.0)
-                                        .opacity(progress)
-                                }
-                        }
-                        .accessibilityLabel("Search")
-
-                        Spacer()
-
-                        switch filter {
-                        case .all:
-//                            Text(navBarText)
-//                            .font(.system(size: 16, weight: .semibold, design: .rounded))
-//                            .opacity(0)
-                            EmptyView()
-                        case .category:
-                            filterTagView(text: "filter-tag-category")
-                        case .day:
-                            filterTagView(text: "filter-tag-day")
-                        case .week:
-                            filterTagView(text: "filter-tag-week")
-                        case .month:
-                            filterTagView(text: "filter-tag-month")
-                        case .recurring:
-                            filterTagView(text: "filter-tag-recurring")
-                        case .type:
-                            filterTagView(text: "filter-tag-type")
-                        case .upcoming:
-                            filterTagView(text: "filter-tag-upcoming")
-                        }
-
-                        Spacer()
-
-                        Button {
-                            showFilter = true
-                        } label: {
-                            Image(systemName: filter == .all ? "triangle" : "triangle.tophalf.filled")
-                                .font(.system(.title2, design: .rounded).weight(.regular))
-                                .dynamicTypeSize(...DynamicTypeSize.xxLarge)
-                                .foregroundColor(Color.DarkIcon)
-                                .rotationEffect(Angle(degrees: 180))
-                                .padding(5)
-                                .contentShape(Rectangle())
-                                .background {
-                                    if showFilter {
-                                        RoundedRectangle(cornerRadius: 7)
-                                            .fill(Color.SecondaryBackground)
-                                    }
-//                                    if pullStatus == .filter || showFilter {
-//                                        RoundedRectangle(cornerRadius: 7)
-//                                            .fill(Color.SecondaryBackground)
-//                                            .scaleEffect(released == .filter ? 1.2 : 1.0)
-//                                            .opacity(released  == .filter ? 0.5 : 1.0)
-//                                    }
-                                }
-                        }
-                        .accessibilityLabel("Filter")
-                        .popover(present: $showFilter, attributes: {
-                            $0.position = .absolute(
-                                originAnchor: .bottomRight,
-                                popoverAnchor: .topRight
-                            )
-                            $0.rubberBandingMode = .none
-                            $0.sourceFrameInset = UIEdgeInsets(top: 0, left: 0, bottom: -10, right: 0)
-                            $0.presentation.animation = .easeInOut(duration: 0.2)
-                            $0.dismissal.animation = .easeInOut(duration: 0.3)
-                        }) {
-                            FilterPickerView(filterType: $filter, showMenu: $showFilter)
-                        }
+                // Header row
+                HStack(spacing: 0) {
+                    Button { searchMode = true } label: {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(.title3, design: .rounded).weight(.regular))
+                            .dynamicTypeSize(...DynamicTypeSize.xxLarge)
+                            .foregroundColor(Color.DarkIcon)
+                            .frame(width: 40, height: 40)
+                            .contentShape(Rectangle())
                     }
+                    .accessibilityLabel("Search")
 
-                    switch filter {
-                    case .all:
-                        EmptyView()
-                    case .category:
-                        CategoryStepperView(categoryFilter: $categoryFilter)
-                    case .day:
-                        DateStepperView(date: $dateFilter)
-                    case .week:
-                        WeekStepperView(showingDate: $weekFilter)
-                    case .month:
-                        MonthStepperView(showingDate: $monthFilter)
-                    case .recurring:
-                        EmptyView()
-                    case .type:
-                        IncomeFilterToggleView(income: $income)
-                    case .upcoming:
-                        EmptyView()
-                    }
+                    Spacer()
+
+                    Image(systemName: "bell.badge.fill")
+                        .font(.system(.title3, design: .rounded).weight(.regular))
+                        .dynamicTypeSize(...DynamicTypeSize.xxLarge)
+                        .foregroundColor(Color.DarkIcon)
+                        .frame(width: 40, height: 40)
                 }
-                .padding(.horizontal, 25)
-                .frame(height: (filter == .all || filter == .recurring || filter == .upcoming) ? 50 : 110, alignment: .top)
-                .padding(.top, topEdge + 10)
+                .padding(.horizontal, 20)
+                .padding(.top, topEdge + 6)
+
+                // Filter label row
+                HStack(spacing: 6) {
+                    Button { showFilter = true } label: {
+                        HStack(spacing: 4) {
+                            Text(filter == .all ? "All entries" : filter.rawValue)
+                                .font(.system(.subheadline, design: .rounded).weight(.medium))
+                                .foregroundColor(Color.SubtitleText)
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(Color.SubtitleText)
+                        }
+                    }
+                    .popover(present: $showFilter, attributes: {
+                        $0.position = .absolute(
+                            originAnchor: .bottomLeft,
+                            popoverAnchor: .topLeft
+                        )
+                        $0.rubberBandingMode = .none
+                        $0.sourceFrameInset = UIEdgeInsets(top: 0, left: 0, bottom: -10, right: 0)
+                        $0.presentation.animation = .easeInOut(duration: 0.2)
+                        $0.dismissal.animation = .easeInOut(duration: 0.3)
+                    }) {
+                        FilterPickerView(filterType: $filter, showMenu: $showFilter)
+                    }
+
+                    if filter != .all {
+                        Button {
+                            withAnimation(.easeIn(duration: 0.15)) { filter = .all }
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 15))
+                                .foregroundColor(Color.SubtitleText.opacity(0.7))
+                        }
+                    }
+
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 10)
+                .padding(.bottom, 2)
+
+                // Date steppers when filter active
+                if filter != .all && filter != .recurring && filter != .upcoming {
+                    Group {
+                        switch filter {
+                        case .category:
+                            CategoryStepperView(categoryFilter: $categoryFilter)
+                        case .day:
+                            DateStepperView(date: $dateFilter)
+                        case .week:
+                            WeekStepperView(showingDate: $weekFilter)
+                        case .month:
+                            MonthStepperView(showingDate: $monthFilter)
+                        case .type:
+                            IncomeFilterToggleView(income: $income)
+                        default:
+                            EmptyView()
+                        }
+                    }
+                    .padding(.horizontal, 25)
+                    .padding(.bottom, 8)
+                }
 
                 ScrollView(showsIndicators: false) {
-                    if filter == .all {
-                        LogInsightsView(navBarText: $navBarText, showCents: showCents, currencySymbol: currencySymbol)
-                    }
+                    VStack(spacing: 0) {
+                        if filter == .all {
+                            LogInsightsView(navBarText: $navBarText, showCents: showCents, currencySymbol: currencySymbol)
+                        }
 
-                    TransactionsList(filter: filter, category: categoryFilter, date: dateFilter, week: weekFilter, month: monthFilter, income: income)
-                        .zIndex(0)
-                        .padding(.horizontal, 20)
+                        // Recent activity card
+                        VStack(spacing: 0) {
+                            HStack {
+                                Text("Recent activity")
+                                    .font(.system(.body, design: .rounded).weight(.semibold))
+                                    .foregroundColor(Color.PrimaryText)
+                                Spacer()
+                                Button { searchMode = true } label: {
+                                    HStack(spacing: 3) {
+                                        Text("View all")
+                                            .font(.system(.subheadline, design: .rounded))
+                                            .foregroundColor(Color.SubtitleText)
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 11, weight: .semibold))
+                                            .foregroundColor(Color.SubtitleText)
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.top, 18)
+                            .padding(.bottom, 12)
+
+                            TransactionsList(filter: filter, category: categoryFilter, date: dateFilter, week: weekFilter, month: monthFilter, income: income)
+                                .padding(.horizontal, 4)
+                                .padding(.bottom, 14)
+                        }
+                        .background(
+                            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                .fill(Color.SecondaryBackground)
+                        )
+                        .padding(.horizontal, 16)
+                        .padding(.top, 16)
                         .padding(.bottom, 70 + bottomEdge)
+                    }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-//
-//                CustomRefreshView {
-//                    VStack {
-//
-//                    }
-//
-//                } onRefresh: {
-//                    searchMode = true
-//                }
-//
-
-//                ScrollView(showsIndicators: false) {
-//                    if filter == .all {
-//                        LogInsightsView(navBarText: $navBarText, showCents: showCents, currencySymbol: currencySymbol)
-//
-//                    }
-//
-//
-//                    TransactionsList(filter: filter, category: categoryFilter, date: dateFilter, week: weekFilter, month: monthFilter, income: income)
-//                        .zIndex(0)
-//                        .padding(.horizontal, 20)
-//                        .padding(.bottom, 70 + bottomEdge)
-                ////                        .offsetExtractor(coordinateSpace: "Scroll") { rect in
-                ////                            DispatchQueue.main.async {
-                ////                                print(rect.minY)
-                ////                                pullStatus = rect.minY > 355 ? (rect.minY > 410 ? .filter : .search) : .none
-                ////                            }
-                ////                        }
-//                }
-//                .frame(maxWidth: .infinity, maxHeight: .infinity)
-//                .onReceive(scrollDelegate.gestureEnded) { _ in
-//                    if pullStatus == .filter {
-//                        showFilter = true
-//                        released = .filter
-//                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-//                    } else if pullStatus == .search {
-//                        released = .search
-//                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-//                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-//                            searchMode = true
-//                        }
-//
-//                    }
-//                }
             }
-//            .onAppear(perform: scrollDelegate.addGesture)
-//            .onDisappear(perform: scrollDelegate.removeGesture)
-            .background(Color.PrimaryBackground)
+            .background(
+                ZStack(alignment: .top) {
+                    Color.PrimaryBackground.ignoresSafeArea()
+                    LinearGradient(
+                        colors: [Color(hex: "BEE8E8").opacity(0.65), Color(hex: "D5F5E3").opacity(0.32), Color.clear],
+                        startPoint: .top,
+                        endPoint: .init(x: 0.5, y: 0.4)
+                    )
+                    .ignoresSafeArea()
+                }
+            )
             .fullScreenCover(isPresented: $searchMode) {
                 SearchView()
             }
@@ -502,27 +474,29 @@ struct LogInsightsView: View {
     }
 
     var body: some View {
-        VStack(spacing: -3) {
-            VStack(spacing: 2) {
-                HStack(spacing: 4) {
-                    Text(LocalizedStringKey(headingText))
-                        .font(.system(.body, design: .rounded).weight(.medium))
-                        .foregroundColor(Color.PrimaryText.opacity(0.9))
-                    Button {
-                        showMenu1 = true
-                    } label: {
-                        Text(LocalizedStringKey(subtitleText[timeframe - 1]))
-                            .padding(2)
-                            .padding(.horizontal, 6)
-                            .font(.system(.body, design: .rounded).weight(.medium))
-                            .foregroundColor(Color.PrimaryText.opacity(9))
-                            .overlay(Capsule().stroke(Color.Outline, lineWidth: 1.3))
+        VStack(alignment: .leading, spacing: 0) {
+            // "Total Balance" title + amount
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text("Total Balance")
+                        .font(.system(.title2, design: .rounded).weight(.bold))
+                        .foregroundColor(Color.PrimaryText)
+                    Spacer()
+                    Button { showMenu1 = true } label: {
+                        HStack(spacing: 3) {
+                            Text(LocalizedStringKey(subtitleText[timeframe - 1]))
+                                .font(.system(.caption, design: .rounded).weight(.semibold))
+                                .foregroundColor(Color.SubtitleText)
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(Color.SubtitleText)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.SecondaryBackground, in: Capsule())
                     }
                     .popover(present: $showMenu1, attributes: {
-                        $0.position = .absolute(
-                            originAnchor: .bottom,
-                            popoverAnchor: .top
-                        )
+                        $0.position = .absolute(originAnchor: .bottomRight, popoverAnchor: .topRight)
                         $0.rubberBandingMode = .none
                         $0.sourceFrameInset = UIEdgeInsets(top: 0, left: 0, bottom: -10, right: 0)
                         $0.presentation.animation = .easeInOut(duration: 0.2)
@@ -532,95 +506,124 @@ struct LogInsightsView: View {
                     }
                 }
 
-                EmptyView()
-                    .modifier(NumberView(number: amount, dynamicTypeSize: _dynamicTypeSize.wrappedValue, netTotal: insightsType == 1, positive: netTotal.positive))
-            }
-            .padding(7)
-            .contentShape(Rectangle())
-            .contextMenu {
-                if insightsType != 3 {
-                    Button {
-                        insightsType = 3
-                    } label: {
-                        Label("Total Spent", systemImage: "minus")
-                    }
-                }
-
-                if insightsType != 2 {
-                    Button {
-                        insightsType = 2
-                    } label: {
-                        Label("Total Income", systemImage: "plus")
-                    }
-                }
-
-                if insightsType != 1 {
-                    Button {
-                        insightsType = 1
-                    } label: {
-                        Label("Net Total", systemImage: "alternatingcurrent")
-                    }
-                }
-            }
-
-            if totalSpent != 0 && totalIncome != 0 && insightsType == 1 {
-                HStack {
-//                    if showCents {
-//                        Text("+\(totalIncome, specifier: "%.2f")")
-//                            .font(.system(size: 18, weight: .medium, design: .rounded))
-//                            .foregroundColor(Color.IncomeGreen)
-//                            .lineLimit(1)
-//                    } else {
-//                        Text("+\(Int(floor(totalIncome)))")
-//                            .font(.system(size: 18, weight: .medium, design: .rounded))
-//                            .foregroundColor(Color.IncomeGreen)
-//                            .lineLimit(1)
-//                    }
-
-                    Text("+\(formatNumber(showCents: showCents, number: totalIncome))")
-                        .font(.system(.title2, design: .rounded).weight(.medium))
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(currencySymbol)
+                        .font(.system(.title, design: .rounded).weight(.semibold))
+                        .foregroundColor(Color.SubtitleText)
+                    Text(formatNumber(showCents: showCents, number: netTotal.value))
+                        .font(.system(size: 46, weight: .bold, design: .rounded))
+                        .foregroundColor(Color.PrimaryText)
                         .minimumScaleFactor(0.5)
-//                        .font(.system(size: 18, weight: .medium, design: .rounded))
-                        .foregroundColor(Color.IncomeGreen)
                         .lineLimit(1)
-
-                    DottedLine()
-                        .stroke(style: StrokeStyle(lineWidth: 1.7, lineCap: .round))
-                        .frame(width: 1.7, height: 15)
-                        .foregroundColor(Color.Outline)
-
-                    Text("-\(formatNumber(showCents: showCents, number: totalSpent))")
-                        .font(.system(.title2, design: .rounded).weight(.medium))
-                        .minimumScaleFactor(0.5)
-//                        .font(.system(size: 18, weight: .medium, design: .rounded))
-                        .foregroundColor(Color.AlertRed)
-                        .lineLimit(1)
-
-//                    if showCents {
-//                        Text("-\(totalSpent, specifier: "%.2f")")
-//                            .font(.system(size: 18, weight: .medium, design: .rounded))
-//                            .foregroundColor(Color.AlertRed)
-//                            .lineLimit(1)
-//                    } else {
-//                        Text("-\(Int(floor(totalSpent)))")
-//                            .font(.system(size: 18, weight: .medium, design: .rounded))
-//                            .foregroundColor(Color.AlertRed)
-//                            .lineLimit(1)
-//                    }
                 }
-                .padding(.bottom, 13)
             }
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
+            .padding(.bottom, 20)
 
-            if lineGraph {
-                LineGraph(data: lineGraphData, green: lineGraphGreen, type: timeframe, range: range)
-                    .frame(height: 25)
-                    .padding(.horizontal, 60)
-                    .padding(.top, 16)
+            // Two stat cards
+            HStack(spacing: 12) {
+                // Spent card — teal gradient
+                ZStack(alignment: .bottomTrailing) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack {
+                            Text("Spent \(subtitleText[timeframe - 1])")
+                                .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                                .foregroundColor(.white.opacity(0.9))
+                            Spacer()
+                            ZStack {
+                                Circle()
+                                    .fill(Color.white.opacity(0.22))
+                                    .frame(width: 30, height: 30)
+                                Image(systemName: "arrow.up.right")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(.white)
+                            }
+                        }
+
+                        Spacer(minLength: 12)
+
+                        Text("\(currencySymbol) \(formatNumber(showCents: showCents, number: totalSpent))")
+                            .font(.system(.title3, design: .rounded).weight(.bold))
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
+                            .padding(.bottom, 5)
+
+                        HStack(spacing: 3) {
+                            Image(systemName: "arrow.up.right")
+                                .font(.system(size: 10, weight: .bold))
+                            Text("tracked expenses")
+                                .font(.system(.caption2, design: .rounded).weight(.medium))
+                        }
+                        .foregroundColor(.white.opacity(0.72))
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+
+                    Image(systemName: "chart.pie.fill")
+                        .font(.system(size: 80))
+                        .foregroundColor(.white.opacity(0.1))
+                        .offset(x: 22, y: 22)
+                        .clipped()
+                }
+                .frame(maxWidth: .infinity, minHeight: 175)
+                .background(
+                    LinearGradient(
+                        colors: [Color(hex: "5DADE2"), Color(hex: "48C9B0")],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    )
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+
+                // Income card — dark navy
+                ZStack(alignment: .bottomTrailing) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack {
+                            Text("Income")
+                                .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                                .foregroundColor(.white.opacity(0.9))
+                            Spacer()
+                            ZStack {
+                                Circle()
+                                    .fill(Color.white.opacity(0.15))
+                                    .frame(width: 30, height: 30)
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(.white)
+                            }
+                        }
+
+                        Spacer(minLength: 12)
+
+                        Text("\(currencySymbol) \(formatNumber(showCents: showCents, number: totalIncome))")
+                            .font(.system(.title3, design: .rounded).weight(.bold))
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
+                            .padding(.bottom, 5)
+
+                        Text(subtitleText[timeframe - 1])
+                            .font(.system(.caption2, design: .rounded).weight(.medium))
+                            .foregroundColor(.white.opacity(0.6))
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+
+                    Image(systemName: "calendar.badge.clock")
+                        .font(.system(size: 64))
+                        .foregroundColor(.white.opacity(0.08))
+                        .offset(x: 18, y: 18)
+                        .clipped()
+                }
+                .frame(maxWidth: .infinity, minHeight: 175)
+                .background(Color(hex: "1A2035"))
+                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
             }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 8)
         }
-        .padding([.bottom, .horizontal], 20)
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-        .frame(height: lineGraph ? 240 : 170)
     }
 
     func formatNumber(showCents: Bool, number: Double) -> String {

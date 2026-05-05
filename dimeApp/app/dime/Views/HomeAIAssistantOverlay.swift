@@ -33,19 +33,11 @@ struct HomeAIAssistantOverlay: View {
             let activeComposerBottomPadding = keyboardOverlap > 0 ? 12 : baseComposerBottomPadding
 
             ZStack(alignment: .bottom) {
-                Color(hex: "0A0A0A")
+                Color(.systemBackground)
                     .ignoresSafeArea()
 
                 HomeAIAnimatedGradientBackground()
-                    .opacity(max(0, revealProgress) * 0.88)
-                    .mask(
-                        LinearGradient(
-                            colors: [.black, .black.opacity(0.82), .black.opacity(0.18), .clear],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                        .ignoresSafeArea()
-                    )
+                    .opacity(max(0, revealProgress))
                     .ignoresSafeArea()
 
 VStack(spacing: 0) {
@@ -71,9 +63,9 @@ VStack(spacing: 0) {
                     .background(
                         LinearGradient(
                             colors: [
-                                Color.black.opacity(0),
-                                Color.black.opacity(0.18),
-                                Color.black.opacity(0.34)
+                                Color(.systemBackground).opacity(0),
+                                Color(.systemBackground).opacity(0.92),
+                                Color(.systemBackground)
                             ],
                             startPoint: .top,
                             endPoint: .bottom
@@ -122,23 +114,25 @@ VStack(spacing: 0) {
     }
 
     private var previewHeader: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             Image(systemName: "sparkles")
-                .font(.system(size: 15, weight: .semibold))
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(Color(hex: "3B82F6"))
 
             Text(assistantTitle)
-                .font(.system(size: 21, weight: .semibold, design: .rounded))
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundColor(Color(.label))
 
             Text("beta")
-                .font(.system(.subheadline, design: .rounded).weight(.semibold))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
+                .font(.system(size: 12, design: .rounded).weight(.medium))
+                .foregroundColor(Color(.secondaryLabel))
+                .padding(.horizontal, 9)
+                .padding(.vertical, 4)
                 .overlay(
                     Capsule(style: .continuous)
-                        .stroke(Color.white.opacity(0.24), lineWidth: 1)
+                        .stroke(Color(.separator), lineWidth: 1)
                 )
         }
-        .foregroundColor(.white.opacity(0.88))
         .frame(maxWidth: .infinity)
     }
 
@@ -215,28 +209,19 @@ VStack(spacing: 0) {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 18) {
-            Text("How can I help you?")
-                .font(.system(size: 30, weight: .medium, design: .serif))
-                .tracking(-0.4)
-                .foregroundColor(.white.opacity(0.96))
-                .multilineTextAlignment(.center)
-                .padding(.top, 20)
-
-            quickActionsSection(title: "")
-
-            Text("Try: \"How much did I spend on food this week?\"")
-                .font(.system(.subheadline, design: .rounded).weight(.medium))
-                .foregroundColor(.white.opacity(0.42))
+        VStack(spacing: 20) {
+            quickActionsSection(title: "Try asking")
         }
+        .padding(.top, 8)
     }
 
     private func quickActionsSection(title: String) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             if !title.isEmpty {
                 Text(title)
-                    .font(.system(.footnote, design: .rounded).weight(.medium))
-                    .foregroundColor(.white.opacity(0.42))
+                    .font(.system(.subheadline).weight(.medium))
+                    .foregroundColor(Color(.secondaryLabel))
+                    .padding(.horizontal, 2)
             }
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -246,64 +231,76 @@ VStack(spacing: 0) {
                             viewModel.triggerQuickAction(quickAction)
                         } label: {
                             VStack(alignment: .leading, spacing: 10) {
-                                Image(systemName: quickAction.systemImage)
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(.white.opacity(0.72))
+                                ZStack {
+                                    Circle()
+                                        .fill(Color(hex: "EBF5FB"))
+                                        .frame(width: 34, height: 34)
+                                    Image(systemName: quickAction.systemImage)
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(Color(hex: "3B82F6"))
+                                }
 
                                 Spacer(minLength: 0)
 
                                 Text(quickAction.title)
-                                    .font(.system(.headline, design: .rounded).weight(.medium))
-                                    .foregroundColor(.white.opacity(0.92))
+                                    .font(.system(.subheadline).weight(.semibold))
+                                    .foregroundColor(Color(.label))
                                     .lineLimit(2)
                                     .multilineTextAlignment(.leading)
 
                                 Text(quickActionSubtitle(for: quickAction.title))
-                                    .font(.system(.footnote, design: .rounded))
-                                    .foregroundColor(.white.opacity(0.46))
+                                    .font(.system(.caption, design: .rounded))
+                                    .foregroundColor(Color(.secondaryLabel))
                                     .lineLimit(2)
                             }
-                            .padding(16)
-                            .frame(width: 146, height: 146, alignment: .leading)
+                            .padding(14)
+                            .frame(width: 148, height: 148, alignment: .leading)
                             .background(
                                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .fill(Color(hex: "141414").opacity(0.96))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                            .stroke(Color(hex: "222222"), lineWidth: 1)
-                                    )
+                                    .fill(Color(.secondarySystemBackground))
+                                    .shadow(color: Color.black.opacity(0.06), radius: 8, y: 2)
                             )
                         }
                         .buttonStyle(.plain)
                     }
                 }
                 .padding(.trailing, 24)
+                .padding(.bottom, 4)
             }
             .scrollClipDisabledIfAvailable()
         }
     }
 
     private func messageBubble(_ message: HomeAIMessage) -> some View {
-        HStack {
+        HStack(alignment: .top) {
             if message.role == .assistant {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Renvo")
-                        .font(.system(.caption, design: .rounded).weight(.medium))
-                        .foregroundColor(.white.opacity(0.38))
+                HStack(alignment: .top, spacing: 10) {
+                    ZStack {
+                        Circle()
+                            .fill(Color(hex: "EBF5FB"))
+                            .frame(width: 30, height: 30)
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(Color(hex: "3B82F6"))
+                    }
+                    .padding(.top, 2)
 
-                    Text(message.text)
-                        .font(.system(.body, design: .rounded))
-                        .foregroundColor(.white.opacity(0.92))
-                        .multilineTextAlignment(.leading)
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("Renvo")
+                            .font(.system(.subheadline).weight(.semibold))
+                            .foregroundColor(Color(hex: "3B82F6"))
+
+                        Text(message.text)
+                            .font(.system(.body))
+                            .foregroundColor(Color(.label))
+                            .multilineTextAlignment(.leading)
+                    }
                 }
                 .padding(16)
                 .background(
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(Color(hex: "141414").opacity(0.96))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .stroke(Color(hex: "222222"), lineWidth: 1)
-                        )
+                        .fill(Color(.secondarySystemBackground))
+                        .shadow(color: Color.black.opacity(0.06), radius: 8, y: 2)
                 )
 
                 Spacer(minLength: 42)
@@ -341,13 +338,19 @@ VStack(spacing: 0) {
 
                             if hasText {
                                 Text(message.text)
-                                    .font(.system(.body, design: .rounded).weight(.medium))
-                                    .foregroundColor(.white.opacity(0.94))
+                                    .font(.system(.body).weight(.medium))
+                                    .foregroundColor(.white)
                                     .padding(.horizontal, 14)
                                     .padding(.vertical, 11)
                             }
                         }
-                        .background(Color(hex: "1A1A1A"))
+                        .background(
+                            LinearGradient(
+                                colors: [Color(hex: "4ECDC4"), Color(hex: "9BAAF8")],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
                         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                         .frame(maxWidth: 260, alignment: .trailing)
                     }
@@ -357,27 +360,28 @@ VStack(spacing: 0) {
     }
 
     private var typingIndicator: some View {
-        HStack {
-            HStack(spacing: 6) {
+        HStack(alignment: .top, spacing: 10) {
+            ZStack {
                 Circle()
-                    .fill(Color.white.opacity(0.8))
-                    .frame(width: 7, height: 7)
-                Circle()
-                    .fill(Color.white.opacity(0.6))
-                    .frame(width: 7, height: 7)
-                Circle()
-                    .fill(Color.white.opacity(0.4))
-                    .frame(width: 7, height: 7)
+                    .fill(Color(hex: "EBF5FB"))
+                    .frame(width: 30, height: 30)
+                Image(systemName: "sparkles")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(Color(hex: "3B82F6"))
             }
-            .padding(.horizontal, 16)
+            .padding(.top, 2)
+
+            HStack(spacing: 5) {
+                Circle().fill(Color(.tertiaryLabel)).frame(width: 7, height: 7)
+                Circle().fill(Color(.tertiaryLabel)).frame(width: 7, height: 7)
+                Circle().fill(Color(.tertiaryLabel)).frame(width: 7, height: 7)
+            }
+            .padding(.horizontal, 14)
             .padding(.vertical, 14)
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Color(hex: "141414").opacity(0.96))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(Color(hex: "222222"), lineWidth: 1)
-                    )
+                    .fill(Color(.secondarySystemBackground))
+                    .shadow(color: Color.black.opacity(0.06), radius: 8, y: 2)
             )
 
             Spacer(minLength: 42)
@@ -385,16 +389,21 @@ VStack(spacing: 0) {
     }
 
     private var composerSection: some View {
-        HStack(alignment: .bottom, spacing: 8) {
+        HStack(alignment: .bottom, spacing: 10) {
             if keyboardHeightHelper.keyboardHeight > 0 {
                 Button { showAttachmentSheet = true } label: {
                     ZStack {
                         Circle()
-                            .fill(Color(hex: "1A1A1A"))
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color(hex: "4ECDC4"), Color(hex: "9BAAF8")],
+                                    startPoint: .topLeading, endPoint: .bottomTrailing
+                                )
+                            )
                             .frame(width: 50, height: 50)
                         Image(systemName: "plus")
                             .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(.white.opacity(0.65))
+                            .foregroundColor(.white)
                     }
                 }
                 .buttonStyle(.plain)
@@ -422,7 +431,7 @@ VStack(spacing: 0) {
                 .frame(height: 90)
 
                 Rectangle()
-                    .fill(Color.white.opacity(0.07))
+                    .fill(Color(.separator).opacity(0.5))
                     .frame(height: 1)
                     .padding(.horizontal, 14)
             }
@@ -431,10 +440,19 @@ VStack(spacing: 0) {
             HStack(alignment: .center, spacing: 12) {
                 if keyboardHeightHelper.keyboardHeight == 0 {
                     Button { showAttachmentSheet = true } label: {
-                        Image(systemName: "plus")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(.white.opacity(0.6))
-                            .frame(width: 28, height: 28)
+                        ZStack {
+                            Circle()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color(hex: "4ECDC4"), Color(hex: "9BAAF8")],
+                                        startPoint: .topLeading, endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(width: 32, height: 32)
+                            Image(systemName: "plus")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(.white)
+                        }
                     }
                     .buttonStyle(.plain)
                 }
@@ -450,26 +468,27 @@ VStack(spacing: 0) {
 
                 if viewModel.hasContent {
                     Button { sendComposerMessage() } label: {
-                        Image(systemName: "arrow.up.circle.fill")
-                            .font(.system(size: 30))
-                            .foregroundColor(.white)
+                        Image(systemName: "paperplane.fill")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(Color(hex: "5DADE2"))
+                            .frame(width: 32, height: 32)
                     }
                     .buttonStyle(.plain)
                 }
             }
             .frame(height: 56)
-            .padding(.horizontal, 18)
+            .padding(.horizontal, 16)
         }
         .contentShape(Rectangle())
         .onTapGesture { focusComposer() }
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(Color(hex: "1A1A1A"))
+                .fill(Color(.secondarySystemBackground))
                 .overlay(
                     RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(composerFocused ? Color.white.opacity(0.16) : Color.clear, lineWidth: 1)
+                        .stroke(composerFocused ? Color(hex: "5DADE2").opacity(0.3) : Color(.separator).opacity(0.5), lineWidth: 1)
                 )
-                .shadow(color: composerFocused ? Color.white.opacity(0.08) : Color.black.opacity(0.12), radius: composerFocused ? 18 : 12, y: 8)
+                .shadow(color: Color.black.opacity(composerFocused ? 0.08 : 0.04), radius: composerFocused ? 12 : 6, y: 2)
         )
         .simultaneousGesture(
             DragGesture(minimumDistance: 4)
@@ -522,8 +541,8 @@ VStack(spacing: 0) {
     private var collapseHandle: some View {
         ZStack {
             Image(systemName: "chevron.up")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(.white.opacity(0.46))
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(Color(.tertiaryLabel))
                 .frame(width: 48, height: 28)
         }
         .frame(width: 112, height: 64)
@@ -701,8 +720,8 @@ private struct HomeAIComposerTextField: UIViewRepresentable {
         textField.backgroundColor = .clear
         textField.borderStyle = .none
         textField.returnKeyType = .send
-        textField.textColor = UIColor.white.withAlphaComponent(0.95)
-        textField.tintColor = UIColor.white
+        textField.textColor = UIColor.label
+        textField.tintColor = UIColor(red: 0.365, green: 0.678, blue: 0.886, alpha: 1)
         textField.font = UIFont.roundedSystemFont(ofSize: 17, weight: .regular)
         textField.autocorrectionType = .yes
         textField.autocapitalizationType = .sentences
@@ -743,7 +762,7 @@ private struct HomeAIComposerTextField: UIViewRepresentable {
         textField.attributedPlaceholder = NSAttributedString(
             string: placeholder,
             attributes: [
-                .foregroundColor: UIColor.white.withAlphaComponent(0.34),
+                .foregroundColor: UIColor.placeholderText,
                 .font: UIFont.roundedSystemFont(ofSize: 17, weight: .regular)
             ]
         )
@@ -789,40 +808,18 @@ private extension UIFont {
 
 private struct HomeAIAnimatedGradientBackground: View {
     var body: some View {
-        if #available(iOS 18.0, *) {
-            TimelineView(.animation) { timeline in
-                let t = Float(timeline.date.timeIntervalSinceReferenceDate)
-                MeshGradient(width: 3, height: 3, points: [
-                    [0, 0], [0.5, 0], [1, 0],
-                    [0, 0.5],
-                    [0.5 + 0.18 * sin(t * 0.45), 0.5 + 0.15 * cos(t * 0.37)],
-                    [1, 0.5],
-                    [0, 1],
-                    [0.5 + 0.12 * cos(t * 0.55), 1],
-                    [1, 1]
-                ], colors: [
-                    Color(red: 0.49, green: 0.18, blue: 0.58),
-                    Color(red: 0.15, green: 0.39, blue: 0.92),
-                    Color(red: 0.58, green: 0.20, blue: 0.92),
-                    Color(red: 0.31, green: 0.11, blue: 0.59),
-                    Color(red: 0.49, green: 0.23, blue: 0.93),
-                    Color(red: 0.11, green: 0.31, blue: 0.85),
-                    Color(red: 0.43, green: 0.16, blue: 0.85),
-                    Color(red: 0.22, green: 0.19, blue: 0.64),
-                    Color(red: 0.12, green: 0.11, blue: 0.29)
-                ])
-                .blur(radius: 6)
-            }
-        } else {
-            LinearGradient(
-                colors: [
-                    Color(red: 0.49, green: 0.18, blue: 0.58),
-                    Color(red: 0.15, green: 0.39, blue: 0.92),
-                    Color(red: 0.43, green: 0.16, blue: 0.85),
-                    Color(red: 0.12, green: 0.11, blue: 0.29)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
+        ZStack {
+            RadialGradient(
+                colors: [Color(hex: "4ECDC4").opacity(0.28), Color.clear],
+                center: .topLeading,
+                startRadius: 0,
+                endRadius: 340
+            )
+            RadialGradient(
+                colors: [Color(hex: "9BAAF8").opacity(0.22), Color.clear],
+                center: .topTrailing,
+                startRadius: 0,
+                endRadius: 320
             )
         }
     }

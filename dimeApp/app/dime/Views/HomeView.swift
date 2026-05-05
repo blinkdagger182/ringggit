@@ -130,7 +130,7 @@ struct HomeView: View {
 
                             Text(homeAISheetOffset > homeAIPullThreshold * 0.82 ? "Release for ✨ AI" : "Pull more for ✨ AI")
                                 .font(.system(.title3, design: .rounded).weight(.medium))
-                                .foregroundColor(.white.opacity(0.94))
+                                .foregroundColor(Color(.label).opacity(0.72))
                         }
                         .padding(.top, max(48, homeAISheetOffset - 108))
                     }
