@@ -34,6 +34,7 @@ final class HomeAIAssistantViewModel: ObservableObject {
     @Published var draftMessage = ""
     @Published private(set) var messages: [HomeAIMessage] = []
     @Published private(set) var isResponding = false
+    @Published private(set) var isAnimatingReply = false
     @Published var pendingAttachments: [AttachmentItem] = []
 
     var dataController: DataController?
@@ -77,7 +78,8 @@ final class HomeAIAssistantViewModel: ObservableObject {
 
     func sendDraftMessage() {
         let trimmed = draftMessage.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty || !pendingAttachments.isEmpty, !isResponding else { return }
+        guard !trimmed.isEmpty || !pendingAttachments.isEmpty,
+              !isResponding, !isAnimatingReply else { return }
 
         let messageText = trimmed.isEmpty ? "Please extract all transactions from the attached image(s)." : trimmed
         let capturedAttachments = pendingAttachments
@@ -99,16 +101,44 @@ final class HomeAIAssistantViewModel: ObservableObject {
                     images: imageDataList
                 )
                 executeActions(response.actions)
-                messages.append(HomeAIMessage(role: .assistant, text: response.reply, date: .now, visual: response.visual))
+                await animateReply(response)
             } catch AIServiceError.apiError(let msg) {
                 messages.append(HomeAIMessage(role: .assistant, text: "API error: \(msg)", date: .now))
+                isResponding = false
             } catch let urlError as URLError where urlError.code == .timedOut {
                 messages.append(HomeAIMessage(role: .assistant, text: "Request timed out — the file is large. Try a shorter document or fewer pages.", date: .now))
+                isResponding = false
             } catch {
                 messages.append(HomeAIMessage(role: .assistant, text: "Couldn't connect. Check your API key and internet connection.", date: .now))
+                isResponding = false
             }
-            isResponding = false
         }
+    }
+
+    private func animateReply(_ response: AIResponse) async {
+        let now = Date()
+        let msgDate = now
+        messages.append(HomeAIMessage(role: .assistant, text: "", date: msgDate))
+        isResponding = false
+        isAnimatingReply = true
+
+        let reply = response.reply.isEmpty ? "Done." : response.reply
+        let words = reply.components(separatedBy: " ")
+        var built = ""
+
+        for (i, word) in words.enumerated() {
+            if i > 0 { built += " " }
+            built += word
+            if let idx = messages.indices.last {
+                messages[idx] = HomeAIMessage(role: .assistant, text: built, date: msgDate)
+            }
+            try? await Task.sleep(nanoseconds: 28_000_000)
+        }
+
+        if let idx = messages.indices.last {
+            messages[idx] = HomeAIMessage(role: .assistant, text: built, date: msgDate, visual: response.visual)
+        }
+        isAnimatingReply = false
     }
 
     private func appendUserMessage(_ text: String, attachments: [AttachmentItem] = []) {
@@ -119,7 +149,7 @@ final class HomeAIAssistantViewModel: ObservableObject {
 
     private func buildSystemPrompt() -> String {
         var categoriesText = "None configured"
-        var spendingSummary = ""
+        var transactionHistory = "No transactions recorded yet."
 
         if let dc = dataController {
             let context = dc.container.viewContext
@@ -137,15 +167,24 @@ final class HomeAIAssistantViewModel: ObservableObject {
                 }.joined(separator: ", ")
             }
 
-            let calendar = Calendar.current
-            if let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: .now)) {
-                let txRequest = NSFetchRequest<Transaction>(entityName: "Transaction")
-                txRequest.predicate = NSPredicate(format: "date >= %@", startOfMonth as NSDate)
-                let txs = (try? context.fetch(txRequest)) ?? []
+            let txRequest = NSFetchRequest<Transaction>(entityName: "Transaction")
+            txRequest.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
+            let allTxs = (try? context.fetch(txRequest)) ?? []
 
-                let totalExpenses = txs.filter { !$0.income }.reduce(0.0) { $0 + $1.amount }
-                let totalIncome = txs.filter { $0.income }.reduce(0.0) { $0 + $1.amount }
-                spendingSummary = "This month so far: RM\(String(format: "%.2f", totalExpenses)) expenses, RM\(String(format: "%.2f", totalIncome)) income, \(txs.count) transactions."
+            if !allTxs.isEmpty {
+                let df = DateFormatter()
+                df.dateFormat = "yyyy-MM-dd"
+                df.locale = Locale(identifier: "en_US_POSIX")
+
+                let lines: [String] = allTxs.prefix(600).compactMap { tx in
+                    guard let date = tx.date else { return nil }
+                    let dateStr = df.string(from: date)
+                    let sign = tx.income ? "+" : "-"
+                    let cat = tx.category?.name ?? "Uncategorized"
+                    let note = (tx.note?.isEmpty == false) ? tx.note! : "(no note)"
+                    return "\(dateStr) | \(sign)RM\(String(format: "%.2f", tx.amount)) | \(note) | \(cat)"
+                }
+                transactionHistory = lines.joined(separator: "\n")
             }
         }
 
@@ -156,7 +195,9 @@ final class HomeAIAssistantViewModel: ObservableObject {
 
         Today: \(dateStr)
         Available categories: \(categoriesText)
-        \(spendingSummary)
+
+        ALL USER TRANSACTIONS (newest first, up to 600 records — use this to answer ANY historical question):
+        \(transactionHistory)
 
         When the user pastes ANY text or shares ANY image — receipts, screenshots, bank statements, PDFs rendered as images, WhatsApp messages, invoices — parse ALL financial transactions and log them automatically. Extract dates from the source material; do not default to today unless no date is present.
 
