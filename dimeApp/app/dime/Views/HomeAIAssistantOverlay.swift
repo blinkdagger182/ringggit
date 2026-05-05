@@ -117,7 +117,12 @@ VStack(spacing: 0) {
         HStack(spacing: 8) {
             Image(systemName: "sparkles")
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(Color(hex: "3B82F6"))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [Color(hex: "4ECDC4"), Color(hex: "9BAAF8")],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    )
+                )
 
             Text(assistantTitle)
                 .font(.system(size: 20, weight: .semibold))
@@ -233,11 +238,21 @@ VStack(spacing: 0) {
                             VStack(alignment: .leading, spacing: 10) {
                                 ZStack {
                                     Circle()
-                                        .fill(Color(hex: "EBF5FB"))
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [Color(hex: "4ECDC4").opacity(0.18), Color(hex: "9BAAF8").opacity(0.22)],
+                                                startPoint: .topLeading, endPoint: .bottomTrailing
+                                            )
+                                        )
                                         .frame(width: 34, height: 34)
                                     Image(systemName: quickAction.systemImage)
                                         .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(Color(hex: "3B82F6"))
+                                        .foregroundStyle(
+                                            LinearGradient(
+                                                colors: [Color(hex: "4ECDC4"), Color(hex: "7B8FF8")],
+                                                startPoint: .topLeading, endPoint: .bottomTrailing
+                                            )
+                                        )
                                 }
 
                                 Spacer(minLength: 0)
@@ -277,18 +292,33 @@ VStack(spacing: 0) {
                 HStack(alignment: .top, spacing: 10) {
                     ZStack {
                         Circle()
-                            .fill(Color(hex: "EBF5FB"))
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color(hex: "4ECDC4").opacity(0.18), Color(hex: "9BAAF8").opacity(0.22)],
+                                    startPoint: .topLeading, endPoint: .bottomTrailing
+                                )
+                            )
                             .frame(width: 30, height: 30)
                         Image(systemName: "sparkles")
                             .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(Color(hex: "3B82F6"))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [Color(hex: "4ECDC4"), Color(hex: "7B8FF8")],
+                                    startPoint: .topLeading, endPoint: .bottomTrailing
+                                )
+                            )
                     }
                     .padding(.top, 2)
 
                     VStack(alignment: .leading, spacing: 5) {
                         Text("Renvo")
                             .font(.system(.subheadline).weight(.semibold))
-                            .foregroundColor(Color(hex: "3B82F6"))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [Color(hex: "4ECDC4"), Color(hex: "7B8FF8")],
+                                    startPoint: .leading, endPoint: .trailing
+                                )
+                            )
 
                         Text(message.text)
                             .font(.system(.body))
@@ -470,7 +500,12 @@ VStack(spacing: 0) {
                     Button { sendComposerMessage() } label: {
                         Image(systemName: "paperplane.fill")
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(Color(hex: "5DADE2"))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [Color(hex: "4ECDC4"), Color(hex: "9BAAF8")],
+                                    startPoint: .topLeading, endPoint: .bottomTrailing
+                                )
+                            )
                             .frame(width: 32, height: 32)
                     }
                     .buttonStyle(.plain)
@@ -486,7 +521,7 @@ VStack(spacing: 0) {
                 .fill(Color(.secondarySystemBackground))
                 .overlay(
                     RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(composerFocused ? Color(hex: "5DADE2").opacity(0.3) : Color(.separator).opacity(0.5), lineWidth: 1)
+                        .stroke(composerFocused ? Color(hex: "4ECDC4").opacity(0.4) : Color(.separator).opacity(0.5), lineWidth: 1)
                 )
                 .shadow(color: Color.black.opacity(composerFocused ? 0.08 : 0.04), radius: composerFocused ? 12 : 6, y: 2)
         )
@@ -721,7 +756,7 @@ private struct HomeAIComposerTextField: UIViewRepresentable {
         textField.borderStyle = .none
         textField.returnKeyType = .send
         textField.textColor = UIColor.label
-        textField.tintColor = UIColor(red: 0.365, green: 0.678, blue: 0.886, alpha: 1)
+        textField.tintColor = UIColor(red: 0.306, green: 0.804, blue: 0.769, alpha: 1)
         textField.font = UIFont.roundedSystemFont(ofSize: 17, weight: .regular)
         textField.autocorrectionType = .yes
         textField.autocapitalizationType = .sentences
