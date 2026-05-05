@@ -144,9 +144,9 @@ struct HomeAIAttachmentSheet: View {
             }
         }
         .sheet(isPresented: $showDocumentPicker) {
-            PDFDocumentPickerView { pages, filename in
+            PDFDocumentPickerView { pages, filename, sourceText in
                 guard !pages.isEmpty else { return }
-                attachments.append(AttachmentItem(pdfPages: pages, filename: filename))
+                attachments.append(AttachmentItem(pdfPages: pages, filename: filename, sourceText: sourceText))
                 dismiss()
             }
         }
@@ -349,7 +349,7 @@ struct FullPhotoPickerView: UIViewControllerRepresentable {
 // MARK: - PDF Document Picker
 
 struct PDFDocumentPickerView: UIViewControllerRepresentable {
-    let onComplete: ([UIImage], String) -> Void
+    let onComplete: ([UIImage], String, String?) -> Void
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: [UTType.pdf])
@@ -363,8 +363,8 @@ struct PDFDocumentPickerView: UIViewControllerRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator(onComplete: onComplete) }
 
     final class Coordinator: NSObject, UIDocumentPickerDelegate {
-        let onComplete: ([UIImage], String) -> Void
-        init(onComplete: @escaping ([UIImage], String) -> Void) { self.onComplete = onComplete }
+        let onComplete: ([UIImage], String, String?) -> Void
+        init(onComplete: @escaping ([UIImage], String, String?) -> Void) { self.onComplete = onComplete }
 
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
             guard let url = urls.first else { return }
@@ -372,20 +372,25 @@ struct PDFDocumentPickerView: UIViewControllerRepresentable {
             defer { url.stopAccessingSecurityScopedResource() }
 
             let filename = url.deletingPathExtension().lastPathComponent
-            let images = renderPDFPages(url: url)
-            DispatchQueue.main.async { self.onComplete(images, filename) }
+            let result = renderPDFPagesAndExtractText(url: url)
+            DispatchQueue.main.async { self.onComplete(result.images, filename, result.text) }
         }
 
-        private func renderPDFPages(url: URL) -> [UIImage] {
-            guard let document = PDFDocument(url: url) else { return [] }
+        private func renderPDFPagesAndExtractText(url: URL) -> (images: [UIImage], text: String?) {
+            guard let document = PDFDocument(url: url) else { return ([], nil) }
             var images: [UIImage] = []
+            var pageTextBlocks: [String] = []
             let pageCount = min(document.pageCount, 10)
 
             for i in 0..<pageCount {
                 guard let page = document.page(at: i) else { continue }
+                let pageText = layoutPreservingText(for: page)
+                if !pageText.isEmpty {
+                    pageTextBlocks.append("Page \(i + 1):\n\(pageText)")
+                }
+
                 let mediaRect = page.bounds(for: .mediaBox)
-                // 1000px wide — sufficient for text, keeps payload small
-                let scale: CGFloat = min(1000 / mediaRect.width, 1400 / mediaRect.height)
+                let scale: CGFloat = min(1600 / mediaRect.width, 2200 / mediaRect.height)
                 let targetSize = CGSize(
                     width: mediaRect.width * scale,
                     height: mediaRect.height * scale
@@ -393,7 +398,36 @@ struct PDFDocumentPickerView: UIViewControllerRepresentable {
                 images.append(page.thumbnail(of: targetSize, for: .mediaBox))
             }
 
-            return images
+            let text = pageTextBlocks.isEmpty ? nil : pageTextBlocks.joined(separator: "\n\n")
+            return (images, text)
+        }
+
+        private func layoutPreservingText(for page: PDFPage) -> String {
+            let pageBounds = page.bounds(for: .mediaBox)
+            let rowCount = 52
+            let rowHeight = pageBounds.height / CGFloat(rowCount)
+            var rows: [String] = []
+
+            for row in 0..<rowCount {
+                let y = pageBounds.minY + CGFloat(row) * rowHeight
+                let rect = CGRect(
+                    x: pageBounds.minX,
+                    y: y,
+                    width: pageBounds.width,
+                    height: rowHeight
+                )
+                guard let text = page.selection(for: rect)?.string else { continue }
+                let normalized = text
+                    .components(separatedBy: .newlines)
+                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty }
+                    .joined(separator: " | ")
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !normalized.isEmpty else { continue }
+                rows.append(normalized)
+            }
+
+            return rows.joined(separator: "\n")
         }
     }
 }

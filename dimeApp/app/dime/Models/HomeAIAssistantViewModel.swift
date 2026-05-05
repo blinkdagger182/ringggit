@@ -13,23 +13,48 @@ struct AttachmentItem: Identifiable {
     let thumbnail: UIImage
     let pages: [UIImage]
     let label: String
+    let sourceText: String?
 
     init(image: UIImage, label: String) {
         self.thumbnail = image
         self.pages = [image]
         self.label = label
+        self.sourceText = nil
     }
 
-    init(pdfPages: [UIImage], filename: String) {
+    init(pdfPages: [UIImage], filename: String, sourceText: String? = nil) {
         self.thumbnail = pdfPages.first ?? UIImage()
         self.pages = pdfPages
         let count = pdfPages.count
         self.label = "\(filename) · \(count) \(count == 1 ? "page" : "pages")"
+        self.sourceText = sourceText
     }
 }
 
 @MainActor
 final class HomeAIAssistantViewModel: ObservableObject {
+    private struct ExtractionPage {
+        let image: UIImage
+        let sourceText: String?
+        let label: String
+    }
+
+    private struct ExtractionJob {
+        let originalMessage: String
+        let pages: [ExtractionPage]
+        var nextPageIndex: Int
+        var batchSize: Int
+        var loggedActions: [AITransactionAction]
+    }
+
+    private struct PDFTransactionCandidate {
+        let rawLine: String
+        let amount: Double
+        let income: Bool
+        let date: Date
+        let note: String
+    }
+
     @Published var isPresented = false
     @Published var draftMessage = ""
     @Published private(set) var messages: [HomeAIMessage] = []
@@ -39,6 +64,7 @@ final class HomeAIAssistantViewModel: ObservableObject {
     @Published var pendingAttachments: [AttachmentItem] = []
 
     var dataController: DataController?
+    private var resumableExtractionJob: ExtractionJob?
 
     let quickActions: [HomeAIQuickAction] = [
         HomeAIQuickAction(title: "Add transaction", prompt: "Add transaction", systemImage: "plus.circle.fill"),
@@ -52,7 +78,9 @@ final class HomeAIAssistantViewModel: ObservableObject {
     }
 
     var hasContent: Bool {
-        !draftMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !pendingAttachments.isEmpty
+        !draftMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !pendingAttachments.isEmpty
+            || resumableExtractionJob != nil
     }
 
     func expand() {
@@ -79,10 +107,13 @@ final class HomeAIAssistantViewModel: ObservableObject {
 
     func sendDraftMessage() {
         let trimmed = draftMessage.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty || !pendingAttachments.isEmpty,
+        let hasResumableExtraction = pendingAttachments.isEmpty && resumableExtractionJob != nil
+        guard !trimmed.isEmpty || !pendingAttachments.isEmpty || hasResumableExtraction,
               !isResponding, !isAnimatingReply else { return }
 
-        let messageText = trimmed.isEmpty ? "Please extract all transactions from the attached image(s)." : trimmed
+        let messageText = trimmed.isEmpty
+            ? (hasResumableExtraction ? "Continue extraction" : "Please extract all transactions from the attached image(s).")
+            : trimmed
         let capturedAttachments = pendingAttachments
 
         appendUserMessage(messageText, attachments: capturedAttachments)
@@ -111,14 +142,37 @@ final class HomeAIAssistantViewModel: ObservableObject {
         Task {
             statusText = "Thinking"
             do {
-                let imageDataList = capturedAttachments
-                    .flatMap { $0.pages }
-                    .compactMap { $0.jpegData(compressionQuality: 0.65) }
                 let systemPrompt = buildSystemPrompt()
+                if let existingJob = resumableExtractionJob,
+                   capturedAttachments.isEmpty {
+                    await processExtractionJob(existingJob, systemPrompt: systemPrompt)
+                    return
+                }
+
+                if !capturedAttachments.isEmpty {
+                    let pages = Self.makeExtractionPages(from: capturedAttachments)
+                    guard !pages.isEmpty else {
+                        messages.append(HomeAIMessage(role: .assistant, text: "I couldn't read any pages from that attachment.", date: .now))
+                        isResponding = false
+                        statusText = ""
+                        return
+                    }
+
+                    let job = ExtractionJob(
+                        originalMessage: messageText,
+                        pages: pages,
+                        nextPageIndex: 0,
+                        batchSize: Self.initialBatchSize(for: pages.count),
+                        loggedActions: []
+                    )
+                    resumableExtractionJob = job
+                    await processExtractionJob(job, systemPrompt: systemPrompt)
+                    return
+                }
+
                 let response = try await AIService.send(
                     systemPrompt: systemPrompt,
                     conversationMessages: messages,
-                    images: imageDataList,
                     toolExecutor: toolExecutor
                 )
                 statusText = "Writing response"
@@ -139,6 +193,330 @@ final class HomeAIAssistantViewModel: ObservableObject {
                 statusText = ""
             }
         }
+    }
+
+    private func processExtractionJob(_ initialJob: ExtractionJob, systemPrompt: String) async {
+        var job = initialJob
+        var loggedActions = job.loggedActions
+
+        do {
+            while job.nextPageIndex < job.pages.count {
+                let startIndex = job.nextPageIndex
+                let endIndex = min(startIndex + job.batchSize, job.pages.count)
+                let batchPages = Array(job.pages[startIndex..<endIndex])
+                let pageRangeText = startIndex + 1 == endIndex
+                    ? "page \(startIndex + 1)"
+                    : "pages \(startIndex + 1)-\(endIndex)"
+                statusText = "Extracting \(pageRangeText) of \(job.pages.count)"
+
+                let batchImages = batchPages.compactMap { $0.image.jpegData(compressionQuality: 0.88) }
+                let batchSourceText = Self.combinedSourceText(from: batchPages)
+                let batchRawText = Self.rawSourceText(from: batchPages)
+                let batchPrompt = """
+                \(job.originalMessage)
+
+                Process only \(pageRangeText) of this attachment. Return transactions visible in this batch only. If a row is continued from the previous page, use the visible text evidence and do not invent missing values.
+                """
+                let batchMessages = [HomeAIMessage(role: .user, text: batchPrompt, date: .now)]
+
+                let response = try await AIService.send(
+                    systemPrompt: systemPrompt,
+                    conversationMessages: batchMessages,
+                    images: batchImages,
+                    sourceText: batchSourceText
+                )
+
+                let reconciledActions = Self.reconciledActions(
+                    aiActions: response.actions,
+                    candidates: Self.transactionCandidates(in: batchRawText)
+                )
+                executeActions(reconciledActions)
+                loggedActions.append(contentsOf: reconciledActions)
+                job.loggedActions = loggedActions
+                job.nextPageIndex = endIndex
+                resumableExtractionJob = job
+            }
+
+            resumableExtractionJob = nil
+            statusText = "Writing response"
+            let response = AIResponse(
+                reply: "Logged \(loggedActions.count) transactions from \(job.pages.count) \(job.pages.count == 1 ? "page" : "pages").",
+                thinking: "Processed in page batches; saved each successful batch before moving to the next.",
+                actions: [],
+                visual: loggedActions.isEmpty ? nil : .transactionsLogged(loggedActions)
+            )
+            await animateReply(response)
+            statusText = ""
+        } catch let urlError as URLError where urlError.code == .timedOut {
+            job.batchSize = 1
+            resumableExtractionJob = job
+            messages.append(HomeAIMessage(
+                role: .assistant,
+                text: "Timed out on page \(job.nextPageIndex + 1). I saved completed pages already. Send “continue” and I’ll resume from page \(job.nextPageIndex + 1) with one page per request.",
+                date: .now
+            ))
+            isResponding = false
+            statusText = ""
+        } catch AIServiceError.apiError(let msg) {
+            resumableExtractionJob = job
+            messages.append(HomeAIMessage(
+                role: .assistant,
+                text: "API error on page \(job.nextPageIndex + 1): \(msg). Completed pages were saved. Send “continue” to retry from page \(job.nextPageIndex + 1).",
+                date: .now
+            ))
+            isResponding = false
+            statusText = ""
+        } catch {
+            resumableExtractionJob = job
+            messages.append(HomeAIMessage(
+                role: .assistant,
+                text: "Stopped on page \(job.nextPageIndex + 1). Completed pages were saved. Send “continue” to retry from page \(job.nextPageIndex + 1).",
+                date: .now
+            ))
+            isResponding = false
+            statusText = ""
+        }
+    }
+
+    private static func combinedSourceText(from attachments: [AttachmentItem]) -> String {
+        combinedSourceText(from: makeExtractionPages(from: attachments))
+    }
+
+    private static func combinedSourceText(from pages: [ExtractionPage]) -> String {
+        let textBlocks = sourceTextBlocks(from: pages)
+
+        guard !textBlocks.isEmpty else { return "" }
+        let fullText = textBlocks.joined(separator: "\n\n--- NEXT PDF ---\n\n")
+        let candidateLines = detectedSignedTransactionLines(in: fullText)
+        let candidateSection = candidateLines.isEmpty
+            ? ""
+            : """
+
+        Detected signed transaction lines from PDF text. Treat every line below as a transaction candidate unless it is clearly a statement total/header:
+        \(candidateLines.joined(separator: "\n"))
+
+        """
+
+        return """
+
+        Extracted PDF text evidence:
+        \(candidateSection)
+        Full extracted PDF text:
+        \(fullText)
+        """
+    }
+
+    private static func rawSourceText(from pages: [ExtractionPage]) -> String {
+        sourceTextBlocks(from: pages).joined(separator: "\n\n")
+    }
+
+    private static func sourceTextBlocks(from pages: [ExtractionPage]) -> [String] {
+        pages
+            .compactMap(\.sourceText)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+    }
+
+    private static func reconciledActions(
+        aiActions: [AITransactionAction],
+        candidates: [PDFTransactionCandidate]
+    ) -> [AITransactionAction] {
+        guard !candidates.isEmpty else { return aiActions }
+
+        var remainingAICounts = countedKeys(for: aiActions)
+        var missing: [AITransactionAction] = []
+
+        for candidate in candidates {
+            let key = transactionKey(
+                date: candidate.date,
+                amount: candidate.amount,
+                income: candidate.income
+            )
+
+            if let count = remainingAICounts[key], count > 0 {
+                remainingAICounts[key] = count - 1
+                continue
+            }
+
+            missing.append(AITransactionAction(
+                amount: candidate.amount,
+                note: candidate.note,
+                categoryName: "",
+                income: candidate.income,
+                date: candidate.date,
+                repeatType: 0,
+                repeatCoefficient: 1
+            ))
+        }
+
+        return aiActions + missing
+    }
+
+    private static func countedKeys(for actions: [AITransactionAction]) -> [String: Int] {
+        actions.reduce(into: [String: Int]()) { result, action in
+            let key = transactionKey(date: action.date, amount: action.amount, income: action.income)
+            result[key, default: 0] += 1
+        }
+    }
+
+    private static func transactionKey(date: Date, amount: Double, income: Bool) -> String {
+        let day = Calendar.current.startOfDay(for: date).timeIntervalSince1970
+        let cents = Int((amount * 100).rounded())
+        return "\(Int(day))|\(income ? "in" : "out")|\(cents)"
+    }
+
+    private static func transactionCandidates(in text: String) -> [PDFTransactionCandidate] {
+        let datePattern = #"(\b\d{2}/\d{2}/\d{2}\b)"#
+        let signedAmountPattern = #"(\b\d[\d,]*(?:\.\d{2})\s*[+\-−–—])"#
+        guard let lineRegex = try? NSRegularExpression(pattern: "\(datePattern)(.+?)\(signedAmountPattern)", options: []),
+              let amountRegex = try? NSRegularExpression(pattern: signedAmountPattern) else {
+            return []
+        }
+
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "dd/MM/yy"
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+
+        var candidates: [PDFTransactionCandidate] = []
+        for line in text.components(separatedBy: .newlines) {
+            let normalizedLine = normalizeStatementLine(line)
+            guard !normalizedLine.isEmpty else { continue }
+
+            let range = NSRange(normalizedLine.startIndex..<normalizedLine.endIndex, in: normalizedLine)
+            guard let match = lineRegex.firstMatch(in: normalizedLine, range: range),
+                  match.numberOfRanges >= 4,
+                  let dateRange = Range(match.range(at: 1), in: normalizedLine),
+                  let descriptionRange = Range(match.range(at: 2), in: normalizedLine),
+                  let amountRange = Range(match.range(at: 3), in: normalizedLine),
+                  let date = dateFormatter.date(from: String(normalizedLine[dateRange])),
+                  let signedAmount = signedAmount(from: String(normalizedLine[amountRange])) else {
+                continue
+            }
+
+            let leadingDescription = String(normalizedLine[..<dateRange.lowerBound])
+            let trailingDescription = String(normalizedLine[descriptionRange])
+                .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let leadingNote = leadingDescription
+                .replacingOccurrences(of: "|", with: " ")
+                .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let description = trailingDescription.isEmpty ? leadingNote : trailingDescription
+            let note = description.isEmpty ? normalizedLine : description
+
+            // Require the signed amount match to be from this row, not a statement header/footer.
+            guard amountRegex.firstMatch(in: normalizedLine, range: range) != nil else { continue }
+
+            candidates.append(PDFTransactionCandidate(
+                rawLine: normalizedLine,
+                amount: abs(signedAmount),
+                income: signedAmount > 0,
+                date: date,
+                note: note
+            ))
+        }
+
+        return candidates
+    }
+
+    private static func signedAmount(from raw: String) -> Double? {
+        let normalized = raw
+            .replacingOccurrences(of: "−", with: "-")
+            .replacingOccurrences(of: "–", with: "-")
+            .replacingOccurrences(of: "—", with: "-")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let income = normalized.hasSuffix("+")
+        let expense = normalized.hasSuffix("-")
+        guard income || expense else { return nil }
+
+        let numeric = normalized
+            .dropLast()
+            .replacingOccurrences(of: ",", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let amount = Double(numeric) else { return nil }
+        return income ? amount : -amount
+    }
+
+    private static func normalizeStatementLine(_ line: String) -> String {
+        line
+            .replacingOccurrences(of: "−", with: "-")
+            .replacingOccurrences(of: "–", with: "-")
+            .replacingOccurrences(of: "—", with: "-")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func makeExtractionPages(from attachments: [AttachmentItem]) -> [ExtractionPage] {
+        attachments.flatMap { attachment in
+            let pageTexts = splitPDFTextIntoPages(attachment.sourceText)
+            return attachment.pages.enumerated().map { index, image in
+                ExtractionPage(
+                    image: image,
+                    sourceText: pageTexts.indices.contains(index) ? pageTexts[index] : attachment.sourceText,
+                    label: "\(attachment.label) page \(index + 1)"
+                )
+            }
+        }
+    }
+
+    private static func splitPDFTextIntoPages(_ text: String?) -> [String] {
+        guard let text, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return []
+        }
+
+        let lines = text.components(separatedBy: .newlines)
+        let pageHeaderRegex = try? NSRegularExpression(pattern: #"^Page \d+:"#)
+        var pages: [String] = []
+        var current: [String] = []
+
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            let range = NSRange(trimmed.startIndex..<trimmed.endIndex, in: trimmed)
+            let isPageHeader = pageHeaderRegex?.firstMatch(in: trimmed, range: range) != nil
+
+            if isPageHeader, !current.isEmpty {
+                pages.append(current.joined(separator: "\n"))
+                current = [line]
+            } else {
+                current.append(line)
+            }
+        }
+
+        if !current.isEmpty {
+            pages.append(current.joined(separator: "\n"))
+        }
+
+        return pages.isEmpty ? [text] : pages
+    }
+
+    private static func initialBatchSize(for pageCount: Int) -> Int {
+        pageCount > 1 ? 2 : 1
+    }
+
+    private static func detectedSignedTransactionLines(in text: String) -> [String] {
+        let datePattern = #"\b\d{2}/\d{2}/\d{2}\b"#
+        let signedAmountPattern = #"\b\d[\d,]*(?:\.\d{2})[+\-−–—]\b|\b\d[\d,]*(?:\.\d{2})\s*[+\-−–—]"#
+        guard let dateRegex = try? NSRegularExpression(pattern: datePattern),
+              let amountRegex = try? NSRegularExpression(pattern: signedAmountPattern) else {
+            return []
+        }
+
+        var candidates: [String] = []
+        for line in text.components(separatedBy: .newlines) {
+            let normalizedLine = line
+                .replacingOccurrences(of: "−", with: "-")
+                .replacingOccurrences(of: "–", with: "-")
+                .replacingOccurrences(of: "—", with: "-")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !normalizedLine.isEmpty else { continue }
+
+            let range = NSRange(normalizedLine.startIndex..<normalizedLine.endIndex, in: normalizedLine)
+            let hasDate = dateRegex.firstMatch(in: normalizedLine, range: range) != nil
+            let hasSignedAmount = amountRegex.firstMatch(in: normalizedLine, range: range) != nil
+            guard hasDate && hasSignedAmount else { continue }
+            candidates.append("- \(normalizedLine)")
+        }
+
+        return Array(candidates.prefix(250))
     }
 
     // MARK: - Word-by-word animation
@@ -262,17 +640,25 @@ final class HomeAIAssistantViewModel: ObservableObject {
 
         When the user pastes ANY text or shares ANY image — receipts, screenshots, bank statements, PDFs, WhatsApp messages, invoices — parse ALL financial transactions and log them automatically. Extract dates from the source; do not default to today unless no date is present.
 
+        If "Extracted PDF text evidence" is present, treat it as the highest-priority source for exact amount signs and running balances. Use the image only to recover layout/continuations when the text wraps awkwardly. Never override a PDF text amount like "700.00-" with a visual guess.
+        If "Detected signed transaction lines from PDF text" is present, scan that list first and create one action for every transaction candidate line. Do not stop at page boundaries; a date at the top of a new page is still a real transaction.
+
         Always respond with valid JSON only, exactly:
         {
-          "thinking": "2-4 sentence chain-of-thought: what you see, how you determined income vs expense, which category fits and why",
+          "thinking": "brief chain-of-thought: page count, total transactions found, balance check result",
           "reply": "friendly message confirming what you logged, or answering their question",
           "actions": [
             {
               "type": "create_transaction",
-              "amount": 12.50,
+              "signed_amount": -12.50,
+              "raw_amount_text": "12.50-",
+              "raw_row_text": "2026-03-04 TRANSFER FROM A/C LIM QIU SHI 700.00- 41.33",
+              "raw_debit_text": "",
+              "raw_credit_text": "",
+              "raw_previous_balance_text": "741.33",
+              "raw_balance_text": "41.33",
               "note": "Coffee at Starbucks",
               "category_name": "Food & Drink",
-              "income": false,
               "date": "YYYY-MM-DD",
               "repeat_type": 0,
               "repeat_coefficient": 1
@@ -281,23 +667,79 @@ final class HomeAIAssistantViewModel: ObservableObject {
           "visual": { ... }
         }
 
-        Rules:
-        - thinking: always include — briefly explain your interpretation of the input, the income/expense decision, and category choice. Max 4 sentences.
+        CRITICAL — evidence-first extraction:
+        - For every bank statement / receipt / PDF / image transaction, copy raw evidence fields exactly when visible.
+        - raw_amount_text: exact amount cell text including trailing sign, e.g. "700.00-" or "300.00+".
+        - raw_row_text: exact visible row text around the transaction including date, description, amount, and balance.
+        - raw_debit_text / raw_credit_text: exact value from debit/withdrawal or credit/deposit columns when the statement uses separate columns. Use "" if not present.
+        - raw_previous_balance_text: the running balance before this transaction, if visible/inferable from adjacent row. Use "" if not known.
+        - raw_balance_text: the running balance after this transaction, if visible. Use "" if not present.
+        - The app will use these raw fields to determine income/expense deterministically. Do not omit them for statement/image extraction.
+
+        signed_amount rules:
+        - signed_amount is a number. Negative = expense (money out). Positive = income (money in).
+        - "700.00-" in statement → signed_amount: -700.00
+        - "300.00+" in statement → signed_amount: 300.00
+        - "1,172.00-" in statement → signed_amount: -1172.00
+        - "2,800.00+" in statement → signed_amount: 2800.00
+        - User says "coffee 12" → signed_amount: -12.00 (expense by default)
+        - User says "salary 5000" → signed_amount: 5000.00 (income)
+        - Always use the trailing +/- from the statement amount column to set the sign. Never infer sign from description words.
+
+        MULTI-PAGE STATEMENT EXTRACTION — follow these rules exactly:
+
+        STEP 1 — SCAN EVERY ROW. For each page, read every single row that has an amount value. Do not skip any row. A bank statement with 5 pages may have 50–100+ transactions — log them all.
+
+        STEP 2 — HANDLE PAGE BREAKS. Bank statement pages often split or continue transactions across pages:
+          • The last row on a page may show date + partial description with NO amount yet
+          • The first rows on the next page may show the rest of the description + the amount
+          • The first complete dated row on a new page may belong to the same calendar date as the previous page — include it.
+          • Treat these as ONE transaction. Use the date and amount from whichever page shows them.
+          • Rows at the top of a page with no date/no amount are ALWAYS continuations — never skip them.
+
+        STEP 3 — NEVER DEDUPLICATE. The same merchant name, amount, and even the same date can appear multiple times as separate real transactions. Log every occurrence as its own transaction. Example: three "IBK FUND TFR TO A/C MUHAMMAD AZHAN RIZH* 300.00+" on different or same dates = three separate actions.
+
+        STEP 4 — USE RUNNING BALANCE TO VERIFY. After extracting all rows, check: each transaction should move the running balance by exactly its amount in the correct direction. If the balance jumps unexpectedly, you missed a transaction — go back and find it.
+
+        Other rules:
         - reply: confirm every transaction logged by name and amount, or answer the financial question naturally in English
         - actions: array of create_transaction objects, empty [] if just answering a question
-        - date: "YYYY-MM-DDTHH:mm" if time is visible on the receipt/statement, otherwise "YYYY-MM-DD". Never default to midnight — if time is unknown, omit the time component entirely.
-        - amount: always a positive number regardless of sign in source
-        - Extract ALL transactions from pasted content or images even if many
+        - date: "YYYY-MM-DDTHH:mm" if time is visible on the receipt/statement, otherwise "YYYY-MM-DD". Never default to midnight — if time is unknown, omit the time component entirely. For continuation rows, inherit the date from the row above.
         - repeat_type: 0=one-time (default), 1=daily, 2=weekly, 3=monthly — set when user says "every month", "weekly", "recurring", "subscription", etc.
         - repeat_coefficient: the interval number (e.g. "every 2 weeks" → repeat_type=2, repeat_coefficient=2). Default 1. Omit if not recurring.
 
-        INCOME vs EXPENSE — set income: true or false based on money direction:
-        - income: true → money received: salary, allowance, bonus, refund, cashback, dividend, interest, "CR", "Credit", "credited", transfer IN, top-up received
-        - income: false → money going out: purchase, payment, bill, fee, subscription, withdrawal, "DR", "Debit", "debited", transfer OUT, any spending
-        - In bank statements: Debit / DR column = expense (income: false). Credit / CR column = income (income: true).
-        - Malaysian bank statements (Maybank, RHB, etc.) show the sign AFTER the amount: "170.00+" = credit = income: true. "200.00-" = debit = income: false. This trailing +/- is the definitive signal.
-        - A leading negative sign (-RM) on an amount = expense. A leading positive or no sign = check CR/DR label.
-        - When unsure, default to income: false (expense).
+        SIGNED AMOUNT SIGN — how to determine negative vs positive:
+
+        METHOD A — BALANCE DELTA (use this whenever a running balance column is visible):
+        For each transaction row that has a before-balance and after-balance:
+          signed_amount = balance_after − balance_before
+          If result is negative → expense (money out). If positive → income (money in).
+        Example: balance was 741.33, now 41.33 → 41.33 − 741.33 = −700 → signed_amount: −700
+        Example: balance was 41.33, now 341.33 → 341.33 − 41.33 = +300 → signed_amount: 300
+        This is math — it is always correct regardless of description wording.
+        Use the BEGINNING BALANCE row as the reference for the first transaction.
+
+        METHOD B — TRAILING SIGN (use when no running balance column exists):
+        Amount ending in "+" → positive. Amount ending in "−" → negative.
+        "700.00−" → −700. "300.00+" → 300.
+        Reference suffixes like "MBB CT−" "DUITNOW QR−" are NOT amount signs — ignore them.
+
+        METHOD C — COLUMNS/LABELS (use when no trailing sign):
+        Debit/Withdrawal column → negative. Credit/Deposit column → positive.
+        DR/Debit label → negative. CR/Credit/REFUND label → positive.
+
+        METHOD D — KEYWORDS (last resort, no other signal):
+        Positive: salary, gaji, bonus, allowance, cashback, refund, dividend, interest
+        Negative: purchase, payment, bill, fee, subscription, withdrawal, charge
+
+        Default: negative.
+
+        BALANCE VERIFICATION (always run for bank statements):
+        After extracting all transactions, verify:
+          expected_ending = beginning_balance + sum(positive signed_amounts) + sum(negative signed_amounts)
+          If expected_ending ≠ actual ending balance shown (diff > 0.01):
+            • You missed a transaction or got a sign wrong — find and fix it
+          Always report in reply: "✓ Balance verified RM X → RM Y" or "⚠️ Off by RM Z"
 
         CATEGORY — CRITICAL: category_name MUST be copied verbatim from the lists above. Do NOT invent names.
         - Pick the closest match from the correct list (expense vs income). If no perfect match exists, pick whichever listed category fits best.

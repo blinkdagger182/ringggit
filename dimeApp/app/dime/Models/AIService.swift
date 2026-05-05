@@ -60,6 +60,7 @@ struct AIService {
         systemPrompt: String,
         conversationMessages: [HomeAIMessage],
         images: [Data] = [],
+        sourceText: String = "",
         toolExecutor: ((_ name: String, _ args: [String: Any]) async -> String)? = nil
     ) async throws -> AIResponse {
         let useVision = !images.isEmpty
@@ -78,9 +79,10 @@ struct AIService {
         }
 
         if let lastMsg = conversationMessages.last {
+            let textContent = lastMsg.text + sourceText
             if useVision && lastMsg.role == .user {
                 var contentParts: [[String: Any]] = [
-                    ["type": "text", "text": lastMsg.text]
+                    ["type": "text", "text": textContent]
                 ]
                 for imageData in images {
                     let base64 = imageData.base64EncodedString()
@@ -96,7 +98,7 @@ struct AIService {
             } else {
                 apiMessages.append([
                     "role": lastMsg.role == .user ? "user" : "assistant",
-                    "content": lastMsg.text
+                    "content": textContent
                 ])
             }
         }
@@ -246,11 +248,26 @@ struct AIService {
             dateOnlyFormatter.locale = Locale(identifier: "en_US_POSIX")
 
             for action in actionsArray {
-                guard (action["type"] as? String) == "create_transaction",
-                      let amount = (action["amount"] as? Double) ?? (action["amount"] as? Int).map(Double.init),
-                      let income = action["income"] as? Bool else { continue }
+                guard (action["type"] as? String) == "create_transaction" else { continue }
                 let note = action["note"] as? String ?? ""
                 let categoryName = action["category_name"] as? String ?? ""
+
+                let amount: Double
+                let income: Bool
+                if let resolved = deterministicAmountAndIncome(from: action) {
+                    amount = resolved.amount
+                    income = resolved.income
+                } else if let signed = numericValue(action["signed_amount"]) {
+                    income = signed > 0
+                    amount = abs(signed)
+                } else if let raw = numericValue(action["amount"]),
+                          let aiIncome = action["income"] as? Bool {
+                    // fallback: legacy fields
+                    income = aiIncome
+                    amount = abs(raw)
+                } else {
+                    continue
+                }
 
                 let date: Date
                 if let dateStr = action["date"] as? String {
@@ -328,5 +345,208 @@ struct AIService {
         }
 
         return AIResponse(reply: reply, thinking: thinking, actions: actions, visual: visual)
+    }
+
+    private static func deterministicAmountAndIncome(from action: [String: Any]) -> (amount: Double, income: Bool)? {
+        let rawAmount = stringValue(
+            action["raw_amount_text"]
+                ?? action["raw_amount"]
+                ?? action["amount_text"]
+        )
+        let rawRow = stringValue(
+            action["raw_row_text"]
+                ?? action["row_text"]
+                ?? action["source_row"]
+        )
+
+        let explicitAmount = numericValue(action["amount"])
+            ?? numericValue(action["signed_amount"]).map(abs)
+            ?? parseStatementNumber(rawAmount).map(abs)
+            ?? parseSignedAmountFromRow(rawRow)?.amount
+
+        if let amount = explicitAmount,
+           let income = directionFromRawAmount(rawAmount, matchingAmount: amount)
+            ?? directionFromRawRow(rawRow, matchingAmount: amount)
+            ?? directionFromColumns(action) {
+            return (amount, income)
+        }
+
+        if let amount = explicitAmount,
+           let income = directionFromBalanceDelta(action) {
+            return (amount, income)
+        }
+
+        if let signed = numericValue(action["signed_amount"]) {
+            return (abs(signed), signed > 0)
+        }
+
+        return nil
+    }
+
+    private static func directionFromRawAmount(_ raw: String?, matchingAmount amount: Double) -> Bool? {
+        guard let raw else { return nil }
+        let normalized = normalizeMinus(raw)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .uppercased()
+        guard normalized.rangeOfCharacter(from: .decimalDigits) != nil else { return nil }
+
+        if normalized.hasSuffix("+") { return true }
+        if normalized.hasSuffix("-") { return false }
+        if normalized.hasPrefix("("), normalized.hasSuffix(")") { return false }
+        if normalized.hasSuffix(" DR") || normalized.hasSuffix("DR") { return false }
+        if normalized.hasSuffix(" CR") || normalized.hasSuffix("CR") { return true }
+
+        if let signed = parseSignedAmountFromRow(normalized, matchingAmount: amount) {
+            return signed.income
+        }
+
+        return nil
+    }
+
+    private static func directionFromRawRow(_ raw: String?, matchingAmount amount: Double) -> Bool? {
+        parseSignedAmountFromRow(raw, matchingAmount: amount)?.income
+    }
+
+    private static func directionFromColumns(_ action: [String: Any]) -> Bool? {
+        let debitKeys = ["raw_debit_text", "debit_text", "withdrawal_text", "debit_amount", "withdrawal_amount"]
+        let creditKeys = ["raw_credit_text", "credit_text", "deposit_text", "credit_amount", "deposit_amount"]
+
+        let hasDebit = debitKeys.contains { key in
+            hasMeaningfulValue(action[key])
+        }
+        let hasCredit = creditKeys.contains { key in
+            hasMeaningfulValue(action[key])
+        }
+
+        if hasDebit && !hasCredit { return false }
+        if hasCredit && !hasDebit { return true }
+        return nil
+    }
+
+    private static func directionFromBalanceDelta(_ action: [String: Any]) -> Bool? {
+        let previous = parseStatementNumber(
+            action["raw_previous_balance_text"]
+                ?? action["previous_balance_text"]
+                ?? action["balance_before"]
+                ?? action["previous_balance"]
+        )
+        let current = parseStatementNumber(
+            action["raw_balance_text"]
+                ?? action["balance_text"]
+                ?? action["balance_after"]
+                ?? action["current_balance"]
+        )
+
+        guard let previous, let current else { return nil }
+        let delta = current - previous
+        guard abs(delta) > 0.005 else { return nil }
+        return delta > 0
+    }
+
+    private static func parseSignedAmountFromRow(_ raw: String?, matchingAmount amount: Double? = nil) -> (amount: Double, income: Bool)? {
+        guard let raw else { return nil }
+        let normalized = normalizeMinus(raw)
+        let pattern = #"(?<![A-Za-z0-9])(?:RM|MYR)?\s*\(?\d[\d,]*(?:\.\d{2})?\)?\s*[+-]|(?<![A-Za-z0-9])(?:RM|MYR)?\s*\(\s*\d[\d,]*(?:\.\d{2})?\s*\)"#
+
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
+            return nil
+        }
+
+        let nsRange = NSRange(normalized.startIndex..<normalized.endIndex, in: normalized)
+        let matches = regex.matches(in: normalized, range: nsRange)
+        let candidates: [(amount: Double, income: Bool)] = matches.compactMap { match in
+            guard let range = Range(match.range, in: normalized) else { return nil }
+            let token = String(normalized[range])
+            guard let amount = parseStatementNumber(token)?.magnitude else { return nil }
+
+            let trimmed = token.trimmingCharacters(in: .whitespacesAndNewlines)
+            let income = trimmed.hasSuffix("+") ? true : false
+            return (amount, income)
+        }
+
+        guard !candidates.isEmpty else { return nil }
+
+        if let amount {
+            let tolerance = max(0.01, amount * 0.0001)
+            if let exact = candidates.first(where: { abs($0.amount - amount) <= tolerance }) {
+                return exact
+            }
+        }
+
+        return candidates.last
+    }
+
+    private static func parseStatementNumber(_ value: Any?) -> Double? {
+        if let value = numericValue(value) {
+            return value
+        }
+
+        guard var raw = stringValue(value) else { return nil }
+        raw = normalizeMinus(raw)
+            .uppercased()
+            .replacingOccurrences(of: "MYR", with: "")
+            .replacingOccurrences(of: "RM", with: "")
+            .replacingOccurrences(of: ",", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let isNegative = raw.hasSuffix("-") || raw.hasSuffix("DR") || (raw.hasPrefix("(") && raw.hasSuffix(")"))
+        raw = raw
+            .replacingOccurrences(of: "+", with: "")
+            .replacingOccurrences(of: "-", with: "")
+            .replacingOccurrences(of: "CR", with: "")
+            .replacingOccurrences(of: "DR", with: "")
+            .replacingOccurrences(of: "(", with: "")
+            .replacingOccurrences(of: ")", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard let number = Double(raw) else { return nil }
+        return isNegative ? -number : number
+    }
+
+    private static func numericValue(_ value: Any?) -> Double? {
+        switch value {
+        case let double as Double:
+            return double
+        case let int as Int:
+            return Double(int)
+        case let number as NSNumber:
+            return number.doubleValue
+        case let string as String:
+            return Double(string.replacingOccurrences(of: ",", with: ""))
+        default:
+            return nil
+        }
+    }
+
+    private static func stringValue(_ value: Any?) -> String? {
+        switch value {
+        case let string as String:
+            let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? nil : trimmed
+        case let number as NSNumber:
+            return number.stringValue
+        default:
+            return nil
+        }
+    }
+
+    private static func hasMeaningfulValue(_ value: Any?) -> Bool {
+        if let number = numericValue(value) {
+            return abs(number) > 0.005
+        }
+        if let string = stringValue(value) {
+            let cleaned = string
+                .replacingOccurrences(of: "-", with: "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return !cleaned.isEmpty
+        }
+        return false
+    }
+
+    private static func normalizeMinus(_ value: String) -> String {
+        value
+            .replacingOccurrences(of: "−", with: "-")
+            .replacingOccurrences(of: "–", with: "-")
+            .replacingOccurrences(of: "—", with: "-")
     }
 }
