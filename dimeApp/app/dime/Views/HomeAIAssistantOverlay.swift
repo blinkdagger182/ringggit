@@ -334,6 +334,10 @@ VStack(spacing: 0) {
                             .shadow(color: Color.black.opacity(0.06), radius: 8, y: 2)
                     )
 
+                    if let thinking = message.thinking {
+                        ThinkingDisclosure(thinking: thinking)
+                    }
+
                     if let visual = message.visual {
                         AIVisualCardView(visual: visual)
                     }
@@ -844,6 +848,70 @@ private extension UIFont {
             return systemFont
         }
         return UIFont(descriptor: descriptor, size: size)
+    }
+}
+
+private struct ThinkingDisclosure: View {
+    let thinking: String
+    @State private var isExpanded = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.spring(response: 0.28, dampingFraction: 0.8)) {
+                    isExpanded.toggle()
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "brain")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [Color(hex: "4ECDC4"), Color(hex: "9BAAF8")],
+                                startPoint: .leading, endPoint: .trailing
+                            )
+                        )
+                    Text("Reasoning")
+                        .font(.system(.caption, design: .rounded).weight(.semibold))
+                        .foregroundColor(Color(.secondaryLabel))
+                    Spacer(minLength: 0)
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(Color(.tertiaryLabel))
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+            }
+            .buttonStyle(.plain)
+
+            if isExpanded {
+                Rectangle()
+                    .fill(Color(.separator).opacity(0.4))
+                    .frame(height: 1)
+                    .padding(.horizontal, 10)
+
+                Text(thinking)
+                    .font(.system(.caption, design: .rounded))
+                    .foregroundColor(Color(.secondaryLabel))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(10)
+            }
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color(.tertiarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(
+                            LinearGradient(
+                                colors: [Color(hex: "4ECDC4").opacity(0.35), Color(hex: "9BAAF8").opacity(0.35)],
+                                startPoint: .leading, endPoint: .trailing
+                            ),
+                            lineWidth: 1
+                        )
+                )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 

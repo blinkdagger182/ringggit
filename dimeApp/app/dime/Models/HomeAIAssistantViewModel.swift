@@ -127,7 +127,8 @@ final class HomeAIAssistantViewModel: ObservableObject {
 
     private func animateReply(_ response: AIResponse) async {
         let now = Date()
-        messages.append(HomeAIMessage(role: .assistant, text: "", date: now))
+        // Thinking is shown immediately; reply animates word by word
+        messages.append(HomeAIMessage(role: .assistant, text: "", date: now, thinking: response.thinking))
         isResponding = false
         isAnimatingReply = true
 
@@ -139,13 +140,13 @@ final class HomeAIAssistantViewModel: ObservableObject {
             if i > 0 { built += " " }
             built += word
             if let idx = messages.indices.last {
-                messages[idx] = HomeAIMessage(role: .assistant, text: built, date: now)
+                messages[idx] = HomeAIMessage(role: .assistant, text: built, date: now, thinking: response.thinking)
             }
             try? await Task.sleep(nanoseconds: 28_000_000)
         }
 
         if let idx = messages.indices.last {
-            messages[idx] = HomeAIMessage(role: .assistant, text: built, date: now, visual: response.visual)
+            messages[idx] = HomeAIMessage(role: .assistant, text: built, date: now, visual: response.visual, thinking: response.thinking)
         }
         isAnimatingReply = false
     }
@@ -240,6 +241,7 @@ final class HomeAIAssistantViewModel: ObservableObject {
 
         Always respond with valid JSON only, exactly:
         {
+          "thinking": "2-4 sentence chain-of-thought: what you see, how you determined income vs expense, which category fits and why",
           "reply": "friendly message confirming what you logged, or answering their question",
           "actions": [
             {
@@ -257,16 +259,29 @@ final class HomeAIAssistantViewModel: ObservableObject {
         }
 
         Rules:
+        - thinking: always include — briefly explain your interpretation of the input, the income/expense decision, and category choice. Max 4 sentences.
         - reply: confirm every transaction logged by name and amount, or answer the financial question naturally in English
         - actions: array of create_transaction objects, empty [] if just answering a question
-        - category_name: must match one of the available category names exactly (use closest match)
-        - income: false for expenses/purchases, true for salary/transfers received/cashback
         - date: "YYYY-MM-DDTHH:mm" if time is visible on the receipt/statement, otherwise "YYYY-MM-DD". Never default to midnight — if time is unknown, omit the time component entirely.
-        - amount: always a positive number
+        - amount: always a positive number regardless of sign in source
         - Extract ALL transactions from pasted content or images even if many
-        - If a category is unclear, pick the closest available one
         - repeat_type: 0=one-time (default), 1=daily, 2=weekly, 3=monthly — set when user says "every month", "weekly", "recurring", "subscription", etc.
         - repeat_coefficient: the interval number (e.g. "every 2 weeks" → repeat_type=2, repeat_coefficient=2). Default 1. Omit if not recurring.
+
+        INCOME vs EXPENSE — set income: true or false based on money direction:
+        - income: true → money received: salary, allowance, bonus, refund, cashback, dividend, interest, "CR", "Credit", "credited", transfer IN, top-up received
+        - income: false → money going out: purchase, payment, bill, fee, subscription, withdrawal, "DR", "Debit", "debited", transfer OUT, any spending
+        - In bank statements: Debit / DR column = expense (income: false). Credit / CR column = income (income: true).
+        - Malaysian bank statements (Maybank, RHB, etc.) show the sign AFTER the amount: "170.00+" = credit = income: true. "200.00-" = debit = income: false. This trailing +/- is the definitive signal.
+        - A leading negative sign (-RM) on an amount = expense. A leading positive or no sign = check CR/DR label.
+        - When unsure, default to income: false (expense).
+
+        CATEGORY — pick the best match from the available list above:
+        - category_name must be the plain text name only — NO emoji, NO "(expense)"/"(income)" suffix. E.g. if the list shows "🍔 Food & Drink (expense)", return category_name: "Food & Drink"
+        - Analyze merchant name, description, and keywords to infer the right category
+        - Common mappings: Grab/Uber/MRT/LRT/bus/Touch'n Go/petrol/Shell/BHP → Transport; McDonald's/KFC/restaurant/cafe/food/Starbucks/mamak → Food; Netflix/Spotify/cinema/games → Entertainment; clinic/pharmacy/hospital/medicine → Health; salary/gaji/allowance/bonus → Income category; electricity/water/Unifi/telco/phone bill → Utilities; supermarket/groceries/Tesco/Giant/Mydin → Groceries
+        - Always pick from the available categories list — never invent a new name
+        - If truly no match, use the closest available category
 
         Visual card rules — include "visual" when it adds value:
 
@@ -322,10 +337,18 @@ final class HomeAIAssistantViewModel: ObservableObject {
     }
 
     private func matchCategory(name: String, income: Bool, from categories: [Category]) -> Category? {
-        let lower = name.lowercased()
-        return categories.first { $0.name?.lowercased() == lower }
-            ?? categories.first { $0.name?.lowercased().contains(lower) == true }
-            ?? categories.first { lower.contains($0.name?.lowercased() ?? "") && !($0.name?.isEmpty ?? true) }
+        // Strip emoji and suffix like "(expense)" that the AI might accidentally include
+        let stripped = name
+            .replacingOccurrences(of: "\\(.*?\\)", with: "", options: .regularExpression)
+            .replacingOccurrences(of: "[^\\p{L}\\p{N} &'/-]", with: "", options: .regularExpression)
+            .trimmingCharacters(in: .whitespaces)
+            .lowercased()
+
+        func n(_ cat: Category) -> String { cat.name?.lowercased() ?? "" }
+
+        return categories.first { n($0) == stripped }
+            ?? categories.first { n($0).contains(stripped) && !stripped.isEmpty }
+            ?? categories.first { stripped.contains(n($0)) && !n($0).isEmpty }
             ?? categories.first { $0.income == income }
     }
 }

@@ -18,13 +18,15 @@ struct HomeAIMessage: Identifiable {
     let date: Date
     let attachments: [AttachmentItem]
     let visual: AIVisualCard?
+    let thinking: String?
 
-    init(role: Role, text: String, date: Date, attachments: [AttachmentItem] = [], visual: AIVisualCard? = nil) {
+    init(role: Role, text: String, date: Date, attachments: [AttachmentItem] = [], visual: AIVisualCard? = nil, thinking: String? = nil) {
         self.role = role
         self.text = text
         self.date = date
         self.attachments = attachments
         self.visual = visual
+        self.thinking = thinking
     }
 }
 

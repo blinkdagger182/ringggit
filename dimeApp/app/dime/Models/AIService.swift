@@ -32,6 +32,7 @@ enum AIVisualCard {
 
 struct AIResponse {
     let reply: String
+    let thinking: String?
     let actions: [AITransactionAction]
     let visual: AIVisualCard?
 }
@@ -226,6 +227,7 @@ struct AIService {
         }
 
         let reply = json["reply"] as? String ?? "Done."
+        let thinking = json["thinking"] as? String
         var actions: [AITransactionAction] = []
 
         if let actionsArray = json["actions"] as? [[String: Any]] {
@@ -319,6 +321,6 @@ struct AIService {
             }
         }
 
-        return AIResponse(reply: reply, actions: actions, visual: visual)
+        return AIResponse(reply: reply, thinking: thinking, actions: actions, visual: visual)
     }
 }
