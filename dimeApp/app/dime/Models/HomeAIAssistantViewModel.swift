@@ -10,8 +10,22 @@ import UIKit
 
 struct AttachmentItem: Identifiable {
     let id = UUID()
-    let image: UIImage
+    let thumbnail: UIImage  // shown in UI
+    let pages: [UIImage]    // all images sent to API (1 for photos, N for PDF pages)
     let label: String
+
+    init(image: UIImage, label: String) {
+        self.thumbnail = image
+        self.pages = [image]
+        self.label = label
+    }
+
+    init(pdfPages: [UIImage], filename: String) {
+        self.thumbnail = pdfPages.first ?? UIImage()
+        self.pages = pdfPages
+        let count = pdfPages.count
+        self.label = "\(filename) · \(count) \(count == 1 ? "page" : "pages")"
+    }
 }
 
 @MainActor
@@ -67,17 +81,18 @@ final class HomeAIAssistantViewModel: ObservableObject {
 
         let messageText = trimmed.isEmpty ? "Please extract all transactions from the attached image(s)." : trimmed
         let capturedAttachments = pendingAttachments
+        let thumbnails = capturedAttachments.map { $0.thumbnail }
 
-        appendUserMessage(messageText)
+        appendUserMessage(messageText, thumbnails: thumbnails)
         draftMessage = ""
         pendingAttachments = []
         isResponding = true
 
         Task {
             do {
-                let imageDataList = capturedAttachments.compactMap {
-                    $0.image.jpegData(compressionQuality: 0.82)
-                }
+                let imageDataList = capturedAttachments
+                    .flatMap { $0.pages }
+                    .compactMap { $0.jpegData(compressionQuality: 0.65) }
                 let systemPrompt = buildSystemPrompt()
                 let response = try await AIService.send(
                     systemPrompt: systemPrompt,
@@ -88,15 +103,17 @@ final class HomeAIAssistantViewModel: ObservableObject {
                 messages.append(HomeAIMessage(role: .assistant, text: response.reply, date: .now))
             } catch AIServiceError.apiError(let msg) {
                 messages.append(HomeAIMessage(role: .assistant, text: "API error: \(msg)", date: .now))
+            } catch let urlError as URLError where urlError.code == .timedOut {
+                messages.append(HomeAIMessage(role: .assistant, text: "Request timed out — the file is large. Try a shorter document or fewer pages.", date: .now))
             } catch {
-                messages.append(HomeAIMessage(role: .assistant, text: "Couldn't connect. Check your API key and internet.", date: .now))
+                messages.append(HomeAIMessage(role: .assistant, text: "Couldn't connect. Check your API key and internet connection.", date: .now))
             }
             isResponding = false
         }
     }
 
-    private func appendUserMessage(_ text: String) {
-        messages.append(HomeAIMessage(role: .user, text: text, date: .now))
+    private func appendUserMessage(_ text: String, thumbnails: [UIImage] = []) {
+        messages.append(HomeAIMessage(role: .user, text: text, date: .now, attachmentThumbnails: thumbnails))
     }
 
     // MARK: - AI Context

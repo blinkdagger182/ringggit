@@ -144,11 +144,9 @@ struct HomeAIAttachmentSheet: View {
             }
         }
         .sheet(isPresented: $showDocumentPicker) {
-            PDFDocumentPickerView { images in
-                for (i, img) in images.enumerated() {
-                    let label = images.count == 1 ? "PDF" : "PDF p.\(i + 1)"
-                    attachments.append(AttachmentItem(image: img, label: label))
-                }
+            PDFDocumentPickerView { pages, filename in
+                guard !pages.isEmpty else { return }
+                attachments.append(AttachmentItem(pdfPages: pages, filename: filename))
                 dismiss()
             }
         }
@@ -351,7 +349,7 @@ struct FullPhotoPickerView: UIViewControllerRepresentable {
 // MARK: - PDF Document Picker
 
 struct PDFDocumentPickerView: UIViewControllerRepresentable {
-    let onComplete: ([UIImage]) -> Void
+    let onComplete: ([UIImage], String) -> Void
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: [UTType.pdf])
@@ -365,27 +363,29 @@ struct PDFDocumentPickerView: UIViewControllerRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator(onComplete: onComplete) }
 
     final class Coordinator: NSObject, UIDocumentPickerDelegate {
-        let onComplete: ([UIImage]) -> Void
-        init(onComplete: @escaping ([UIImage]) -> Void) { self.onComplete = onComplete }
+        let onComplete: ([UIImage], String) -> Void
+        init(onComplete: @escaping ([UIImage], String) -> Void) { self.onComplete = onComplete }
 
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
             guard let url = urls.first else { return }
             _ = url.startAccessingSecurityScopedResource()
             defer { url.stopAccessingSecurityScopedResource() }
 
+            let filename = url.deletingPathExtension().lastPathComponent
             let images = renderPDFPages(url: url)
-            DispatchQueue.main.async { self.onComplete(images) }
+            DispatchQueue.main.async { self.onComplete(images, filename) }
         }
 
         private func renderPDFPages(url: URL) -> [UIImage] {
             guard let document = PDFDocument(url: url) else { return [] }
             var images: [UIImage] = []
-            let pageCount = min(document.pageCount, 12)
+            let pageCount = min(document.pageCount, 10)
 
             for i in 0..<pageCount {
                 guard let page = document.page(at: i) else { continue }
                 let mediaRect = page.bounds(for: .mediaBox)
-                let scale: CGFloat = min(1600 / mediaRect.width, 2200 / mediaRect.height)
+                // 1000px wide — sufficient for text, keeps payload small
+                let scale: CGFloat = min(1000 / mediaRect.width, 1400 / mediaRect.height)
                 let targetSize = CGSize(
                     width: mediaRect.width * scale,
                     height: mediaRect.height * scale

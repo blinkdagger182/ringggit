@@ -298,15 +298,34 @@ VStack(spacing: 0) {
             } else {
                 Spacer(minLength: 42)
 
-                Text(message.text)
-                    .font(.system(.body, design: .rounded).weight(.medium))
-                    .foregroundColor(.white.opacity(0.94))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 13)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(Color(hex: "1A1A1A"))
-                    )
+                VStack(alignment: .trailing, spacing: 6) {
+                    if !message.attachmentThumbnails.isEmpty {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 6) {
+                                ForEach(message.attachmentThumbnails.indices, id: \.self) { i in
+                                    Image(uiImage: message.attachmentThumbnails[i])
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 120, height: 90)
+                                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                }
+                            }
+                        }
+                        .frame(maxWidth: 260)
+                    }
+
+                    if !message.text.isEmpty && message.text != "Please extract all transactions from the attached image(s)." {
+                        Text(message.text)
+                            .font(.system(.body, design: .rounded).weight(.medium))
+                            .foregroundColor(.white.opacity(0.94))
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 13)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .fill(Color(hex: "1A1A1A"))
+                            )
+                    }
+                }
             }
         }
     }
@@ -372,11 +391,24 @@ VStack(spacing: 0) {
             HStack(spacing: 8) {
                 ForEach(viewModel.pendingAttachments) { item in
                     ZStack(alignment: .topTrailing) {
-                        Image(uiImage: item.image)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 64, height: 64)
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        ZStack(alignment: .bottomLeading) {
+                            Image(uiImage: item.thumbnail)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 64, height: 64)
+                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+                            if item.pages.count > 1 {
+                                Text(item.label.components(separatedBy: "·").last?.trimmingCharacters(in: .whitespaces) ?? "")
+                                    .font(.system(size: 9, weight: .semibold, design: .rounded))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 5)
+                                    .padding(.vertical, 2)
+                                    .background(Color.black.opacity(0.55))
+                                    .clipShape(Capsule())
+                                    .padding(4)
+                            }
+                        }
 
                         Button {
                             viewModel.removeAttachment(id: item.id)

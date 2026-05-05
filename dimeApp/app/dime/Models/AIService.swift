@@ -83,7 +83,7 @@ struct AIService {
         request.setValue("Bearer \(AIConfig.openAIKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        request.timeoutInterval = 60
+        request.timeoutInterval = 120
 
         let (data, response): (Data, URLResponse) = try await URLSession.shared.data(for: request)
 
