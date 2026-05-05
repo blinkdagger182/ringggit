@@ -42,6 +42,8 @@ struct AITransactionAction {
     let categoryName: String
     let income: Bool
     let date: Date
+    let repeatType: Int        // 0=none 1=daily 2=weekly 3=monthly
+    let repeatCoefficient: Int // interval (e.g. every 2 weeks = type 2, coeff 2)
 }
 
 enum AIServiceError: Error {
@@ -258,12 +260,17 @@ struct AIService {
                     date = .now
                 }
 
+                let repeatType = (action["repeat_type"] as? Int) ?? 0
+                let repeatCoefficient = max(1, (action["repeat_coefficient"] as? Int) ?? 1)
+
                 actions.append(AITransactionAction(
                     amount: abs(amount),
                     note: note,
                     categoryName: categoryName,
                     income: income,
-                    date: date
+                    date: date,
+                    repeatType: repeatType,
+                    repeatCoefficient: repeatCoefficient
                 ))
             }
         }

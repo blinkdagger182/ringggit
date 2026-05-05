@@ -248,7 +248,9 @@ final class HomeAIAssistantViewModel: ObservableObject {
               "note": "Coffee at Starbucks",
               "category_name": "Food & Drink",
               "income": false,
-              "date": "YYYY-MM-DD"
+              "date": "YYYY-MM-DD",
+              "repeat_type": 0,
+              "repeat_coefficient": 1
             }
           ],
           "visual": { ... }
@@ -263,6 +265,8 @@ final class HomeAIAssistantViewModel: ObservableObject {
         - amount: always a positive number
         - Extract ALL transactions from pasted content or images even if many
         - If a category is unclear, pick the closest available one
+        - repeat_type: 0=one-time (default), 1=daily, 2=weekly, 3=monthly — set when user says "every month", "weekly", "recurring", "subscription", etc.
+        - repeat_coefficient: the interval number (e.g. "every 2 weeks" → repeat_type=2, repeat_coefficient=2). Default 1. Omit if not recurring.
 
         Visual card rules — include "visual" when it adds value:
 
@@ -310,8 +314,8 @@ final class HomeAIAssistantViewModel: ObservableObject {
                 income: action.income,
                 amount: action.amount,
                 date: action.date,
-                repeatType: 0,
-                repeatCoefficient: 1,
+                repeatType: action.repeatType,
+                repeatCoefficient: action.repeatCoefficient,
                 delay: false
             )
         }
