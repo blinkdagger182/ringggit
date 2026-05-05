@@ -8,12 +8,19 @@ import Foundation
 import SwiftUI
 import UIKit
 
+struct AttachmentItem: Identifiable {
+    let id = UUID()
+    let image: UIImage
+    let label: String
+}
+
 @MainActor
 final class HomeAIAssistantViewModel: ObservableObject {
     @Published var isPresented = false
     @Published var draftMessage = ""
     @Published private(set) var messages: [HomeAIMessage] = []
     @Published private(set) var isResponding = false
+    @Published var pendingAttachments: [AttachmentItem] = []
 
     var dataController: DataController?
 
@@ -26,6 +33,10 @@ final class HomeAIAssistantViewModel: ObservableObject {
 
     var quickHint: String {
         messages.isEmpty ? "Swipe down to open your finance assistant" : "Continue your last finance question"
+    }
+
+    var hasContent: Bool {
+        !draftMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !pendingAttachments.isEmpty
     }
 
     func expand() {
@@ -41,6 +52,10 @@ final class HomeAIAssistantViewModel: ObservableObject {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }
 
+    func removeAttachment(id: UUID) {
+        pendingAttachments.removeAll { $0.id == id }
+    }
+
     func triggerQuickAction(_ quickAction: HomeAIQuickAction) {
         draftMessage = quickAction.prompt
         sendDraftMessage()
@@ -48,18 +63,26 @@ final class HomeAIAssistantViewModel: ObservableObject {
 
     func sendDraftMessage() {
         let trimmed = draftMessage.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, !isResponding else { return }
+        guard !trimmed.isEmpty || !pendingAttachments.isEmpty, !isResponding else { return }
 
-        appendUserMessage(trimmed)
+        let messageText = trimmed.isEmpty ? "Please extract all transactions from the attached image(s)." : trimmed
+        let capturedAttachments = pendingAttachments
+
+        appendUserMessage(messageText)
         draftMessage = ""
+        pendingAttachments = []
         isResponding = true
 
         Task {
             do {
+                let imageDataList = capturedAttachments.compactMap {
+                    $0.image.jpegData(compressionQuality: 0.82)
+                }
                 let systemPrompt = buildSystemPrompt()
                 let response = try await AIService.send(
                     systemPrompt: systemPrompt,
-                    conversationMessages: messages
+                    conversationMessages: messages,
+                    images: imageDataList
                 )
                 executeActions(response.actions)
                 messages.append(HomeAIMessage(role: .assistant, text: response.reply, date: .now))
@@ -113,13 +136,13 @@ final class HomeAIAssistantViewModel: ObservableObject {
         let dateStr = DateFormatter.localizedString(from: .now, dateStyle: .full, timeStyle: .none)
 
         return """
-        You are Dime Nova, a smart financial assistant inside the Dime expense tracking app (Malaysia, currency MYR / RM).
+        You are Renvo AI, a smart financial assistant inside the Dime expense tracking app (Malaysia, currency MYR / RM).
 
         Today: \(dateStr)
         Available categories: \(categoriesText)
         \(spendingSummary)
 
-        When the user pastes ANY text — receipts, WhatsApp messages, bank SMS, invoices, descriptions — parse ALL financial transactions and log them automatically.
+        When the user pastes ANY text or shares ANY image — receipts, screenshots, bank statements, PDFs rendered as images, WhatsApp messages, invoices — parse ALL financial transactions and log them automatically. Extract dates from the source material; do not default to today unless no date is present.
 
         Always respond with valid JSON only, exactly:
         {
@@ -141,9 +164,9 @@ final class HomeAIAssistantViewModel: ObservableObject {
         - actions: array of create_transaction objects, empty [] if just answering a question
         - category_name: must match one of the available category names exactly (use closest match)
         - income: false for expenses/purchases, true for salary/transfers received/cashback
-        - date: YYYY-MM-DD format, default to today if not specified
+        - date: YYYY-MM-DD format — extract from receipt/statement if present, otherwise use today
         - amount: always a positive number
-        - Extract ALL transactions from pasted content even if many
+        - Extract ALL transactions from pasted content or images even if many
         - If a category is unclear, pick the closest available one
         """
     }

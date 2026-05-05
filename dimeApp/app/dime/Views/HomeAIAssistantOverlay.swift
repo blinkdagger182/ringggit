@@ -23,6 +23,7 @@ struct HomeAIAssistantOverlay: View {
     @State private var composerFocused = false
     @State private var composerFocusRequestID = 0
     @State private var chatScrollRequestID = 0
+    @State private var showAttachmentSheet = false
 
     var body: some View {
         GeometryReader { proxy in
@@ -54,8 +55,7 @@ VStack(spacing: 0) {
                 }
                 .frame(width: proxy.size.width, height: proxy.size.height, alignment: .top)
 
-                composer
-                    .padding(.horizontal, 20)
+                composerSection
                     .padding(.bottom, activeComposerBottomPadding)
                     .opacity(revealProgress)
                     .offset(y: (1 - revealProgress) * 20 - keyboardOverlap)
@@ -89,6 +89,22 @@ VStack(spacing: 0) {
                     guard isExpanded else { return }
                     focusComposer()
                 }
+            }
+        }
+        .sheet(isPresented: $showAttachmentSheet) {
+            let sheet = HomeAIAttachmentSheet(
+                attachments: $viewModel.pendingAttachments,
+                onQuickPrompt: { prompt in
+                    viewModel.draftMessage = prompt
+                    viewModel.sendDraftMessage()
+                }
+            )
+            if #available(iOS 16.0, *) {
+                sheet
+                    .presentationDetents([.medium])
+                    .presentationDragIndicator(.hidden)
+            } else {
+                sheet
             }
         }
     }
@@ -323,8 +339,78 @@ VStack(spacing: 0) {
         }
     }
 
+    private var composerSection: some View {
+        VStack(spacing: 8) {
+            if !viewModel.pendingAttachments.isEmpty {
+                attachmentStrip
+                    .padding(.horizontal, 20)
+            }
+
+            HStack(alignment: .center, spacing: 8) {
+                if keyboardHeightHelper.keyboardHeight > 0 {
+                    Button { showAttachmentSheet = true } label: {
+                        ZStack {
+                            Circle()
+                                .fill(Color(hex: "1A1A1A"))
+                                .frame(width: 50, height: 50)
+                            Image(systemName: "plus")
+                                .font(.system(size: 20, weight: .medium))
+                                .foregroundColor(.white.opacity(0.65))
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                composer
+            }
+            .padding(.horizontal, 20)
+        }
+    }
+
+    private var attachmentStrip: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(viewModel.pendingAttachments) { item in
+                    ZStack(alignment: .topTrailing) {
+                        Image(uiImage: item.image)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 64, height: 64)
+                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+                        Button {
+                            viewModel.removeAttachment(id: item.id)
+                        } label: {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.black.opacity(0.65))
+                                    .frame(width: 20, height: 20)
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundColor(.white)
+                            }
+                            .padding(3)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+        .frame(height: 70)
+    }
+
     private var composer: some View {
-        HStack(alignment: .center, spacing: 10) {
+        HStack(alignment: .center, spacing: 12) {
+            if keyboardHeightHelper.keyboardHeight == 0 {
+                Button { showAttachmentSheet = true } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundColor(.white.opacity(0.6))
+                        .frame(width: 28, height: 28)
+                }
+                .buttonStyle(.plain)
+            }
+
             HomeAIComposerTextField(
                 text: $viewModel.draftMessage,
                 isFocused: composerFocusBinding,
@@ -333,6 +419,15 @@ VStack(spacing: 0) {
                 onSubmit: sendComposerMessage
             )
             .frame(maxWidth: .infinity, minHeight: 24, maxHeight: 24, alignment: .leading)
+
+            if viewModel.hasContent {
+                Button { sendComposerMessage() } label: {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.system(size: 30))
+                        .foregroundColor(.white)
+                }
+                .buttonStyle(.plain)
+            }
         }
         .frame(height: 56)
         .padding(.horizontal, 18)

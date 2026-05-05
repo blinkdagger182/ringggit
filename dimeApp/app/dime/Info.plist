@@ -61,6 +61,8 @@
 			<string>dimeapp://newExpense</string>
 		</dict>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Renvo AI reads your photos and receipts to automatically log transactions.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

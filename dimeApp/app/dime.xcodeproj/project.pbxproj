@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		04A8E059AA45012A1B4DE5A7 /* HomeAIAttachmentSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44B152FB18238AB615708622 /* HomeAIAttachmentSheet.swift */; };
 		1D1E777C707D5144EFFF83B1 /* AIConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C58E9A9574F6F65BFAAD177 /* AIConfig.swift */; };
 		37DF5605B4BEA2CBC2061303 /* AIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D798336B86A8F793296E0DBD /* AIService.swift */; };
 		530C89D62A793B6C00B5028D /* ShortcutsEntities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 530C89D52A793B6C00B5028D /* ShortcutsEntities.swift */; };
@@ -219,6 +220,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		44B152FB18238AB615708622 /* HomeAIAttachmentSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeAIAttachmentSheet.swift; sourceTree = "<group>"; };
 		530C89D52A793B6C00B5028D /* ShortcutsEntities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutsEntities.swift; sourceTree = "<group>"; };
 		530C9DFC28ACE14A0038535F /* BudgetWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetWidget.swift; sourceTree = "<group>"; };
 		5311A22E29F04EF300A5BE20 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.intentdefinition; name = Base; path = Base.lproj/WidgetConfiguration.intentdefinition; sourceTree = "<group>"; };
@@ -543,6 +545,7 @@
 				532C58BB2A629C3900DA2C81 /* NewBudgetView.swift */,
 				5327D2D5287C6B5E00F76ADF /* CustomTabBar.swift */,
 				5358E9162AC86DA1003E8CA9 /* SingleTransactionPhotoView.swift */,
+				44B152FB18238AB615708622 /* HomeAIAttachmentSheet.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -1031,6 +1034,7 @@
 				53A839BD28D35738006F227C /* SKProduct-LocalizedPrice.swift in Sources */,
 				1D1E777C707D5144EFFF83B1 /* AIConfig.swift in Sources */,
 				37DF5605B4BEA2CBC2061303 /* AIService.swift in Sources */,
+				04A8E059AA45012A1B4DE5A7 /* HomeAIAttachmentSheet.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

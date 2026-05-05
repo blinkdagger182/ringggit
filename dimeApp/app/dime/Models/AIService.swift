@@ -25,16 +25,54 @@ enum AIServiceError: Error {
 }
 
 struct AIService {
-    static func send(systemPrompt: String, conversationMessages: [HomeAIMessage]) async throws -> AIResponse {
-        var messages: [[String: String]] = [
+    static func send(
+        systemPrompt: String,
+        conversationMessages: [HomeAIMessage],
+        images: [Data] = []
+    ) async throws -> AIResponse {
+        let useVision = !images.isEmpty
+        let model = useVision ? AIConfig.visionModel : AIConfig.model
+
+        var messages: [[String: Any]] = [
             ["role": "system", "content": systemPrompt]
         ]
-        for msg in conversationMessages {
-            messages.append(["role": msg.role == .user ? "user" : "assistant", "content": msg.text])
+
+        // History — all but the last user message
+        let historyMessages = conversationMessages.dropLast()
+        for msg in historyMessages {
+            messages.append([
+                "role": msg.role == .user ? "user" : "assistant",
+                "content": msg.text
+            ])
+        }
+
+        // Last user message — attach images if present
+        if let lastMsg = conversationMessages.last {
+            if useVision && lastMsg.role == .user {
+                var contentParts: [[String: Any]] = [
+                    ["type": "text", "text": lastMsg.text]
+                ]
+                for imageData in images {
+                    let base64 = imageData.base64EncodedString()
+                    contentParts.append([
+                        "type": "image_url",
+                        "image_url": [
+                            "url": "data:image/jpeg;base64,\(base64)",
+                            "detail": "high"
+                        ]
+                    ])
+                }
+                messages.append(["role": "user", "content": contentParts])
+            } else {
+                messages.append([
+                    "role": lastMsg.role == .user ? "user" : "assistant",
+                    "content": lastMsg.text
+                ])
+            }
         }
 
         let body: [String: Any] = [
-            "model": AIConfig.model,
+            "model": model,
             "messages": messages,
             "response_format": ["type": "json_object"],
             "temperature": 0.1
@@ -45,7 +83,7 @@ struct AIService {
         request.setValue("Bearer \(AIConfig.openAIKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        request.timeoutInterval = 30
+        request.timeoutInterval = 60
 
         let (data, response): (Data, URLResponse) = try await URLSession.shared.data(for: request)
 
