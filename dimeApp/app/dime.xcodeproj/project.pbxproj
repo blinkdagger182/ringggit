@@ -157,6 +157,7 @@
 		5EA1A0052E0A000100ABCD01 /* HomeAIAssistantViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA1A0042E0A000100ABCD01 /* HomeAIAssistantViewModel.swift */; };
 		5EA1A0072E0A000100ABCD01 /* HomeAIAssistantBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA1A0062E0A000100ABCD01 /* HomeAIAssistantBar.swift */; };
 		5EA1A0092E0A000100ABCD01 /* HomeAIAssistantOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA1A0082E0A000100ABCD01 /* HomeAIAssistantOverlay.swift */; };
+		5EA1A00B2E0A000100ABCD01 /* HomeAIVisualCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA1A00A2E0A000100ABCD01 /* HomeAIVisualCards.swift */; };
 		AE5B3D792AEE99E000AB364E /* NumberPad.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE5B3D782AEE99E000AB364E /* NumberPad.swift */; };
 		AEADEF6F2AE94DA3006EB614 /* Toast.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEADEF6E2AE94DA3006EB614 /* Toast.swift */; };
 		AEADEF712AE94DA8006EB614 /* BackButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEADEF702AE94DA8006EB614 /* BackButton.swift */; };
@@ -341,6 +342,7 @@
 		5EA1A0042E0A000100ABCD01 /* HomeAIAssistantViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeAIAssistantViewModel.swift; sourceTree = "<group>"; };
 		5EA1A0062E0A000100ABCD01 /* HomeAIAssistantBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeAIAssistantBar.swift; sourceTree = "<group>"; };
 		5EA1A0082E0A000100ABCD01 /* HomeAIAssistantOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeAIAssistantOverlay.swift; sourceTree = "<group>"; };
+		5EA1A00A2E0A000100ABCD01 /* HomeAIVisualCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeAIVisualCards.swift; sourceTree = "<group>"; };
 		8C58E9A9574F6F65BFAAD177 /* AIConfig.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AIConfig.swift; sourceTree = "<group>"; };
 		AE5B3D782AEE99E000AB364E /* NumberPad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NumberPad.swift; sourceTree = "<group>"; };
 		AEADEF6E2AE94DA3006EB614 /* Toast.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Toast.swift; sourceTree = "<group>"; };
@@ -530,6 +532,7 @@
 				53B907972AE817D50001F496 /* Shapes */,
 				5EA1A0062E0A000100ABCD01 /* HomeAIAssistantBar.swift */,
 				5EA1A0082E0A000100ABCD01 /* HomeAIAssistantOverlay.swift */,
+				5EA1A00A2E0A000100ABCD01 /* HomeAIVisualCards.swift */,
 				5327D2CD287C6B5E00F76ADF /* CategoryView.swift */,
 				53A4147628B3B559008C30E7 /* WelcomeSheetView.swift */,
 				5327D2CE287C6B5E00F76ADF /* TransactionView.swift */,
@@ -945,6 +948,7 @@
 				5327D2DA287C6B5F00F76ADF /* TestView.swift in Sources */,
 				538A32AA2A505AC6008AEF8C /* BottomSheet.swift in Sources */,
 				5EA1A0092E0A000100ABCD01 /* HomeAIAssistantOverlay.swift in Sources */,
+				5EA1A00B2E0A000100ABCD01 /* HomeAIVisualCards.swift in Sources */,
 				5327D2D9287C6B5F00F76ADF /* HomeView.swift in Sources */,
 				53BC2A422A8B21930019E4A8 /* MainModel.xcdatamodeld in Sources */,
 				53D6BDCC2AF73BC800F5728E /* SettingsCurrencyView.swift in Sources */,

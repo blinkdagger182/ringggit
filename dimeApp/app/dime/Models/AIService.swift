@@ -5,9 +5,35 @@
 
 import Foundation
 
+// MARK: - Visual card types
+
+struct AIVisualSummary {
+    let totalExpense: Double
+    let totalIncome: Double
+    let count: Int
+    let period: String
+    let comparisonPct: Double?  // negative = spending went down (good)
+}
+
+struct AIRecurringItem {
+    let name: String
+    let amount: Double
+    let income: Bool
+    let frequency: String
+}
+
+enum AIVisualCard {
+    case summary(AIVisualSummary)
+    case transactionsLogged([AITransactionAction])
+    case recurring([AIRecurringItem])
+}
+
+// MARK: - Response / action types
+
 struct AIResponse {
     let reply: String
     let actions: [AITransactionAction]
+    let visual: AIVisualCard?
 }
 
 struct AITransactionAction {
@@ -24,6 +50,8 @@ enum AIServiceError: Error {
     case apiError(String)
 }
 
+// MARK: - Service
+
 struct AIService {
     static func send(
         systemPrompt: String,
@@ -37,7 +65,6 @@ struct AIService {
             ["role": "system", "content": systemPrompt]
         ]
 
-        // History — all but the last user message
         let historyMessages = conversationMessages.dropLast()
         for msg in historyMessages {
             messages.append([
@@ -46,7 +73,6 @@ struct AIService {
             ])
         }
 
-        // Last user message — attach images if present
         if let lastMsg = conversationMessages.last {
             if useVision && lastMsg.role == .user {
                 var contentParts: [[String: Any]] = [
@@ -132,10 +158,8 @@ struct AIService {
                 let date: Date
                 if let dateStr = action["date"] as? String {
                     if let parsed = datetimeFormatter.date(from: dateStr) {
-                        // AI provided full datetime — use as-is
                         date = parsed
                     } else if let parsedDay = dateOnlyFormatter.date(from: dateStr) {
-                        // AI provided date only — inject current time-of-day so it doesn't land at midnight
                         let now = Date()
                         let cal = Calendar.current
                         let timeComponents = cal.dateComponents([.hour, .minute, .second], from: now)
@@ -157,6 +181,51 @@ struct AIService {
             }
         }
 
-        return AIResponse(reply: reply, actions: actions)
+        // Parse optional visual card
+        var visual: AIVisualCard? = nil
+        if let visualObj = json["visual"] as? [String: Any],
+           let type = visualObj["type"] as? String {
+            switch type {
+            case "summary":
+                let expense = (visualObj["total_expense"] as? Double)
+                    ?? (visualObj["total_expense"] as? Int).map(Double.init) ?? 0
+                let income = (visualObj["total_income"] as? Double)
+                    ?? (visualObj["total_income"] as? Int).map(Double.init) ?? 0
+                let count = (visualObj["count"] as? Int) ?? actions.count
+                let period = (visualObj["period"] as? String) ?? "this period"
+                let pct = visualObj["comparison_pct"] as? Double
+                visual = .summary(AIVisualSummary(
+                    totalExpense: expense,
+                    totalIncome: income,
+                    count: count,
+                    period: period,
+                    comparisonPct: pct
+                ))
+            case "transactions_logged":
+                if !actions.isEmpty {
+                    visual = .transactionsLogged(actions)
+                }
+            case "recurring":
+                if let items = visualObj["items"] as? [[String: Any]] {
+                    let recurringItems: [AIRecurringItem] = items.compactMap { item in
+                        guard let name = item["name"] as? String,
+                              let amount = (item["amount"] as? Double)
+                                  ?? (item["amount"] as? Int).map(Double.init)
+                        else { return nil }
+                        return AIRecurringItem(
+                            name: name,
+                            amount: abs(amount),
+                            income: item["income"] as? Bool ?? false,
+                            frequency: item["frequency"] as? String ?? "monthly"
+                        )
+                    }
+                    if !recurringItems.isEmpty { visual = .recurring(recurringItems) }
+                }
+            default:
+                break
+            }
+        }
+
+        return AIResponse(reply: reply, actions: actions, visual: visual)
     }
 }

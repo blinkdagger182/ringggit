@@ -99,7 +99,7 @@ final class HomeAIAssistantViewModel: ObservableObject {
                     images: imageDataList
                 )
                 executeActions(response.actions)
-                messages.append(HomeAIMessage(role: .assistant, text: response.reply, date: .now))
+                messages.append(HomeAIMessage(role: .assistant, text: response.reply, date: .now, visual: response.visual))
             } catch AIServiceError.apiError(let msg) {
                 messages.append(HomeAIMessage(role: .assistant, text: "API error: \(msg)", date: .now))
             } catch let urlError as URLError where urlError.code == .timedOut {
@@ -172,7 +172,8 @@ final class HomeAIAssistantViewModel: ObservableObject {
               "income": false,
               "date": "YYYY-MM-DD"
             }
-          ]
+          ],
+          "visual": { ... }
         }
 
         Rules:
@@ -184,6 +185,33 @@ final class HomeAIAssistantViewModel: ObservableObject {
         - amount: always a positive number
         - Extract ALL transactions from pasted content or images even if many
         - If a category is unclear, pick the closest available one
+
+        Visual card rules — include "visual" when it adds value:
+
+        1. When you log 1+ transactions, include:
+           "visual": { "type": "transactions_logged" }
+
+        2. When answering a spending/income/balance question, include:
+           "visual": {
+             "type": "summary",
+             "total_expense": <number>,
+             "total_income": <number>,
+             "count": <number of transactions in that period>,
+             "period": "<e.g. this month, this week, today>",
+             "comparison_pct": <optional signed number — negative means spending decreased vs prior period>
+           }
+
+        3. When the user asks about recurring payments, subscriptions, or you detect a pattern, include:
+           "visual": {
+             "type": "recurring",
+             "items": [
+               { "name": "Netflix", "amount": 15.90, "income": false, "frequency": "monthly" },
+               { "name": "Salary", "amount": 5000, "income": true, "frequency": "monthly" }
+             ]
+           }
+
+        - Omit "visual" entirely when not relevant (e.g. simple one-line answers).
+        - Never include "visual" for error messages.
         """
     }
 

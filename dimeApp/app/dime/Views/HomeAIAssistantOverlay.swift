@@ -289,49 +289,55 @@ VStack(spacing: 0) {
     private func messageBubble(_ message: HomeAIMessage) -> some View {
         HStack(alignment: .top) {
             if message.role == .assistant {
-                HStack(alignment: .top, spacing: 10) {
-                    ZStack {
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [Color(hex: "4ECDC4").opacity(0.18), Color(hex: "9BAAF8").opacity(0.22)],
-                                    startPoint: .topLeading, endPoint: .bottomTrailing
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .top, spacing: 10) {
+                        ZStack {
+                            Circle()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color(hex: "4ECDC4").opacity(0.18), Color(hex: "9BAAF8").opacity(0.22)],
+                                        startPoint: .topLeading, endPoint: .bottomTrailing
+                                    )
                                 )
-                            )
-                            .frame(width: 30, height: 30)
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [Color(hex: "4ECDC4"), Color(hex: "7B8FF8")],
-                                    startPoint: .topLeading, endPoint: .bottomTrailing
+                                .frame(width: 30, height: 30)
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [Color(hex: "4ECDC4"), Color(hex: "7B8FF8")],
+                                        startPoint: .topLeading, endPoint: .bottomTrailing
+                                    )
                                 )
-                            )
+                        }
+                        .padding(.top, 2)
+
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("Renvo")
+                                .font(.system(.subheadline).weight(.semibold))
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [Color(hex: "4ECDC4"), Color(hex: "7B8FF8")],
+                                        startPoint: .leading, endPoint: .trailing
+                                    )
+                                )
+
+                            Text(message.text)
+                                .font(.system(.body))
+                                .foregroundColor(Color(.label))
+                                .multilineTextAlignment(.leading)
+                        }
                     }
-                    .padding(.top, 2)
+                    .padding(16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(Color(.secondarySystemBackground))
+                            .shadow(color: Color.black.opacity(0.06), radius: 8, y: 2)
+                    )
 
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text("Renvo")
-                            .font(.system(.subheadline).weight(.semibold))
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [Color(hex: "4ECDC4"), Color(hex: "7B8FF8")],
-                                    startPoint: .leading, endPoint: .trailing
-                                )
-                            )
-
-                        Text(message.text)
-                            .font(.system(.body))
-                            .foregroundColor(Color(.label))
-                            .multilineTextAlignment(.leading)
+                    if let visual = message.visual {
+                        AIVisualCardView(visual: visual)
                     }
                 }
-                .padding(16)
-                .background(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(Color(.secondarySystemBackground))
-                        .shadow(color: Color.black.opacity(0.06), radius: 8, y: 2)
-                )
 
                 Spacer(minLength: 42)
             } else {
