@@ -24,6 +24,7 @@ struct HomeAIAssistantOverlay: View {
     @State private var composerFocusRequestID = 0
     @State private var chatScrollRequestID = 0
     @State private var showAttachmentSheet = false
+    @State private var previewAttachment: AttachmentItem?
 
     var body: some View {
         GeometryReader { proxy in
@@ -32,11 +33,19 @@ struct HomeAIAssistantOverlay: View {
             let activeComposerBottomPadding = keyboardOverlap > 0 ? 12 : baseComposerBottomPadding
 
             ZStack(alignment: .bottom) {
-                Color(hex: "1a0533")
+                Color(hex: "0A0A0A")
                     .ignoresSafeArea()
 
                 HomeAIAnimatedGradientBackground()
-                    .opacity(max(0, revealProgress))
+                    .opacity(max(0, revealProgress) * 0.88)
+                    .mask(
+                        LinearGradient(
+                            colors: [.black, .black.opacity(0.82), .black.opacity(0.18), .clear],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .ignoresSafeArea()
+                    )
                     .ignoresSafeArea()
 
 VStack(spacing: 0) {
@@ -90,6 +99,9 @@ VStack(spacing: 0) {
                     focusComposer()
                 }
             }
+        }
+        .fullScreenCover(item: $previewAttachment) { item in
+            AttachmentPreviewView(item: item)
         }
         .sheet(isPresented: $showAttachmentSheet) {
             let sheet = HomeAIAttachmentSheet(
@@ -298,32 +310,43 @@ VStack(spacing: 0) {
             } else {
                 Spacer(minLength: 42)
 
-                VStack(alignment: .trailing, spacing: 6) {
-                    if !message.attachmentThumbnails.isEmpty {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 6) {
-                                ForEach(message.attachmentThumbnails.indices, id: \.self) { i in
-                                    Image(uiImage: message.attachmentThumbnails[i])
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(width: 120, height: 90)
-                                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                }
+                let hasText = !message.text.isEmpty && message.text != "Please extract all transactions from the attached image(s)."
+                let hasThumbnails = !message.attachmentThumbnails.isEmpty
+
+                VStack(alignment: .trailing, spacing: 0) {
+                    if hasThumbnails || hasText {
+                        VStack(alignment: .leading, spacing: 0) {
+                            if hasThumbnails {
+                                Image(uiImage: message.attachmentThumbnails[0])
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(maxWidth: 220, maxHeight: 160)
+                                    .clipped()
+                                    .overlay(alignment: .bottomLeading) {
+                                        if message.attachmentThumbnails.count > 1 {
+                                            Text("+\(message.attachmentThumbnails.count - 1) more")
+                                                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                                                .foregroundColor(.white)
+                                                .padding(.horizontal, 6)
+                                                .padding(.vertical, 3)
+                                                .background(Color.black.opacity(0.55))
+                                                .clipShape(Capsule())
+                                                .padding(6)
+                                        }
+                                    }
+                            }
+
+                            if hasText {
+                                Text(message.text)
+                                    .font(.system(.body, design: .rounded).weight(.medium))
+                                    .foregroundColor(.white.opacity(0.94))
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 11)
                             }
                         }
-                        .frame(maxWidth: 260)
-                    }
-
-                    if !message.text.isEmpty && message.text != "Please extract all transactions from the attached image(s)." {
-                        Text(message.text)
-                            .font(.system(.body, design: .rounded).weight(.medium))
-                            .foregroundColor(.white.opacity(0.94))
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 13)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .fill(Color(hex: "1A1A1A"))
-                            )
+                        .background(Color(hex: "1A1A1A"))
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .frame(maxWidth: 260, alignment: .trailing)
                     }
                 }
             }
@@ -359,114 +382,82 @@ VStack(spacing: 0) {
     }
 
     private var composerSection: some View {
-        VStack(spacing: 8) {
-            if !viewModel.pendingAttachments.isEmpty {
-                attachmentStrip
-                    .padding(.horizontal, 20)
+        HStack(alignment: .center, spacing: 8) {
+            if keyboardHeightHelper.keyboardHeight > 0 {
+                Button { showAttachmentSheet = true } label: {
+                    ZStack {
+                        Circle()
+                            .fill(Color(hex: "1A1A1A"))
+                            .frame(width: 50, height: 50)
+                        Image(systemName: "plus")
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundColor(.white.opacity(0.65))
+                    }
+                }
+                .buttonStyle(.plain)
             }
 
-            HStack(alignment: .center, spacing: 8) {
-                if keyboardHeightHelper.keyboardHeight > 0 {
-                    Button { showAttachmentSheet = true } label: {
-                        ZStack {
-                            Circle()
-                                .fill(Color(hex: "1A1A1A"))
-                                .frame(width: 50, height: 50)
-                            Image(systemName: "plus")
-                                .font(.system(size: 20, weight: .medium))
-                                .foregroundColor(.white.opacity(0.65))
+            composer
+        }
+        .padding(.horizontal, 20)
+    }
+
+    private var composer: some View {
+        VStack(spacing: 0) {
+            // Attachment thumbnails inside the pill
+            if !viewModel.pendingAttachments.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(viewModel.pendingAttachments) { item in
+                            composerAttachmentCell(item)
                         }
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                }
+                .frame(height: 90)
+
+                Rectangle()
+                    .fill(Color.white.opacity(0.07))
+                    .frame(height: 1)
+                    .padding(.horizontal, 14)
+            }
+
+            // Input row
+            HStack(alignment: .center, spacing: 12) {
+                if keyboardHeightHelper.keyboardHeight == 0 {
+                    Button { showAttachmentSheet = true } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundColor(.white.opacity(0.6))
+                            .frame(width: 28, height: 28)
                     }
                     .buttonStyle(.plain)
                 }
 
-                composer
-            }
-            .padding(.horizontal, 20)
-        }
-    }
+                HomeAIComposerTextField(
+                    text: $viewModel.draftMessage,
+                    isFocused: composerFocusBinding,
+                    focusRequestID: composerFocusRequestID,
+                    placeholder: "Ask anything about your money...",
+                    onSubmit: sendComposerMessage
+                )
+                .frame(maxWidth: .infinity, minHeight: 24, maxHeight: 24, alignment: .leading)
 
-    private var attachmentStrip: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(viewModel.pendingAttachments) { item in
-                    ZStack(alignment: .topTrailing) {
-                        ZStack(alignment: .bottomLeading) {
-                            Image(uiImage: item.thumbnail)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 64, height: 64)
-                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-
-                            if item.pages.count > 1 {
-                                Text(item.label.components(separatedBy: "·").last?.trimmingCharacters(in: .whitespaces) ?? "")
-                                    .font(.system(size: 9, weight: .semibold, design: .rounded))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 5)
-                                    .padding(.vertical, 2)
-                                    .background(Color.black.opacity(0.55))
-                                    .clipShape(Capsule())
-                                    .padding(4)
-                            }
-                        }
-
-                        Button {
-                            viewModel.removeAttachment(id: item.id)
-                        } label: {
-                            ZStack {
-                                Circle()
-                                    .fill(Color.black.opacity(0.65))
-                                    .frame(width: 20, height: 20)
-                                Image(systemName: "xmark")
-                                    .font(.system(size: 9, weight: .bold))
-                                    .foregroundColor(.white)
-                            }
-                            .padding(3)
-                        }
-                        .buttonStyle(.plain)
+                if viewModel.hasContent {
+                    Button { sendComposerMessage() } label: {
+                        Image(systemName: "arrow.up.circle.fill")
+                            .font(.system(size: 30))
+                            .foregroundColor(.white)
                     }
+                    .buttonStyle(.plain)
                 }
             }
+            .frame(height: 56)
+            .padding(.horizontal, 18)
         }
-        .frame(height: 70)
-    }
-
-    private var composer: some View {
-        HStack(alignment: .center, spacing: 12) {
-            if keyboardHeightHelper.keyboardHeight == 0 {
-                Button { showAttachmentSheet = true } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundColor(.white.opacity(0.6))
-                        .frame(width: 28, height: 28)
-                }
-                .buttonStyle(.plain)
-            }
-
-            HomeAIComposerTextField(
-                text: $viewModel.draftMessage,
-                isFocused: composerFocusBinding,
-                focusRequestID: composerFocusRequestID,
-                placeholder: "Ask anything about your money...",
-                onSubmit: sendComposerMessage
-            )
-            .frame(maxWidth: .infinity, minHeight: 24, maxHeight: 24, alignment: .leading)
-
-            if viewModel.hasContent {
-                Button { sendComposerMessage() } label: {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .font(.system(size: 30))
-                        .foregroundColor(.white)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .frame(height: 56)
-        .padding(.horizontal, 18)
         .contentShape(Rectangle())
-        .onTapGesture {
-            focusComposer()
-        }
+        .onTapGesture { focusComposer() }
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(Color(hex: "1A1A1A"))
@@ -483,6 +474,45 @@ VStack(spacing: 0) {
                     dismissKeyboard()
                 }
         )
+    }
+
+    private func composerAttachmentCell(_ item: AttachmentItem) -> some View {
+        ZStack(alignment: .topTrailing) {
+            Button { previewAttachment = item } label: {
+                ZStack(alignment: .bottomLeading) {
+                    Image(uiImage: item.thumbnail)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 68, height: 68)
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+                    if item.pages.count > 1 {
+                        Text(item.label.components(separatedBy: "·").last?.trimmingCharacters(in: .whitespaces) ?? "")
+                            .font(.system(size: 9, weight: .semibold, design: .rounded))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(Color.black.opacity(0.6))
+                            .clipShape(Capsule())
+                            .padding(4)
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+
+            Button { viewModel.removeAttachment(id: item.id) } label: {
+                ZStack {
+                    Circle()
+                        .fill(Color(hex: "2C2C2C"))
+                        .frame(width: 20, height: 20)
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(.white)
+                }
+                .padding(3)
+            }
+            .buttonStyle(.plain)
+        }
     }
 
     private var collapseHandle: some View {
@@ -573,6 +603,50 @@ VStack(spacing: 0) {
             get: { composerFocused },
             set: { composerFocused = $0 }
         )
+    }
+}
+
+private struct AttachmentPreviewView: View {
+    let item: AttachmentItem
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            Color.black.ignoresSafeArea()
+
+            if item.pages.count == 1 {
+                Image(uiImage: item.pages[0])
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                TabView {
+                    ForEach(item.pages.indices, id: \.self) { i in
+                        Image(uiImage: item.pages[i])
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .tag(i)
+                    }
+                }
+                .tabViewStyle(.page)
+                .indexViewStyle(.page(backgroundDisplayMode: .always))
+            }
+
+            Button { dismiss() } label: {
+                ZStack {
+                    Circle()
+                        .fill(Color.white.opacity(0.15))
+                        .frame(width: 36, height: 36)
+                    Image(systemName: "xmark")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white)
+                }
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 56)
+            .padding(.trailing, 20)
+        }
     }
 }
 

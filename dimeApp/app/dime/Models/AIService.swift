@@ -114,9 +114,13 @@ struct AIService {
         var actions: [AITransactionAction] = []
 
         if let actionsArray = json["actions"] as? [[String: Any]] {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM-dd"
-            formatter.locale = Locale(identifier: "en_US_POSIX")
+            let datetimeFormatter = DateFormatter()
+            datetimeFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm"
+            datetimeFormatter.locale = Locale(identifier: "en_US_POSIX")
+
+            let dateOnlyFormatter = DateFormatter()
+            dateOnlyFormatter.dateFormat = "yyyy-MM-dd"
+            dateOnlyFormatter.locale = Locale(identifier: "en_US_POSIX")
 
             for action in actionsArray {
                 guard (action["type"] as? String) == "create_transaction",
@@ -126,8 +130,19 @@ struct AIService {
                       let income = action["income"] as? Bool else { continue }
 
                 let date: Date
-                if let dateStr = action["date"] as? String, let parsed = formatter.date(from: dateStr) {
-                    date = parsed
+                if let dateStr = action["date"] as? String {
+                    if let parsed = datetimeFormatter.date(from: dateStr) {
+                        // AI provided full datetime — use as-is
+                        date = parsed
+                    } else if let parsedDay = dateOnlyFormatter.date(from: dateStr) {
+                        // AI provided date only — inject current time-of-day so it doesn't land at midnight
+                        let now = Date()
+                        let cal = Calendar.current
+                        let timeComponents = cal.dateComponents([.hour, .minute, .second], from: now)
+                        date = cal.date(byAdding: timeComponents, to: parsedDay) ?? parsedDay
+                    } else {
+                        date = .now
+                    }
                 } else {
                     date = .now
                 }

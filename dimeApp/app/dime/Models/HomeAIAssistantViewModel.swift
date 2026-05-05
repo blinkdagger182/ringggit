@@ -181,7 +181,7 @@ final class HomeAIAssistantViewModel: ObservableObject {
         - actions: array of create_transaction objects, empty [] if just answering a question
         - category_name: must match one of the available category names exactly (use closest match)
         - income: false for expenses/purchases, true for salary/transfers received/cashback
-        - date: YYYY-MM-DD format — extract from receipt/statement if present, otherwise use today
+        - date: "YYYY-MM-DDTHH:mm" if time is visible on the receipt/statement, otherwise "YYYY-MM-DD". Never default to midnight — if time is unknown, omit the time component entirely.
         - amount: always a positive number
         - Extract ALL transactions from pasted content or images even if many
         - If a category is unclear, pick the closest available one
