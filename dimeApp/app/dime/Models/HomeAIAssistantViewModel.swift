@@ -10,8 +10,8 @@ import UIKit
 
 struct AttachmentItem: Identifiable {
     let id = UUID()
-    let thumbnail: UIImage  // shown in UI
-    let pages: [UIImage]    // all images sent to API (1 for photos, N for PDF pages)
+    let thumbnail: UIImage
+    let pages: [UIImage]
     let label: String
 
     init(image: UIImage, label: String) {
@@ -89,6 +89,13 @@ final class HomeAIAssistantViewModel: ObservableObject {
         pendingAttachments = []
         isResponding = true
 
+        // Tool executor: AI calls this when it needs transaction data for a date range
+        let toolExecutor: (_ name: String, _ args: [String: Any]) async -> String = { [weak self] name, args in
+            await MainActor.run {
+                self?.executeTool(name: name, args: args) ?? "No data available."
+            }
+        }
+
         Task {
             do {
                 let imageDataList = capturedAttachments
@@ -98,7 +105,8 @@ final class HomeAIAssistantViewModel: ObservableObject {
                 let response = try await AIService.send(
                     systemPrompt: systemPrompt,
                     conversationMessages: messages,
-                    images: imageDataList
+                    images: imageDataList,
+                    toolExecutor: toolExecutor
                 )
                 executeActions(response.actions)
                 await animateReply(response)
@@ -115,10 +123,11 @@ final class HomeAIAssistantViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Word-by-word animation
+
     private func animateReply(_ response: AIResponse) async {
         let now = Date()
-        let msgDate = now
-        messages.append(HomeAIMessage(role: .assistant, text: "", date: msgDate))
+        messages.append(HomeAIMessage(role: .assistant, text: "", date: now))
         isResponding = false
         isAnimatingReply = true
 
@@ -130,13 +139,13 @@ final class HomeAIAssistantViewModel: ObservableObject {
             if i > 0 { built += " " }
             built += word
             if let idx = messages.indices.last {
-                messages[idx] = HomeAIMessage(role: .assistant, text: built, date: msgDate)
+                messages[idx] = HomeAIMessage(role: .assistant, text: built, date: now)
             }
             try? await Task.sleep(nanoseconds: 28_000_000)
         }
 
         if let idx = messages.indices.last {
-            messages[idx] = HomeAIMessage(role: .assistant, text: built, date: msgDate, visual: response.visual)
+            messages[idx] = HomeAIMessage(role: .assistant, text: built, date: now, visual: response.visual)
         }
         isAnimatingReply = false
     }
@@ -145,15 +154,64 @@ final class HomeAIAssistantViewModel: ObservableObject {
         messages.append(HomeAIMessage(role: .user, text: text, date: .now, attachments: attachments))
     }
 
-    // MARK: - AI Context
+    // MARK: - Tool execution (called by AI on demand)
+
+    private func executeTool(name: String, args: [String: Any]) -> String {
+        guard name == "fetch_transactions",
+              let startStr = args["start_date"] as? String,
+              let endStr = args["end_date"] as? String,
+              let dc = dataController else {
+            return "Tool not available."
+        }
+
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        df.locale = Locale(identifier: "en_US_POSIX")
+
+        guard let startDate = df.date(from: startStr),
+              let rawEnd = df.date(from: endStr),
+              let endDate = Calendar.current.date(byAdding: .day, value: 1, to: rawEnd) else {
+            return "Invalid date range: \(startStr) to \(endStr)."
+        }
+
+        let context = dc.container.viewContext
+        let req = NSFetchRequest<Transaction>(entityName: "Transaction")
+        req.predicate = NSPredicate(format: "date >= %@ AND date < %@", startDate as NSDate, endDate as NSDate)
+        req.sortDescriptors = [NSSortDescriptor(key: "date", ascending: true)]
+        let txs = (try? context.fetch(req)) ?? []
+
+        if txs.isEmpty {
+            return "No transactions found between \(startStr) and \(endStr)."
+        }
+
+        let totalExpense = txs.filter { !$0.income }.reduce(0.0) { $0 + $1.amount }
+        let totalIncome = txs.filter { $0.income }.reduce(0.0) { $0 + $1.amount }
+
+        let lines: [String] = txs.compactMap { tx in
+            guard let date = tx.date else { return nil }
+            let dateStr = df.string(from: date)
+            let sign = tx.income ? "+" : "-"
+            let cat = tx.category?.name ?? "Uncategorized"
+            let note = (tx.note?.isEmpty == false) ? tx.note! : "(no note)"
+            return "\(dateStr) | \(sign)RM\(String(format: "%.2f", tx.amount)) | \(note) | \(cat)"
+        }
+
+        return """
+        \(txs.count) transactions (\(startStr) → \(endStr)):
+        Total expenses: RM\(String(format: "%.2f", totalExpense))
+        Total income: RM\(String(format: "%.2f", totalIncome))
+
+        \(lines.joined(separator: "\n"))
+        """
+    }
+
+    // MARK: - System prompt (lightweight — no transaction dump)
 
     private func buildSystemPrompt() -> String {
         var categoriesText = "None configured"
-        var transactionHistory = "No transactions recorded yet."
 
         if let dc = dataController {
             let context = dc.container.viewContext
-
             let catRequest = NSFetchRequest<Category>(entityName: "Category")
             catRequest.sortDescriptors = [NSSortDescriptor(key: "name", ascending: true)]
             let categories = (try? context.fetch(catRequest)) ?? []
@@ -166,26 +224,6 @@ final class HomeAIAssistantViewModel: ObservableObject {
                     return "\(emoji) \(name) (\(type))"
                 }.joined(separator: ", ")
             }
-
-            let txRequest = NSFetchRequest<Transaction>(entityName: "Transaction")
-            txRequest.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
-            let allTxs = (try? context.fetch(txRequest)) ?? []
-
-            if !allTxs.isEmpty {
-                let df = DateFormatter()
-                df.dateFormat = "yyyy-MM-dd"
-                df.locale = Locale(identifier: "en_US_POSIX")
-
-                let lines: [String] = allTxs.prefix(600).compactMap { tx in
-                    guard let date = tx.date else { return nil }
-                    let dateStr = df.string(from: date)
-                    let sign = tx.income ? "+" : "-"
-                    let cat = tx.category?.name ?? "Uncategorized"
-                    let note = (tx.note?.isEmpty == false) ? tx.note! : "(no note)"
-                    return "\(dateStr) | \(sign)RM\(String(format: "%.2f", tx.amount)) | \(note) | \(cat)"
-                }
-                transactionHistory = lines.joined(separator: "\n")
-            }
         }
 
         let dateStr = DateFormatter.localizedString(from: .now, dateStyle: .full, timeStyle: .none)
@@ -196,10 +234,9 @@ final class HomeAIAssistantViewModel: ObservableObject {
         Today: \(dateStr)
         Available categories: \(categoriesText)
 
-        ALL USER TRANSACTIONS (newest first, up to 600 records — use this to answer ANY historical question):
-        \(transactionHistory)
+        You have access to a fetch_transactions tool. Use it whenever the user asks about spending, income, or transaction history for ANY time period — this month, last month, last year, a specific date, or any range. Do NOT make up numbers; always fetch real data first.
 
-        When the user pastes ANY text or shares ANY image — receipts, screenshots, bank statements, PDFs rendered as images, WhatsApp messages, invoices — parse ALL financial transactions and log them automatically. Extract dates from the source material; do not default to today unless no date is present.
+        When the user pastes ANY text or shares ANY image — receipts, screenshots, bank statements, PDFs, WhatsApp messages, invoices — parse ALL financial transactions and log them automatically. Extract dates from the source; do not default to today unless no date is present.
 
         Always respond with valid JSON only, exactly:
         {

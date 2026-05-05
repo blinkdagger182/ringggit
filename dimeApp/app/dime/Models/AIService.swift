@@ -56,18 +56,19 @@ struct AIService {
     static func send(
         systemPrompt: String,
         conversationMessages: [HomeAIMessage],
-        images: [Data] = []
+        images: [Data] = [],
+        toolExecutor: ((_ name: String, _ args: [String: Any]) async -> String)? = nil
     ) async throws -> AIResponse {
         let useVision = !images.isEmpty
         let model = useVision ? AIConfig.visionModel : AIConfig.model
 
-        var messages: [[String: Any]] = [
+        var apiMessages: [[String: Any]] = [
             ["role": "system", "content": systemPrompt]
         ]
 
         let historyMessages = conversationMessages.dropLast()
         for msg in historyMessages {
-            messages.append([
+            apiMessages.append([
                 "role": msg.role == .user ? "user" : "assistant",
                 "content": msg.text
             ])
@@ -88,22 +89,114 @@ struct AIService {
                         ]
                     ])
                 }
-                messages.append(["role": "user", "content": contentParts])
+                apiMessages.append(["role": "user", "content": contentParts])
             } else {
-                messages.append([
+                apiMessages.append([
                     "role": lastMsg.role == .user ? "user" : "assistant",
                     "content": lastMsg.text
                 ])
             }
         }
 
-        let body: [String: Any] = [
+        // Build request body — include tools only for text queries (not vision)
+        var body: [String: Any] = [
             "model": model,
-            "messages": messages,
+            "messages": apiMessages,
             "response_format": ["type": "json_object"],
             "temperature": 0.1
         ]
 
+        if toolExecutor != nil && !useVision {
+            body["tools"] = makeTools()
+            body["tool_choice"] = "auto"
+        }
+
+        // First API call
+        let (data, _) = try await performRequest(body: body)
+
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let choices = json["choices"] as? [[String: Any]],
+              let firstChoice = choices.first,
+              let responseMessage = firstChoice["message"] as? [String: Any] else {
+            throw AIServiceError.invalidResponse
+        }
+
+        // Check if AI wants to call a tool
+        let finishReason = firstChoice["finish_reason"] as? String
+        if finishReason == "tool_calls",
+           let toolCalls = responseMessage["tool_calls"] as? [[String: Any]],
+           let firstCall = toolCalls.first,
+           let fn = firstCall["function"] as? [String: Any],
+           let toolCallId = firstCall["id"] as? String,
+           let fnName = fn["name"] as? String,
+           let argsStr = fn["arguments"] as? String,
+           let argsData = argsStr.data(using: .utf8),
+           let args = try? JSONSerialization.jsonObject(with: argsData) as? [String: Any],
+           let executor = toolExecutor {
+
+            // Execute the tool (runs on main actor via the closure)
+            let toolResult = await executor(fnName, args)
+
+            // Second request: original messages + assistant tool_call + tool result
+            var messages2 = apiMessages
+            messages2.append(["role": "assistant", "content": NSNull(), "tool_calls": toolCalls])
+            messages2.append(["role": "tool", "tool_call_id": toolCallId, "content": toolResult])
+
+            let body2: [String: Any] = [
+                "model": model,
+                "messages": messages2,
+                "response_format": ["type": "json_object"],
+                "temperature": 0.1
+            ]
+
+            let (data2, _) = try await performRequest(body: body2)
+
+            guard let json2 = try? JSONSerialization.jsonObject(with: data2) as? [String: Any],
+                  let choices2 = json2["choices"] as? [[String: Any]],
+                  let msg2 = choices2.first?["message"] as? [String: Any],
+                  let content2 = msg2["content"] as? String else {
+                throw AIServiceError.invalidResponse
+            }
+
+            return try parseContent(content2)
+        }
+
+        // No tool call — direct JSON response
+        guard let content = responseMessage["content"] as? String else {
+            throw AIServiceError.invalidResponse
+        }
+        return try parseContent(content)
+    }
+
+    // MARK: - Tool definition
+
+    private static func makeTools() -> [[String: Any]] {
+        [[
+            "type": "function",
+            "function": [
+                "name": "fetch_transactions",
+                "description": "Retrieve the user's transaction records for a date range. Call this for ANY question about spending, income, or financial history — past or recent.",
+                "parameters": [
+                    "type": "object",
+                    "properties": [
+                        "start_date": [
+                            "type": "string",
+                            "description": "Start date inclusive, YYYY-MM-DD"
+                        ],
+                        "end_date": [
+                            "type": "string",
+                            "description": "End date inclusive, YYYY-MM-DD"
+                        ]
+                    ],
+                    "required": ["start_date", "end_date"]
+                ]
+            ]
+        ]]
+    }
+
+    // MARK: - HTTP helper
+
+    private static func performRequest(body: [String: Any]) async throws -> (Data, URLResponse) {
         var request = URLRequest(url: AIConfig.endpoint)
         request.httpMethod = "POST"
         request.setValue("Bearer \(AIConfig.openAIKey)", forHTTPHeaderField: "Authorization")
@@ -111,7 +204,7 @@ struct AIService {
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         request.timeoutInterval = 120
 
-        let (data, response): (Data, URLResponse) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await URLSession.shared.data(for: request)
 
         if let http = response as? HTTPURLResponse, http.statusCode != 200 {
             let errorBody = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["error"] as? [String: Any]
@@ -119,16 +212,10 @@ struct AIService {
             throw AIServiceError.apiError(message)
         }
 
-        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let choices = json["choices"] as? [[String: Any]],
-              let firstChoice = choices.first,
-              let message = firstChoice["message"] as? [String: Any],
-              let content = message["content"] as? String else {
-            throw AIServiceError.invalidResponse
-        }
-
-        return try parseContent(content)
+        return (data, response)
     }
+
+    // MARK: - Parse
 
     private static func parseContent(_ content: String) throws -> AIResponse {
         guard let data = content.data(using: .utf8),
@@ -181,7 +268,6 @@ struct AIService {
             }
         }
 
-        // Parse optional visual card
         var visual: AIVisualCard? = nil
         if let visualObj = json["visual"] as? [String: Any],
            let type = visualObj["type"] as? String {
