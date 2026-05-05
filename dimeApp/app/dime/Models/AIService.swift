@@ -124,26 +124,32 @@ struct AIService {
             throw AIServiceError.invalidResponse
         }
 
-        // Check if AI wants to call a tool
+        // Check if AI wants to call tools
         let finishReason = firstChoice["finish_reason"] as? String
         if finishReason == "tool_calls",
            let toolCalls = responseMessage["tool_calls"] as? [[String: Any]],
-           let firstCall = toolCalls.first,
-           let fn = firstCall["function"] as? [String: Any],
-           let toolCallId = firstCall["id"] as? String,
-           let fnName = fn["name"] as? String,
-           let argsStr = fn["arguments"] as? String,
-           let argsData = argsStr.data(using: .utf8),
-           let args = try? JSONSerialization.jsonObject(with: argsData) as? [String: Any],
+           !toolCalls.isEmpty,
            let executor = toolExecutor {
 
-            // Execute the tool (runs on main actor via the closure)
-            let toolResult = await executor(fnName, args)
+            // Execute EVERY tool call — leaving any unanswered causes API error
+            var toolResponses: [[String: Any]] = []
+            for call in toolCalls {
+                guard let fn = call["function"] as? [String: Any],
+                      let toolCallId = call["id"] as? String,
+                      let fnName = fn["name"] as? String,
+                      let argsStr = fn["arguments"] as? String,
+                      let argsData = argsStr.data(using: .utf8),
+                      let args = try? JSONSerialization.jsonObject(with: argsData) as? [String: Any]
+                else { continue }
 
-            // Second request: original messages + assistant tool_call + tool result
+                let result = await executor(fnName, args)
+                toolResponses.append(["role": "tool", "tool_call_id": toolCallId, "content": result])
+            }
+
+            // Second request: original messages + assistant tool_calls + all tool results
             var messages2 = apiMessages
             messages2.append(["role": "assistant", "content": NSNull(), "tool_calls": toolCalls])
-            messages2.append(["role": "tool", "tool_call_id": toolCallId, "content": toolResult])
+            messages2.append(contentsOf: toolResponses)
 
             let body2: [String: Any] = [
                 "model": model,
@@ -178,7 +184,7 @@ struct AIService {
             "type": "function",
             "function": [
                 "name": "fetch_transactions",
-                "description": "Retrieve the user's transaction records for a date range. Call this for ANY question about spending, income, or financial history — past or recent.",
+                "description": "Retrieve transaction records for a date range. ONLY call for history queries (e.g. 'what did I spend last month?', 'show last year'). Do NOT call when the user is logging a new transaction.",
                 "parameters": [
                     "type": "object",
                     "properties": [
@@ -242,9 +248,9 @@ struct AIService {
             for action in actionsArray {
                 guard (action["type"] as? String) == "create_transaction",
                       let amount = (action["amount"] as? Double) ?? (action["amount"] as? Int).map(Double.init),
-                      let note = action["note"] as? String,
-                      let categoryName = action["category_name"] as? String,
                       let income = action["income"] as? Bool else { continue }
+                let note = action["note"] as? String ?? ""
+                let categoryName = action["category_name"] as? String ?? ""
 
                 let date: Date
                 if let dateStr = action["date"] as? String {

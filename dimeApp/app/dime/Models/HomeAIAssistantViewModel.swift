@@ -35,6 +35,7 @@ final class HomeAIAssistantViewModel: ObservableObject {
     @Published private(set) var messages: [HomeAIMessage] = []
     @Published private(set) var isResponding = false
     @Published private(set) var isAnimatingReply = false
+    @Published private(set) var statusText: String = ""
     @Published var pendingAttachments: [AttachmentItem] = []
 
     var dataController: DataController?
@@ -92,11 +93,23 @@ final class HomeAIAssistantViewModel: ObservableObject {
         // Tool executor: AI calls this when it needs transaction data for a date range
         let toolExecutor: (_ name: String, _ args: [String: Any]) async -> String = { [weak self] name, args in
             await MainActor.run {
+                if name == "fetch_transactions",
+                   let start = args["start_date"] as? String,
+                   let end = args["end_date"] as? String {
+                    self?.statusText = "Fetching transactions \(start) → \(end)"
+                } else {
+                    self?.statusText = "Fetching data"
+                }
+            }
+            let result = await MainActor.run {
                 self?.executeTool(name: name, args: args) ?? "No data available."
             }
+            await MainActor.run { self?.statusText = "Analyzing" }
+            return result
         }
 
         Task {
+            statusText = "Thinking"
             do {
                 let imageDataList = capturedAttachments
                     .flatMap { $0.pages }
@@ -108,17 +121,22 @@ final class HomeAIAssistantViewModel: ObservableObject {
                     images: imageDataList,
                     toolExecutor: toolExecutor
                 )
+                statusText = "Writing response"
                 executeActions(response.actions)
                 await animateReply(response)
+                statusText = ""
             } catch AIServiceError.apiError(let msg) {
                 messages.append(HomeAIMessage(role: .assistant, text: "API error: \(msg)", date: .now))
                 isResponding = false
+                statusText = ""
             } catch let urlError as URLError where urlError.code == .timedOut {
                 messages.append(HomeAIMessage(role: .assistant, text: "Request timed out — the file is large. Try a shorter document or fewer pages.", date: .now))
                 isResponding = false
+                statusText = ""
             } catch {
                 messages.append(HomeAIMessage(role: .assistant, text: "Couldn't connect. Check your API key and internet connection.", date: .now))
                 isResponding = false
+                statusText = ""
             }
         }
     }
@@ -127,8 +145,8 @@ final class HomeAIAssistantViewModel: ObservableObject {
 
     private func animateReply(_ response: AIResponse) async {
         let now = Date()
-        // Thinking is shown immediately; reply animates word by word
-        messages.append(HomeAIMessage(role: .assistant, text: "", date: now, thinking: response.thinking))
+        // thinking = nil during animation so ThinkingDisclosure state doesn't reset each word
+        messages.append(HomeAIMessage(role: .assistant, text: "", date: now))
         isResponding = false
         isAnimatingReply = true
 
@@ -140,11 +158,12 @@ final class HomeAIAssistantViewModel: ObservableObject {
             if i > 0 { built += " " }
             built += word
             if let idx = messages.indices.last {
-                messages[idx] = HomeAIMessage(role: .assistant, text: built, date: now, thinking: response.thinking)
+                messages[idx] = HomeAIMessage(role: .assistant, text: built, date: now)
             }
             try? await Task.sleep(nanoseconds: 28_000_000)
         }
 
+        // Attach thinking + visual only after animation — stable state from here
         if let idx = messages.indices.last {
             messages[idx] = HomeAIMessage(role: .assistant, text: built, date: now, visual: response.visual, thinking: response.thinking)
         }
@@ -209,7 +228,8 @@ final class HomeAIAssistantViewModel: ObservableObject {
     // MARK: - System prompt (lightweight — no transaction dump)
 
     private func buildSystemPrompt() -> String {
-        var categoriesText = "None configured"
+        var expenseList = "None"
+        var incomeList = "None"
 
         if let dc = dataController {
             let context = dc.container.viewContext
@@ -218,12 +238,10 @@ final class HomeAIAssistantViewModel: ObservableObject {
             let categories = (try? context.fetch(catRequest)) ?? []
 
             if !categories.isEmpty {
-                categoriesText = categories.map { cat in
-                    let type = cat.income ? "income" : "expense"
-                    let emoji = cat.emoji ?? ""
-                    let name = cat.name ?? "Unknown"
-                    return "\(emoji) \(name) (\(type))"
-                }.joined(separator: ", ")
+                let expenseNames = categories.filter { !$0.income }.compactMap { $0.name }
+                let incomeNames = categories.filter { $0.income }.compactMap { $0.name }
+                expenseList = expenseNames.isEmpty ? "None" : expenseNames.map { "• \($0)" }.joined(separator: "\n")
+                incomeList = incomeNames.isEmpty ? "None" : incomeNames.map { "• \($0)" }.joined(separator: "\n")
             }
         }
 
@@ -233,7 +251,12 @@ final class HomeAIAssistantViewModel: ObservableObject {
         You are Renvo AI, a smart financial assistant inside the Dime expense tracking app (Malaysia, currency MYR / RM).
 
         Today: \(dateStr)
-        Available categories: \(categoriesText)
+
+        EXPENSE categories (copy exact string, pick closest match):
+        \(expenseList)
+
+        INCOME categories (copy exact string, pick closest match):
+        \(incomeList)
 
         You have access to a fetch_transactions tool. Use it whenever the user asks about spending, income, or transaction history for ANY time period — this month, last month, last year, a specific date, or any range. Do NOT make up numbers; always fetch real data first.
 
@@ -276,12 +299,11 @@ final class HomeAIAssistantViewModel: ObservableObject {
         - A leading negative sign (-RM) on an amount = expense. A leading positive or no sign = check CR/DR label.
         - When unsure, default to income: false (expense).
 
-        CATEGORY — pick the best match from the available list above:
-        - category_name must be the plain text name only — NO emoji, NO "(expense)"/"(income)" suffix. E.g. if the list shows "🍔 Food & Drink (expense)", return category_name: "Food & Drink"
-        - Analyze merchant name, description, and keywords to infer the right category
-        - Common mappings: Grab/Uber/MRT/LRT/bus/Touch'n Go/petrol/Shell/BHP → Transport; McDonald's/KFC/restaurant/cafe/food/Starbucks/mamak → Food; Netflix/Spotify/cinema/games → Entertainment; clinic/pharmacy/hospital/medicine → Health; salary/gaji/allowance/bonus → Income category; electricity/water/Unifi/telco/phone bill → Utilities; supermarket/groceries/Tesco/Giant/Mydin → Groceries
-        - Always pick from the available categories list — never invent a new name
-        - If truly no match, use the closest available category
+        CATEGORY — CRITICAL: category_name MUST be copied verbatim from the lists above. Do NOT invent names.
+        - Pick the closest match from the correct list (expense vs income). If no perfect match exists, pick whichever listed category fits best.
+        - Common mapping signals: Grab/Uber/LRT/bus/petrol/Shell → Transport-like; McDonald's/restaurant/cafe/mamak/food/drinks → Food-like; Netflix/Spotify/cinema/game → Entertainment-like; clinic/pharmacy/hospital → Health-like; salary/gaji/allowance/bonus → Income; electricity/Unifi/telco/phone bill → Utilities-like; supermarket/Tesco/Giant/grocery → Groceries-like; rent/house/sewa/rumah/mortgage/housing → Housing/Bills/Home-like
+        - Return the exact string — no emoji, no suffix like "(expense)" or "(income)"
+        - Never leave category_name blank; always pick the nearest option
 
         Visual card rules — include "visual" when it adds value:
 
@@ -337,7 +359,6 @@ final class HomeAIAssistantViewModel: ObservableObject {
     }
 
     private func matchCategory(name: String, income: Bool, from categories: [Category]) -> Category? {
-        // Strip emoji and suffix like "(expense)" that the AI might accidentally include
         let stripped = name
             .replacingOccurrences(of: "\\(.*?\\)", with: "", options: .regularExpression)
             .replacingOccurrences(of: "[^\\p{L}\\p{N} &'/-]", with: "", options: .regularExpression)
@@ -346,9 +367,28 @@ final class HomeAIAssistantViewModel: ObservableObject {
 
         func n(_ cat: Category) -> String { cat.name?.lowercased() ?? "" }
 
-        return categories.first { n($0) == stripped }
-            ?? categories.first { n($0).contains(stripped) && !stripped.isEmpty }
-            ?? categories.first { stripped.contains(n($0)) && !n($0).isEmpty }
-            ?? categories.first { $0.income == income }
+        // 1. Exact
+        if let m = categories.first(where: { n($0) == stripped }) { return m }
+        // 2. Category name contains search term
+        if let m = categories.first(where: { n($0).contains(stripped) && !stripped.isEmpty }) { return m }
+        // 3. Search term contains category name
+        if let m = categories.first(where: { stripped.contains(n($0)) && !n($0).isEmpty }) { return m }
+
+        // 4. Word-overlap scoring (prefer same income type)
+        let searchWords = Set(stripped.split(separator: " ").map(String.init).filter { $0.count > 2 })
+        if !searchWords.isEmpty {
+            let sameType = categories.filter { $0.income == income }
+            var bestScore = 0
+            var bestCat: Category? = nil
+            for cat in sameType {
+                let catWords = Set(n(cat).split(separator: " ").map(String.init).filter { $0.count > 2 })
+                let overlap = searchWords.intersection(catWords).count
+                if overlap > bestScore { bestScore = overlap; bestCat = cat }
+            }
+            if let best = bestCat { return best }
+        }
+
+        // 5. Fallback: first category of matching income type
+        return categories.first { $0.income == income }
     }
 }

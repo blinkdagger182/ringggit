@@ -311,7 +311,7 @@ VStack(spacing: 0) {
                         }
                         .padding(.top, 2)
 
-                        VStack(alignment: .leading, spacing: 5) {
+                        VStack(alignment: .leading, spacing: 8) {
                             Text("Renvo")
                                 .font(.system(.subheadline).weight(.semibold))
                                 .foregroundStyle(
@@ -321,10 +321,17 @@ VStack(spacing: 0) {
                                     )
                                 )
 
-                            Text(message.text)
-                                .font(.system(.body))
-                                .foregroundColor(Color(.label))
-                                .multilineTextAlignment(.leading)
+                            // ThinkingDisclosure commented out
+                            // if let thinking = message.thinking {
+                            //     ThinkingDisclosure(thinking: thinking)
+                            // }
+
+                            if !message.text.isEmpty {
+                                Text(message.text)
+                                    .font(.system(.body))
+                                    .foregroundColor(Color(.label))
+                                    .multilineTextAlignment(.leading)
+                            }
                         }
                     }
                     .padding(16)
@@ -333,10 +340,6 @@ VStack(spacing: 0) {
                             .fill(Color(.secondarySystemBackground))
                             .shadow(color: Color.black.opacity(0.06), radius: 8, y: 2)
                     )
-
-                    if let thinking = message.thinking {
-                        ThinkingDisclosure(thinking: thinking)
-                    }
 
                     if let visual = message.visual {
                         AIVisualCardView(visual: visual)
@@ -358,7 +361,7 @@ VStack(spacing: 0) {
                                     Image(uiImage: attachment.thumbnail)
                                         .resizable()
                                         .scaledToFill()
-                                        .frame(maxWidth: 220, maxHeight: 160)
+                                        .frame(width: 240, height: 170)
                                         .clipped()
                                         .overlay(alignment: .bottomLeading) {
                                             if attachment.pages.count > 1 {
@@ -403,21 +406,32 @@ VStack(spacing: 0) {
         HStack(alignment: .top, spacing: 10) {
             ZStack {
                 Circle()
-                    .fill(Color(hex: "EBF5FB"))
+                    .fill(
+                        LinearGradient(
+                            colors: [Color(hex: "4ECDC4").opacity(0.18), Color(hex: "9BAAF8").opacity(0.22)],
+                            startPoint: .topLeading, endPoint: .bottomTrailing
+                        )
+                    )
                     .frame(width: 30, height: 30)
                 Image(systemName: "sparkles")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(Color(hex: "3B82F6"))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [Color(hex: "4ECDC4"), Color(hex: "7B8FF8")],
+                            startPoint: .topLeading, endPoint: .bottomTrailing
+                        )
+                    )
             }
             .padding(.top, 2)
 
-            HStack(spacing: 5) {
-                Circle().fill(Color(.tertiaryLabel)).frame(width: 7, height: 7)
-                Circle().fill(Color(.tertiaryLabel)).frame(width: 7, height: 7)
-                Circle().fill(Color(.tertiaryLabel)).frame(width: 7, height: 7)
+            HStack(spacing: 8) {
+                Text(viewModel.statusText.isEmpty ? "Thinking" : viewModel.statusText)
+                    .font(.system(.body))
+                    .foregroundColor(Color(.label))
+                AIThinkingDots()
             }
             .padding(.horizontal, 14)
-            .padding(.vertical, 14)
+            .padding(.vertical, 12)
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(Color(.secondarySystemBackground))
@@ -851,38 +865,57 @@ private extension UIFont {
     }
 }
 
+private struct AIThinkingDots: View {
+    @State private var phase = 0
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(0..<3, id: \.self) { i in
+                Circle()
+                    .fill(Color(.tertiaryLabel))
+                    .frame(width: 5, height: 5)
+                    .scaleEffect(phase == i ? 1.4 : 1.0)
+                    .animation(.easeInOut(duration: 0.4).repeatForever(autoreverses: true).delay(Double(i) * 0.15), value: phase)
+            }
+        }
+        .onAppear {
+            phase = 0
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { phase = 2 }
+        }
+    }
+}
+
 private struct ThinkingDisclosure: View {
     let thinking: String
     @State private var isExpanded = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Button {
+            HStack(spacing: 6) {
+                Image(systemName: "brain")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [Color(hex: "4ECDC4"), Color(hex: "9BAAF8")],
+                            startPoint: .leading, endPoint: .trailing
+                        )
+                    )
+                Text("Reasoning")
+                    .font(.system(.caption, design: .rounded).weight(.semibold))
+                    .foregroundColor(Color(.secondaryLabel))
+                Spacer(minLength: 0)
+                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(Color(.tertiaryLabel))
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
+            .onTapGesture {
                 withAnimation(.spring(response: 0.28, dampingFraction: 0.8)) {
                     isExpanded.toggle()
                 }
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "brain")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [Color(hex: "4ECDC4"), Color(hex: "9BAAF8")],
-                                startPoint: .leading, endPoint: .trailing
-                            )
-                        )
-                    Text("Reasoning")
-                        .font(.system(.caption, design: .rounded).weight(.semibold))
-                        .foregroundColor(Color(.secondaryLabel))
-                    Spacer(minLength: 0)
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(Color(.tertiaryLabel))
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
             }
-            .buttonStyle(.plain)
 
             if isExpanded {
                 Rectangle()
@@ -898,10 +931,10 @@ private struct ThinkingDisclosure: View {
             }
         }
         .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(Color(.tertiarySystemBackground))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .strokeBorder(
                             LinearGradient(
                                 colors: [Color(hex: "4ECDC4").opacity(0.35), Color(hex: "9BAAF8").opacity(0.35)],
@@ -911,7 +944,7 @@ private struct ThinkingDisclosure: View {
                         )
                 )
         )
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 
