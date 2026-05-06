@@ -589,13 +589,12 @@ struct LogInsightsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // "Total Balance" title + amount
+            // "Net total" title + timeframe + amount
             VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Text("Total Balance")
+                HStack(spacing: 8) {
+                    Text("Net total")
                         .font(.system(.title2, design: .rounded).weight(.bold))
                         .foregroundColor(Color.PrimaryText)
-                    Spacer()
                     Button { showMenu1 = true } label: {
                         HStack(spacing: 3) {
                             Text(LocalizedStringKey(subtitleText[timeframe - 1]))

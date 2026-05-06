@@ -8,8 +8,15 @@ import Photos
 import PhotosUI
 import PDFKit
 import UniformTypeIdentifiers
+@preconcurrency import Vision
+import VisionKit
 
 struct HomeAIAttachmentSheet: View {
+    private struct ScannedDocumentDraft: Identifiable {
+        let id = UUID()
+        let pages: [UIImage]
+    }
+
     @Binding var attachments: [AttachmentItem]
     let onQuickPrompt: (String) -> Void
     @Environment(\.dismiss) private var dismiss
@@ -19,6 +26,8 @@ struct HomeAIAttachmentSheet: View {
     @State private var authStatus: PHAuthorizationStatus = .notDetermined
     @State private var showFullPicker = false
     @State private var showDocumentPicker = false
+    @State private var showDocumentScanner = false
+    @State private var scannedDocumentDraft: ScannedDocumentDraft?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -94,6 +103,15 @@ struct HomeAIAttachmentSheet: View {
 
             // Action rows
             AttachmentActionRow(
+                icon: "doc.text.viewfinder",
+                iconColor: .teal,
+                title: "Scan Receipt or Document",
+                subtitle: "Scan pages, preview, then attach"
+            ) {
+                showDocumentScanner = true
+            }
+
+            AttachmentActionRow(
                 icon: "doc.fill",
                 iconColor: .orange,
                 title: "Upload PDF",
@@ -146,6 +164,19 @@ struct HomeAIAttachmentSheet: View {
         .sheet(isPresented: $showDocumentPicker) {
             PDFDocumentPickerView { pages, filename, sourceText in
                 guard !pages.isEmpty else { return }
+                attachments.append(AttachmentItem(pdfPages: pages, filename: filename, sourceText: sourceText))
+                dismiss()
+            }
+        }
+        .fullScreenCover(isPresented: $showDocumentScanner) {
+            DocumentScannerView { pages in
+                guard !pages.isEmpty else { return }
+                scannedDocumentDraft = ScannedDocumentDraft(pages: pages)
+            }
+        }
+        .sheet(item: $scannedDocumentDraft) { draft in
+            ScannedDocumentPreviewView(pages: draft.pages) { pages, sourceText in
+                let filename = pages.count == 1 ? "Scanned Receipt" : "Scanned Document"
                 attachments.append(AttachmentItem(pdfPages: pages, filename: filename, sourceText: sourceText))
                 dismiss()
             }
@@ -398,7 +429,12 @@ struct PDFDocumentPickerView: UIViewControllerRepresentable {
                 images.append(page.thumbnail(of: targetSize, for: .mediaBox))
             }
 
-            let text = pageTextBlocks.isEmpty ? nil : pageTextBlocks.joined(separator: "\n\n")
+            let text: String?
+            if !pageTextBlocks.isEmpty {
+                text = pageTextBlocks.joined(separator: "\n\n")
+            } else {
+                text = ScannedDocumentOCR.extractTextSync(from: images)
+            }
             return (images, text)
         }
 
@@ -428,6 +464,226 @@ struct PDFDocumentPickerView: UIViewControllerRepresentable {
             }
 
             return rows.joined(separator: "\n")
+        }
+    }
+}
+
+// MARK: - Document Scanner
+
+struct DocumentScannerView: UIViewControllerRepresentable {
+    let onComplete: ([UIImage]) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(dismiss: dismiss, onComplete: onComplete)
+    }
+
+    func makeUIViewController(context: Context) -> VNDocumentCameraViewController {
+        let controller = VNDocumentCameraViewController()
+        controller.delegate = context.coordinator
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: VNDocumentCameraViewController, context: Context) {}
+
+    final class Coordinator: NSObject, VNDocumentCameraViewControllerDelegate {
+        let dismiss: DismissAction
+        let onComplete: ([UIImage]) -> Void
+
+        init(dismiss: DismissAction, onComplete: @escaping ([UIImage]) -> Void) {
+            self.dismiss = dismiss
+            self.onComplete = onComplete
+        }
+
+        func documentCameraViewControllerDidCancel(_ controller: VNDocumentCameraViewController) {
+            dismiss()
+        }
+
+        func documentCameraViewController(_ controller: VNDocumentCameraViewController, didFailWithError error: Error) {
+            dismiss()
+        }
+
+        func documentCameraViewController(_ controller: VNDocumentCameraViewController, didFinishWith scan: VNDocumentCameraScan) {
+            var pages: [UIImage] = []
+            for index in 0..<scan.pageCount {
+                pages.append(scan.imageOfPage(at: index))
+            }
+            dismiss()
+            onComplete(pages)
+        }
+    }
+}
+
+// MARK: - Scan Preview
+
+private struct ScannedDocumentPreviewView: View {
+    let pages: [UIImage]
+    let onConfirm: ([UIImage], String?) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var currentPage = 0
+    @State private var recognizedText: String?
+    @State private var isRecognizingText = false
+
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 16) {
+                TabView(selection: $currentPage) {
+                    ForEach(Array(pages.enumerated()), id: \.offset) { index, image in
+                        GeometryReader { proxy in
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                    .fill(Color(.secondarySystemBackground))
+
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(
+                                        width: proxy.size.width - 24,
+                                        height: proxy.size.height - 24
+                                    )
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 4)
+                        }
+                        .tag(index)
+                    }
+                }
+                .tabViewStyle(.page(indexDisplayMode: .never))
+                .frame(height: 360)
+
+                HStack {
+                    Text("\(pages.count) \(pages.count == 1 ? "page" : "pages") scanned")
+                        .font(.system(.subheadline, design: .rounded).weight(.medium))
+                        .foregroundColor(.primary)
+
+                    Spacer()
+
+                    if pages.count > 1 {
+                        Text("Page \(currentPage + 1) of \(pages.count)")
+                            .font(.system(.footnote, design: .rounded))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .padding(.horizontal, 20)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Text extraction")
+                        .font(.system(.headline, design: .rounded).weight(.semibold))
+
+                    if isRecognizingText {
+                        HStack(spacing: 10) {
+                            ProgressView()
+                            Text("Reading scanned text...")
+                                .font(.system(.subheadline, design: .rounded))
+                                .foregroundColor(.secondary)
+                        }
+                    } else if let recognizedText, !recognizedText.isEmpty {
+                        ScrollView {
+                            Text(recognizedText)
+                                .font(.system(.footnote, design: .monospaced))
+                                .foregroundColor(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .frame(maxHeight: 140)
+                        .padding(12)
+                        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    } else {
+                        Text("No text detected. You can still attach the scan and let the AI read the images directly.")
+                            .font(.system(.subheadline, design: .rounded))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .padding(.horizontal, 20)
+
+                HStack(spacing: 12) {
+                    Button("Retake") {
+                        dismiss()
+                    }
+                    .font(.system(.body, design: .rounded).weight(.medium))
+                    .foregroundColor(.primary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                    Button("Attach Scan") {
+                        onConfirm(pages, recognizedText)
+                    }
+                    .font(.system(.body, design: .rounded).weight(.semibold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 8)
+            }
+            .navigationTitle("Preview Scan")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+        }
+        .navigationViewStyle(.stack)
+        .task {
+            guard recognizedText == nil, !isRecognizingText else { return }
+            isRecognizingText = true
+            recognizedText = await ScannedDocumentOCR.extractText(from: pages)
+            isRecognizingText = false
+        }
+    }
+}
+
+// MARK: - OCR
+
+private enum ScannedDocumentOCR {
+    static func extractTextSync(from pages: [UIImage]) -> String? {
+        let semaphore = DispatchSemaphore(value: 0)
+        var output: String?
+
+        Task {
+            output = await extractText(from: pages)
+            semaphore.signal()
+        }
+
+        semaphore.wait()
+        return output
+    }
+
+    static func extractText(from pages: [UIImage]) async -> String? {
+        guard !pages.isEmpty else { return nil }
+
+        var pageTexts: [String] = []
+        for (index, image) in pages.enumerated() {
+            guard let cgImage = image.cgImage else { continue }
+            let recognized = await recognizeText(in: cgImage)
+            let trimmed = recognized.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { continue }
+            pageTexts.append("Page \(index + 1):\n\(trimmed)")
+        }
+
+        guard !pageTexts.isEmpty else { return nil }
+        return pageTexts.joined(separator: "\n\n")
+    }
+
+    private static func recognizeText(in cgImage: CGImage) async -> String {
+        await withCheckedContinuation { continuation in
+            let request = VNRecognizeTextRequest { request, _ in
+                let text = (request.results as? [VNRecognizedTextObservation])?
+                    .compactMap { $0.topCandidates(1).first?.string }
+                    .joined(separator: "\n") ?? ""
+                continuation.resume(returning: text)
+            }
+
+            request.recognitionLevel = .accurate
+            request.usesLanguageCorrection = true
+
+            let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+            DispatchQueue.global(qos: .userInitiated).async {
+                try? handler.perform([request])
+            }
         }
     }
 }

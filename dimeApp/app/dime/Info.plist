@@ -63,6 +63,8 @@
 	</array>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Renvo AI reads your photos and receipts to automatically log transactions.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Renvo AI scans receipts and documents to help you attach and extract transactions.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

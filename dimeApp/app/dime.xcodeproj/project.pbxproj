@@ -1382,7 +1382,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = dime/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Dime;
+				INFOPLIST_KEY_CFBundleDisplayName = Saku;
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "We need to unlock your data.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save an image of a transaction for sharing.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -1423,7 +1423,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = dime/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Dime;
+				INFOPLIST_KEY_CFBundleDisplayName = Saku;
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "We need to unlock your data.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save an image of a transaction for sharing.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
