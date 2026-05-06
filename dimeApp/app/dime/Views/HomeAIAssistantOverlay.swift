@@ -76,6 +76,13 @@ VStack(spacing: 0) {
                     )
                     .zIndex(2)
 
+                if isExpanded && keyboardOverlap == 0 {
+                    collapseHandle
+                        .padding(.bottom, activeComposerBottomPadding + 104)
+                        .opacity(revealProgress)
+                        .zIndex(1)
+                        .modifier(HomeAICollapseGestureModifier(dragGesture: collapseGesture))
+                }
             }
             .ignoresSafeArea(.keyboard, edges: .bottom)
             .onChange(of: isExpanded) { expanded in
@@ -168,6 +175,7 @@ VStack(spacing: 0) {
                         .onTapGesture {
                             dismissKeyboard()
                         }
+                        .modifier(HomeAICollapseGestureModifier(dragGesture: collapseGesture))
                         .id("bottom-anchor")
                 }
                 .background(
@@ -212,6 +220,7 @@ VStack(spacing: 0) {
             .onTapGesture {
                 dismissKeyboard()
             }
+            .modifier(HomeAICollapseGestureModifier(dragGesture: collapseGesture))
     }
 
     private var emptyState: some View {
@@ -849,43 +858,43 @@ private struct HomeAIMarkdownText: View {
 
     var body: some View {
         Markdown(text)
-            .markdownTheme(homeAITheme)
-            .background(Color.clear)
-            .textSelection(.enabled)
-            .frame(maxWidth: .infinity, alignment: .leading)
+        .markdownTheme(.gitHub)
+        .markdownTextStyle(\.text) {
+            FontSize(.em(1.0))
+            ForegroundColor(Color(.label))
+            BackgroundColor(nil)
+        }
+        .markdownTextStyle(\.strong) {
+            FontWeight(.semibold)
+        }
+        .markdownTextStyle(\.code) {
+            FontFamilyVariant(.monospaced)
+            FontSize(.em(0.92))
+            BackgroundColor(Color(.secondarySystemBackground))
+        }
+        .markdownBlockStyle(\.paragraph) { configuration in
+            configuration.label
+                .relativeLineSpacing(.em(0.22))
+                .markdownMargin(top: 0, bottom: 14)
+        }
+        .markdownBlockStyle(\.blockquote) { configuration in
+            configuration.label
+                .padding(.leading, 14)
+                .padding(.vertical, 2)
+                .markdownTextStyle {
+                    ForegroundColor(Color(.secondaryLabel))
+                }
+                .overlay(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 999, style: .continuous)
+                        .fill(Color(hex: "4ECDC4").opacity(0.45))
+                        .frame(width: 3)
+                }
+                .markdownMargin(top: 4, bottom: 16)
+        }
+        .tint(Color(hex: "4ECDC4"))
+        .textSelection(.enabled)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
-}
-
-private let homeAITheme = Theme.gitHub.text {
-    ForegroundColor(Color(.label))
-    BackgroundColor(nil)
-}
-.strong {
-    FontWeight(.semibold)
-}
-.code {
-    FontFamilyVariant(.monospaced)
-    FontSize(.em(0.92))
-    BackgroundColor(Color(.secondarySystemBackground))
-}
-.paragraph { configuration in
-    configuration.label
-        .relativeLineSpacing(.em(0.22))
-        .markdownMargin(top: 0, bottom: 14)
-}
-.blockquote { configuration in
-    configuration.label
-        .padding(.leading, 14)
-        .padding(.vertical, 2)
-        .markdownTextStyle {
-            ForegroundColor(Color(.secondaryLabel))
-        }
-        .overlay(alignment: .leading) {
-            RoundedRectangle(cornerRadius: 999, style: .continuous)
-                .fill(Color(hex: "4ECDC4").opacity(0.45))
-                .frame(width: 3)
-        }
-        .markdownMargin(top: 4, bottom: 16)
 }
 
 private struct ThinkingDisclosure: View {

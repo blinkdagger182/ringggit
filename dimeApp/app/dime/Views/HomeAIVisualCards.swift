@@ -46,7 +46,7 @@ struct AISummaryCardView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             // Header
-            Text("Net total")
+            Text("Summary")
                 .font(.system(.subheadline, design: .rounded).weight(.semibold))
                 .foregroundColor(Color(.secondaryLabel))
 
