@@ -158,6 +158,7 @@
 		5EA1A0072E0A000100ABCD01 /* HomeAIAssistantBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA1A0062E0A000100ABCD01 /* HomeAIAssistantBar.swift */; };
 		5EA1A0092E0A000100ABCD01 /* HomeAIAssistantOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA1A0082E0A000100ABCD01 /* HomeAIAssistantOverlay.swift */; };
 		5EA1A00B2E0A000100ABCD01 /* HomeAIVisualCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA1A00A2E0A000100ABCD01 /* HomeAIVisualCards.swift */; };
+		6A1F4A012E3B100100ABC001 /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 6A1F4A032E3B100100ABC001 /* MarkdownUI */; };
 		AE5B3D792AEE99E000AB364E /* NumberPad.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE5B3D782AEE99E000AB364E /* NumberPad.swift */; };
 		AEADEF6F2AE94DA3006EB614 /* Toast.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEADEF6E2AE94DA3006EB614 /* Toast.swift */; };
 		AEADEF712AE94DA8006EB614 /* BackButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEADEF702AE94DA8006EB614 /* BackButton.swift */; };
@@ -376,6 +377,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6A1F4A012E3B100100ABC001 /* MarkdownUI in Frameworks */,
 				D6A4DE242D61744400F7F751 /* SwiftUIIntrospect-Static in Frameworks */,
 				D6A4DE202D61744400F7F751 /* SwiftUIIntrospect in Frameworks */,
 				53A4148028B7DA4C008C30E7 /* ConfettiSwiftUI in Frameworks */,
@@ -769,6 +771,7 @@
 				53DCFAA02A498FBF0063FCDE /* CloudKitSyncMonitor */,
 				538D10742A5AB7E7008F1AFB /* IsScrolling */,
 				533A38F32AA49E5900F66957 /* Alamofire */,
+				6A1F4A032E3B100100ABC001 /* MarkdownUI */,
 				D6A4DE1F2D61744400F7F751 /* SwiftUIIntrospect */,
 				D6A4DE232D61744400F7F751 /* SwiftUIIntrospect-Static */,
 			);
@@ -833,6 +836,7 @@
 				53DCFA9F2A498FBF0063FCDE /* XCRemoteSwiftPackageReference "CloudKitSyncMonitor" */,
 				538D10732A5AB7E7008F1AFB /* XCRemoteSwiftPackageReference "IsScrolling" */,
 				533A38F22AA49E0100F66957 /* XCRemoteSwiftPackageReference "Alamofire" */,
+				6A1F4A022E3B100100ABC001 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
 				D6A4DE1E2D61744400F7F751 /* XCRemoteSwiftPackageReference "SwiftUI-Introspect" */,
 			);
 			productRefGroup = 5327D284287C697400F76ADF /* Products */;
@@ -1557,6 +1561,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		6A1F4A022E3B100100ABC001 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/gonzalezreal/swift-markdown-ui";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.4.1;
+			};
+		};
 		5327D2E4287C6CC300F76ADF /* XCRemoteSwiftPackageReference "Popovers" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/aheze/Popovers";
@@ -1616,6 +1628,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		6A1F4A032E3B100100ABC001 /* MarkdownUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6A1F4A022E3B100100ABC001 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */;
+			productName = MarkdownUI;
+		};
 		5327D2E5287C6CC300F76ADF /* Popovers */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 5327D2E4287C6CC300F76ADF /* XCRemoteSwiftPackageReference "Popovers" */;

@@ -151,6 +151,21 @@ struct HomeView: View {
                         .padding(.top, max(48, homeAISheetOffset - 108))
                     }
                 }
+                .overlay(alignment: .top) {
+                    if currentTab == "Log" && homeAIAssistantViewModel.isPresented {
+                        LinearGradient(
+                            colors: [
+                                Color(.systemBackground).opacity(0.24),
+                                Color(.systemBackground).opacity(0.1),
+                                Color.clear
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .frame(height: 26)
+                        .allowsHitTesting(false)
+                    }
+                }
                 .zIndex(1)
 
                 CustomTabBar(currentTab: $currentTab, topEdge: topEdge, bottomEdge: bottomEdge, counter: $counter, launchAdd: launchAdd)
@@ -185,6 +200,28 @@ struct HomeView: View {
                     .allowsHitTesting(true)
                     .padding(.horizontal, 20)
                     .zIndex(1.15)
+                }
+
+                if currentTab == "Log", homeAIAssistantViewModel.isPresented {
+                    Color.clear
+                        .frame(height: homeAIPeekHeight + bottomEdge + 18)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                        .contentShape(Rectangle())
+                        .highPriorityGesture(homeAIPullGesture(openOffset: homeAIOpenOffset))
+                        .overlay(alignment: .top) {
+                            LinearGradient(
+                                colors: [
+                                    Color(.systemBackground).opacity(0.16),
+                                    Color(.systemBackground).opacity(0.05),
+                                    Color.clear
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                            .frame(height: 30)
+                            .allowsHitTesting(false)
+                        }
+                        .zIndex(1.12)
                 }
 
                 if showPopup {

@@ -61,6 +61,8 @@ final class HomeAIAssistantViewModel: ObservableObject {
     @Published private(set) var isResponding = false
     @Published private(set) var isAnimatingReply = false
     @Published private(set) var statusText: String = ""
+    @Published private(set) var streamingText: String = ""
+    @Published private(set) var messageContentRevision = 0
     @Published var pendingAttachments: [AttachmentItem] = []
 
     var dataController: DataController?
@@ -81,6 +83,10 @@ final class HomeAIAssistantViewModel: ObservableObject {
         !draftMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             || !pendingAttachments.isEmpty
             || resumableExtractionJob != nil
+    }
+
+    var isStreaming: Bool {
+        isResponding || isAnimatingReply
     }
 
     func expand() {
@@ -117,9 +123,11 @@ final class HomeAIAssistantViewModel: ObservableObject {
         let capturedAttachments = pendingAttachments
 
         appendUserMessage(messageText, attachments: capturedAttachments)
+        let assistantMessageID = appendAssistantPlaceholder()
         draftMessage = ""
         pendingAttachments = []
         isResponding = true
+        streamingText = ""
 
         // Tool executor: AI calls this when it needs transaction data for a date range
         let toolExecutor: (_ name: String, _ args: [String: Any]) async -> String = { [weak self] name, args in
@@ -145,16 +153,17 @@ final class HomeAIAssistantViewModel: ObservableObject {
                 let systemPrompt = buildSystemPrompt()
                 if let existingJob = resumableExtractionJob,
                    capturedAttachments.isEmpty {
-                    await processExtractionJob(existingJob, systemPrompt: systemPrompt)
+                    await processExtractionJob(existingJob, systemPrompt: systemPrompt, assistantMessageID: assistantMessageID)
                     return
                 }
 
                 if !capturedAttachments.isEmpty {
                     let pages = Self.makeExtractionPages(from: capturedAttachments)
                     guard !pages.isEmpty else {
-                        messages.append(HomeAIMessage(role: .assistant, text: "I couldn't read any pages from that attachment.", date: .now))
-                        isResponding = false
-                        statusText = ""
+                        completeAssistantMessage(
+                            id: assistantMessageID,
+                            text: "I couldn't read any pages from that attachment."
+                        )
                         return
                     }
 
@@ -166,7 +175,7 @@ final class HomeAIAssistantViewModel: ObservableObject {
                         loggedActions: []
                     )
                     resumableExtractionJob = job
-                    await processExtractionJob(job, systemPrompt: systemPrompt)
+                    await processExtractionJob(job, systemPrompt: systemPrompt, assistantMessageID: assistantMessageID)
                     return
                 }
 
@@ -177,25 +186,29 @@ final class HomeAIAssistantViewModel: ObservableObject {
                 )
                 statusText = "Writing response"
                 executeActions(response.actions)
-                await animateReply(response)
+                await animateReply(response, assistantMessageID: assistantMessageID)
                 statusText = ""
             } catch AIServiceError.apiError(let msg) {
-                messages.append(HomeAIMessage(role: .assistant, text: "API error: \(msg)", date: .now))
-                isResponding = false
-                statusText = ""
+                completeAssistantMessage(id: assistantMessageID, text: "API error: \(msg)")
             } catch let urlError as URLError where urlError.code == .timedOut {
-                messages.append(HomeAIMessage(role: .assistant, text: "Request timed out — the file is large. Try a shorter document or fewer pages.", date: .now))
-                isResponding = false
-                statusText = ""
+                completeAssistantMessage(
+                    id: assistantMessageID,
+                    text: "Request timed out — the file is large. Try a shorter document or fewer pages."
+                )
             } catch {
-                messages.append(HomeAIMessage(role: .assistant, text: "Couldn't connect. Check your API key and internet connection.", date: .now))
-                isResponding = false
-                statusText = ""
+                completeAssistantMessage(
+                    id: assistantMessageID,
+                    text: "Couldn't connect. Check your API key and internet connection."
+                )
             }
         }
     }
 
-    private func processExtractionJob(_ initialJob: ExtractionJob, systemPrompt: String) async {
+    private func processExtractionJob(
+        _ initialJob: ExtractionJob,
+        systemPrompt: String,
+        assistantMessageID: UUID
+    ) async {
         var job = initialJob
         var loggedActions = job.loggedActions
 
@@ -245,36 +258,27 @@ final class HomeAIAssistantViewModel: ObservableObject {
                 actions: [],
                 visual: loggedActions.isEmpty ? nil : .transactionsLogged(loggedActions)
             )
-            await animateReply(response)
+            await animateReply(response, assistantMessageID: assistantMessageID)
             statusText = ""
         } catch let urlError as URLError where urlError.code == .timedOut {
             job.batchSize = 1
             resumableExtractionJob = job
-            messages.append(HomeAIMessage(
-                role: .assistant,
-                text: "Timed out on page \(job.nextPageIndex + 1). I saved completed pages already. Send “continue” and I’ll resume from page \(job.nextPageIndex + 1) with one page per request.",
-                date: .now
-            ))
-            isResponding = false
-            statusText = ""
+            completeAssistantMessage(
+                id: assistantMessageID,
+                text: "Timed out on page \(job.nextPageIndex + 1). I saved completed pages already. Send “continue” and I’ll resume from page \(job.nextPageIndex + 1) with one page per request."
+            )
         } catch AIServiceError.apiError(let msg) {
             resumableExtractionJob = job
-            messages.append(HomeAIMessage(
-                role: .assistant,
-                text: "API error on page \(job.nextPageIndex + 1): \(msg). Completed pages were saved. Send “continue” to retry from page \(job.nextPageIndex + 1).",
-                date: .now
-            ))
-            isResponding = false
-            statusText = ""
+            completeAssistantMessage(
+                id: assistantMessageID,
+                text: "API error on page \(job.nextPageIndex + 1): \(msg). Completed pages were saved. Send “continue” to retry from page \(job.nextPageIndex + 1)."
+            )
         } catch {
             resumableExtractionJob = job
-            messages.append(HomeAIMessage(
-                role: .assistant,
-                text: "Stopped on page \(job.nextPageIndex + 1). Completed pages were saved. Send “continue” to retry from page \(job.nextPageIndex + 1).",
-                date: .now
-            ))
-            isResponding = false
-            statusText = ""
+            completeAssistantMessage(
+                id: assistantMessageID,
+                text: "Stopped on page \(job.nextPageIndex + 1). Completed pages were saved. Send “continue” to retry from page \(job.nextPageIndex + 1)."
+            )
         }
     }
 
@@ -519,37 +523,108 @@ final class HomeAIAssistantViewModel: ObservableObject {
         return Array(candidates.prefix(250))
     }
 
-    // MARK: - Word-by-word animation
+    // MARK: - Reply streaming
 
-    private func animateReply(_ response: AIResponse) async {
-        let now = Date()
-        // thinking = nil during animation so ThinkingDisclosure state doesn't reset each word
-        messages.append(HomeAIMessage(role: .assistant, text: "", date: now))
+    private func animateReply(_ response: AIResponse, assistantMessageID: UUID) async {
+        let reply = response.reply.isEmpty ? "Done." : response.reply
+
         isResponding = false
         isAnimatingReply = true
+        statusText = ""
+        streamingText = ""
 
-        let reply = response.reply.isEmpty ? "Done." : response.reply
-        let words = reply.components(separatedBy: " ")
         var built = ""
-
-        for (i, word) in words.enumerated() {
-            if i > 0 { built += " " }
-            built += word
-            if let idx = messages.indices.last {
-                messages[idx] = HomeAIMessage(role: .assistant, text: built, date: now)
+        for chunk in replyChunks(for: reply) {
+            built += chunk
+            updateAssistantMessage(id: assistantMessageID) { message in
+                message.text = built
+                message.visual = nil
+                message.thinking = nil
             }
-            try? await Task.sleep(nanoseconds: 28_000_000)
+            streamingText = built
+            try? await Task.sleep(nanoseconds: streamingDelay(for: chunk))
         }
 
-        // Attach thinking + visual only after animation — stable state from here
-        if let idx = messages.indices.last {
-            messages[idx] = HomeAIMessage(role: .assistant, text: built, date: now, visual: response.visual, thinking: response.thinking)
+        updateAssistantMessage(id: assistantMessageID) { message in
+            message.text = built
+            message.visual = response.visual
+            message.thinking = response.thinking
         }
+        streamingText = built
         isAnimatingReply = false
     }
 
     private func appendUserMessage(_ text: String, attachments: [AttachmentItem] = []) {
         messages.append(HomeAIMessage(role: .user, text: text, date: .now, attachments: attachments))
+        messageContentRevision &+= 1
+    }
+
+    private func appendAssistantPlaceholder() -> UUID {
+        let message = HomeAIMessage(role: .assistant, text: "", date: .now)
+        messages.append(message)
+        messageContentRevision &+= 1
+        return message.id
+    }
+
+    private func completeAssistantMessage(
+        id: UUID,
+        text: String,
+        thinking: String? = nil,
+        visual: AIVisualCard? = nil
+    ) {
+        updateAssistantMessage(id: id) { message in
+            message.text = text
+            message.thinking = thinking
+            message.visual = visual
+        }
+        streamingText = text
+        isResponding = false
+        isAnimatingReply = false
+        statusText = ""
+    }
+
+    private func updateAssistantMessage(id: UUID, update: (inout HomeAIMessage) -> Void) {
+        guard let index = messages.firstIndex(where: { $0.id == id }) else { return }
+        var message = messages[index]
+        update(&message)
+        messages[index] = message
+        messageContentRevision &+= 1
+    }
+
+    private func replyChunks(for reply: String) -> [String] {
+        var chunks: [String] = []
+        var current = ""
+
+        for character in reply {
+            current.append(character)
+
+            if character.isWhitespace || ".!,?:;\n".contains(character) || current.count >= 3 {
+                chunks.append(current)
+                current = ""
+            }
+        }
+
+        if !current.isEmpty {
+            chunks.append(current)
+        }
+
+        return chunks.isEmpty ? [reply] : chunks
+    }
+
+    private func streamingDelay(for chunk: String) -> UInt64 {
+        if chunk.contains(where: \.isNewline) {
+            return 55_000_000
+        }
+
+        if chunk.contains(where: { ".!,?:;".contains($0) }) {
+            return 42_000_000
+        }
+
+        if chunk.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return 18_000_000
+        }
+
+        return 30_000_000
     }
 
     // MARK: - Tool execution (called by AI on demand)

@@ -12,15 +12,24 @@ struct HomeAIMessage: Identifiable {
         case assistant
     }
 
-    let id = UUID()
+    let id: UUID
     let role: Role
-    let text: String
-    let date: Date
-    let attachments: [AttachmentItem]
-    let visual: AIVisualCard?
-    let thinking: String?
+    var text: String
+    var date: Date
+    var attachments: [AttachmentItem]
+    var visual: AIVisualCard?
+    var thinking: String?
 
-    init(role: Role, text: String, date: Date, attachments: [AttachmentItem] = [], visual: AIVisualCard? = nil, thinking: String? = nil) {
+    init(
+        id: UUID = UUID(),
+        role: Role,
+        text: String,
+        date: Date,
+        attachments: [AttachmentItem] = [],
+        visual: AIVisualCard? = nil,
+        thinking: String? = nil
+    ) {
+        self.id = id
         self.role = role
         self.text = text
         self.date = date

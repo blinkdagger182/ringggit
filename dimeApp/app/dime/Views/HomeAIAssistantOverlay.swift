@@ -3,6 +3,7 @@
 //  dime
 //
 
+import MarkdownUI
 import SwiftUI
 import UIKit
 
@@ -75,13 +76,6 @@ VStack(spacing: 0) {
                     )
                     .zIndex(2)
 
-                if isExpanded && keyboardOverlap == 0 {
-                    collapseHandle
-                        .padding(.bottom, activeComposerBottomPadding + 104)
-                        .opacity(revealProgress)
-                        .zIndex(1)
-                        .modifier(HomeAICollapseGestureModifier(dragGesture: collapseGesture))
-                }
             }
             .ignoresSafeArea(.keyboard, edges: .bottom)
             .onChange(of: isExpanded) { expanded in
@@ -146,7 +140,7 @@ VStack(spacing: 0) {
     private func messageArea(keyboardOverlap: CGFloat, composerBottomPadding: CGFloat) -> some View {
         ScrollViewReader { proxy in
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 16) {
+                LazyVStack(alignment: .leading, spacing: 16) {
                     if viewModel.messages.isEmpty {
                         emptyState
                     } else {
@@ -156,20 +150,25 @@ VStack(spacing: 0) {
                             messageBubble(message)
                                 .id(message.id)
                         }
-
-                        if viewModel.isResponding {
-                            typingIndicator
-                                .id("typing-indicator")
-                        }
                     }
 
-                    nonBubbleDragArea(
-                        height: bottomScrollSpacerHeight(
-                            keyboardOverlap: keyboardOverlap,
-                            composerBottomPadding: composerBottomPadding
+                    Color.clear
+                        .frame(
+                            maxWidth: .infinity,
+                            minHeight: bottomScrollSpacerHeight(
+                                keyboardOverlap: keyboardOverlap,
+                                composerBottomPadding: composerBottomPadding
+                            ),
+                            maxHeight: bottomScrollSpacerHeight(
+                                keyboardOverlap: keyboardOverlap,
+                                composerBottomPadding: composerBottomPadding
+                            )
                         )
-                    )
-                    .id("bottom-anchor")
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            dismissKeyboard()
+                        }
+                        .id("bottom-anchor")
                 }
                 .background(
                     Color.black.opacity(0.001)
@@ -188,15 +187,16 @@ VStack(spacing: 0) {
             .onChange(of: viewModel.messages.count) { _ in
                 requestScrollToChatEnd(proxy, animated: false)
             }
-            .onChange(of: viewModel.isResponding) { _ in
-                requestScrollToChatEnd(proxy, animated: false)
+            .onChange(of: viewModel.streamingText) { _ in
+                guard !viewModel.streamingText.isEmpty else { return }
+                requestScrollToChatEnd(proxy, animated: true)
+            }
+            .onChange(of: viewModel.messageContentRevision) { _ in
+                guard !viewModel.isStreaming else { return }
+                requestScrollToChatEnd(proxy, animated: false, delay: 0.02)
             }
             .onChange(of: keyboardHeightHelper.keyboardHeight) { _ in
-                requestScrollToChatEnd(proxy, animated: false, delay: 0.26)
-            }
-            .onChange(of: composerFocused) { focused in
-                guard focused else { return }
-                requestScrollToChatEnd(proxy, animated: false, delay: 0.26)
+                requestScrollToChatEnd(proxy, animated: false, delay: 0.18)
             }
             .onAppear {
                 guard !viewModel.messages.isEmpty else { return }
@@ -212,7 +212,6 @@ VStack(spacing: 0) {
             .onTapGesture {
                 dismissKeyboard()
             }
-            .modifier(HomeAICollapseGestureModifier(dragGesture: collapseGesture))
     }
 
     private var emptyState: some View {
@@ -329,19 +328,18 @@ VStack(spacing: 0) {
                             // }
 
                             if !message.text.isEmpty {
-                                Text(message.text)
-                                    .font(.system(.body))
-                                    .foregroundColor(Color(.label))
-                                    .multilineTextAlignment(.leading)
+                                HomeAIMarkdownText(text: message.text)
+                            } else if isStreamingAssistantPlaceholder(message) {
+                                HStack(spacing: 8) {
+                                    Text(viewModel.statusText.isEmpty ? "Thinking" : viewModel.statusText)
+                                        .font(.system(.body))
+                                        .foregroundColor(Color(.label))
+                                        .lineSpacing(5)
+                                    AIThinkingDots()
+                                }
                             }
                         }
                     }
-                    .padding(16)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(Color(.secondarySystemBackground))
-                            .shadow(color: Color.black.opacity(0.06), radius: 8, y: 2)
-                    )
 
                     if let visual = message.visual {
                         AIVisualCardView(visual: visual)
@@ -404,44 +402,11 @@ VStack(spacing: 0) {
         }
     }
 
-    private var typingIndicator: some View {
-        HStack(alignment: .top, spacing: 10) {
-            ZStack {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [Color(hex: "4ECDC4").opacity(0.18), Color(hex: "9BAAF8").opacity(0.22)],
-                            startPoint: .topLeading, endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 30, height: 30)
-                Image(systemName: "sparkles")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [Color(hex: "4ECDC4"), Color(hex: "7B8FF8")],
-                            startPoint: .topLeading, endPoint: .bottomTrailing
-                        )
-                    )
-            }
-            .padding(.top, 2)
-
-            HStack(spacing: 8) {
-                Text(viewModel.statusText.isEmpty ? "Thinking" : viewModel.statusText)
-                    .font(.system(.body))
-                    .foregroundColor(Color(.label))
-                AIThinkingDots()
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Color(.secondarySystemBackground))
-                    .shadow(color: Color.black.opacity(0.06), radius: 8, y: 2)
-            )
-
-            Spacer(minLength: 42)
-        }
+    private func isStreamingAssistantPlaceholder(_ message: HomeAIMessage) -> Bool {
+        message.role == .assistant
+            && message.id == viewModel.messages.last?.id
+            && message.text.isEmpty
+            && viewModel.isStreaming
     }
 
     private var composerSection: some View {
@@ -611,11 +576,11 @@ VStack(spacing: 0) {
         .accessibilityLabel("Swipe up to return Home")
     }
 
-    private func requestScrollToChatEnd(_ proxy: ScrollViewProxy, animated: Bool, delay: TimeInterval = 0.04) {
+    private func requestScrollToChatEnd(_ proxy: ScrollViewProxy, animated: Bool, delay: TimeInterval = 0) {
         chatScrollRequestID += 1
         let requestID = chatScrollRequestID
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+        let performScroll = {
             guard requestID == chatScrollRequestID else { return }
 
             let action = {
@@ -623,34 +588,26 @@ VStack(spacing: 0) {
             }
 
             if animated {
-                withAnimation(.easeOut(duration: 0.2)) {
+                withAnimation(.linear(duration: 0.08)) {
                     action()
                 }
             } else {
                 action()
             }
         }
+
+        if delay == 0 {
+            DispatchQueue.main.async(execute: performScroll)
+        } else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: performScroll)
+        }
     }
 
     private func sendComposerMessage() {
         guard !viewModel.draftMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        guard !viewModel.isResponding else { return }
+        guard !viewModel.isStreaming else { return }
 
-        focusComposer()
         viewModel.sendDraftMessage()
-        focusComposer()
-
-        DispatchQueue.main.async {
-            focusComposer()
-        }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            focusComposer()
-        }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
-            focusComposer()
-        }
     }
 
     private func dismissKeyboard() {
@@ -885,6 +842,50 @@ private struct AIThinkingDots: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { phase = 2 }
         }
     }
+}
+
+private struct HomeAIMarkdownText: View {
+    let text: String
+
+    var body: some View {
+        Markdown(text)
+            .markdownTheme(homeAITheme)
+            .background(Color.clear)
+            .textSelection(.enabled)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+private let homeAITheme = Theme.gitHub.text {
+    ForegroundColor(Color(.label))
+    BackgroundColor(nil)
+}
+.strong {
+    FontWeight(.semibold)
+}
+.code {
+    FontFamilyVariant(.monospaced)
+    FontSize(.em(0.92))
+    BackgroundColor(Color(.secondarySystemBackground))
+}
+.paragraph { configuration in
+    configuration.label
+        .relativeLineSpacing(.em(0.22))
+        .markdownMargin(top: 0, bottom: 14)
+}
+.blockquote { configuration in
+    configuration.label
+        .padding(.leading, 14)
+        .padding(.vertical, 2)
+        .markdownTextStyle {
+            ForegroundColor(Color(.secondaryLabel))
+        }
+        .overlay(alignment: .leading) {
+            RoundedRectangle(cornerRadius: 999, style: .continuous)
+                .fill(Color(hex: "4ECDC4").opacity(0.45))
+                .frame(width: 3)
+        }
+        .markdownMargin(top: 4, bottom: 16)
 }
 
 private struct ThinkingDisclosure: View {
