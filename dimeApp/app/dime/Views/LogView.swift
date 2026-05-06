@@ -12,6 +12,14 @@ import SwiftUIIntrospect
 import Popovers
 import SwiftUI
 
+private struct LogTopPullPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
 struct LogView: View {
     @ObservedObject var syncMonitor = SyncMonitor.shared
 
@@ -56,6 +64,8 @@ struct LogView: View {
     // to show/hide tab bar
     var bottomEdge: CGFloat
     var launchSearch: Bool
+    var onTopPullChanged: (CGFloat) -> Void = { _ in }
+    var onTopPullEnded: (CGFloat) -> Void = { _ in }
 
     // drag to open
 //    enum PullToReach {
@@ -66,6 +76,7 @@ struct LogView: View {
 //    @State var released: PullToReach = .none
 
     @State var progress = 0.0
+    @State private var topPullOffset: CGFloat = 0
 
     var body: some View {
         if transactions.isEmpty {
@@ -183,6 +194,15 @@ struct LogView: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
+                        GeometryReader { proxy in
+                            Color.clear
+                                .preference(
+                                    key: LogTopPullPreferenceKey.self,
+                                    value: max(0, proxy.frame(in: .named("LogScrollView")).minY)
+                                )
+                        }
+                        .frame(height: 0)
+
                         if filter == .all {
                             LogInsightsView(navBarText: $navBarText, showCents: showCents, currencySymbol: currencySymbol)
                         }
@@ -222,6 +242,17 @@ struct LogView: View {
                         .padding(.bottom, 70 + bottomEdge)
                     }
                 }
+                .coordinateSpace(name: "LogScrollView")
+                .onPreferenceChange(LogTopPullPreferenceKey.self) { offset in
+                    topPullOffset = offset
+                    onTopPullChanged(offset)
+                }
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 0, coordinateSpace: .named("LogScrollView"))
+                        .onEnded { value in
+                            onTopPullEnded(max(topPullOffset, value.predictedEndTranslation.height))
+                        }
+                )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .background(

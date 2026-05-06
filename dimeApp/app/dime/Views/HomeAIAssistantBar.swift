@@ -38,8 +38,8 @@ struct HomeAIAssistantBar: View {
             switch mode {
             case .idlePill:
                 VStack(spacing: 0) {
-                    topHandle
-                        .padding(.top, max(topInset, 12) - 10)
+                    askSakuPill
+                        .padding(.top, max(topInset, 12) + 14)
                         .opacity(max(0, 1.0 - (progress * 0.9)))
 
                     Spacer()
@@ -87,17 +87,39 @@ struct HomeAIAssistantBar: View {
     }
 
     @ViewBuilder
-    private var topHandle: some View {
-        Capsule(style: .continuous)
-            .fill(Color.PrimaryText.opacity(0.12))
-            .frame(width: 54, height: 6)
-            .overlay {
-                Capsule(style: .continuous)
-                    .stroke(Color.white.opacity(0.55), lineWidth: 0.8)
-            }
-            .shadow(color: Color.black.opacity(0.06), radius: 10, y: 4)
-        .padding(.horizontal, 18)
-        .padding(.vertical, 10)
+    private var askSakuPill: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "sparkles")
+                .font(.system(size: 18, weight: .semibold))
+
+            Text("Ask Saku AI")
+                .font(.system(size: 17, weight: .semibold, design: .rounded))
+                .tracking(-0.2)
+        }
+        .foregroundColor(.white.opacity(0.94))
+        .padding(.horizontal, 22)
+        .padding(.vertical, 13)
+        .background(
+            Capsule(style: .continuous)
+                .fill(.ultraThinMaterial)
+                .opacity(0.58)
+        )
+        .overlay {
+            Capsule(style: .continuous)
+                .strokeBorder(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.62),
+                            Color(hex: "9BAAF8").opacity(0.78),
+                            Color(hex: "4ECDC4").opacity(0.5)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1.4
+                )
+        }
+        .shadow(color: Color(hex: "9BAAF8").opacity(0.26), radius: 18, x: 0, y: 8)
         .contentShape(Rectangle())
         .matchedGeometryEffect(id: "home-ai-surface", in: namespace)
         .onTapGesture(perform: onExpand)
@@ -120,7 +142,7 @@ struct HomeAIAssistantBar: View {
             HStack(spacing: 10) {
                 Image(systemName: "sparkles")
                     .font(.system(size: 15, weight: .semibold))
-                Text("Ryt AI")
+                Text("Saku AI")
                     .font(.system(size: 21, weight: .semibold, design: .rounded))
 
                 Text("beta")

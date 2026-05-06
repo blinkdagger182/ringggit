@@ -7,7 +7,7 @@ import SwiftUI
 import UIKit
 
 struct HomeAIAssistantOverlay: View {
-    private let assistantTitle = "Renvo AI"
+    private let assistantTitle = "Saku AI"
 
     @ObservedObject var viewModel: HomeAIAssistantViewModel
     @StateObject private var keyboardHeightHelper = KeyboardHeightHelper()
@@ -17,6 +17,7 @@ struct HomeAIAssistantOverlay: View {
     let bottomInset: CGFloat
     let revealProgress: CGFloat
     let isExpanded: Bool
+    let homePeekHeight: CGFloat
     let onCollapse: () -> Void
     let collapseGesture: AnyGesture<DragGesture.Value>?
 
@@ -29,7 +30,8 @@ struct HomeAIAssistantOverlay: View {
     var body: some View {
         GeometryReader { proxy in
             let keyboardOverlap = max(0, keyboardHeightHelper.keyboardHeight - proxy.safeAreaInsets.bottom)
-            let baseComposerBottomPadding = max(proxy.safeAreaInsets.bottom, bottomInset) + 12
+            let visibleHomePadding = isExpanded && keyboardOverlap == 0 ? homePeekHeight : 0
+            let baseComposerBottomPadding = max(proxy.safeAreaInsets.bottom, bottomInset) + 12 + visibleHomePadding
             let activeComposerBottomPadding = keyboardOverlap > 0 ? 12 : baseComposerBottomPadding
 
             ZStack(alignment: .bottom) {
@@ -948,7 +950,7 @@ private struct ThinkingDisclosure: View {
     }
 }
 
-private struct HomeAIAnimatedGradientBackground: View {
+struct HomeAIAnimatedGradientBackground: View {
     var body: some View {
         ZStack {
             RadialGradient(

@@ -69,6 +69,7 @@ struct HomeView: View {
 
     var body: some View {
         GeometryReader { proxy in
+            let homeAIPeekHeight = targetHomeAIPeekHeight(for: proxy.size.height)
             let homeAIOpenOffset = targetHomeAIOpenOffset(for: proxy.size.height)
 
             ZStack(alignment: .bottom) {
@@ -80,6 +81,7 @@ struct HomeView: View {
                         bottomInset: bottomEdge,
                         revealProgress: homeAIRevealProgress(openOffset: homeAIOpenOffset),
                         isExpanded: homeAIAssistantViewModel.isPresented,
+                        homePeekHeight: homeAIPeekHeight,
                         onCollapse: {
                         withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
                             homeAISheetOffset = 0
@@ -89,11 +91,22 @@ struct HomeView: View {
                         collapseGesture: homeAIPullGesture(openOffset: homeAIOpenOffset)
                     )
                     .ignoresSafeArea()
+                    .offset(y: homeAIOverlayOffset(openOffset: homeAIOpenOffset))
                     .zIndex(0)
                 }
 
                 TabView(selection: $currentTab) {
-                    LogView(topEdge: topEdge, bottomEdge: bottomEdge, launchSearch: launchSearch)
+                    LogView(
+                        topEdge: topEdge,
+                        bottomEdge: bottomEdge,
+                        launchSearch: launchSearch,
+                        onTopPullChanged: { offset in
+                            homeAIScrollPullChanged(offset, openOffset: homeAIOpenOffset)
+                        },
+                        onTopPullEnded: { predictedOffset in
+                            homeAIScrollPullEnded(predictedOffset, openOffset: homeAIOpenOffset)
+                        }
+                    )
                         .ignoresSafeArea(.all)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .tag("Log")
@@ -128,7 +141,7 @@ struct HomeView: View {
                                 .font(.system(size: 22, weight: .medium))
                                 .foregroundColor(Color.PrimaryText.opacity(0.14))
 
-                            Text(homeAISheetOffset > homeAIPullThreshold * 0.82 ? "Release for ✨ AI" : "Pull more for ✨ AI")
+                            Text(homeAISheetOffset > homeAIPullThreshold * 0.82 ? "Release for ✨ Saku AI" : "Pull more for ✨ Saku AI")
                                 .font(.system(.title3, design: .rounded).weight(.medium))
                                 .foregroundColor(Color(.label).opacity(0.72))
                         }
@@ -141,6 +154,16 @@ struct HomeView: View {
                     .offset(y: (currentTab == "Log" ? homeAISheetOffset : 0) + (tabBarManager.hideTab ? (70 + bottomEdge) : 0))
                     .allowsHitTesting(!homeAIAssistantViewModel.isPresented)
                     .zIndex(1.05)
+
+                if currentTab == "Log", !homeAIAssistantViewModel.isPresented {
+                    homeAIConnectedTopGradient
+                        .frame(height: topEdge + 132 + min(homeAISheetOffset, 88))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                        .opacity(max(CGFloat(0.92), CGFloat(1) - homeAIRevealProgress(openOffset: homeAIOpenOffset) * CGFloat(0.18)))
+                        .allowsHitTesting(false)
+                        .ignoresSafeArea(.container, edges: .top)
+                        .zIndex(1.08)
+                }
 
                 if currentTab == "Log" {
                     Color.clear
@@ -368,8 +391,73 @@ struct HomeView: View {
         return min(max(homeAISheetOffset / openOffset, 0), 1)
     }
 
+    private func homeAIScrollPullChanged(_ offset: CGFloat, openOffset: CGFloat) {
+        guard currentTab == "Log", !homeAIAssistantViewModel.isPresented else { return }
+
+        if offset <= 0 {
+            if homeAISheetOffset > 0 {
+                homeAISheetOffset = 0
+            }
+            return
+        }
+
+        homeAISheetOffset = min(offset * 1.12, openOffset)
+    }
+
+    private func homeAIScrollPullEnded(_ predictedOffset: CGFloat, openOffset: CGFloat) {
+        guard currentTab == "Log", !homeAIAssistantViewModel.isPresented else { return }
+        guard homeAISheetOffset > 0 else { return }
+
+        let shouldExpand = max(homeAISheetOffset, predictedOffset) > homeAIPullThreshold
+
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+            if shouldExpand {
+                homeAISheetOffset = openOffset
+                homeAIAssistantViewModel.expand()
+            } else {
+                homeAISheetOffset = 0
+            }
+        }
+    }
+
+    private func homeAIOverlayOffset(openOffset: CGFloat) -> CGFloat {
+        guard !homeAIAssistantViewModel.isPresented else { return 0 }
+
+        let progress = homeAIRevealProgress(openOffset: openOffset)
+        let initialLift = min(180, openOffset * 0.22)
+        return -(1 - progress) * initialLift
+    }
+
+    private var homeAIConnectedTopGradient: some View {
+        ZStack(alignment: .bottom) {
+            HomeAIAnimatedGradientBackground()
+
+            LinearGradient(
+                colors: [
+                    Color(.systemBackground).opacity(0),
+                    Color(.systemBackground).opacity(0.38),
+                    Color(.systemBackground)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 54)
+        }
+        .mask(
+            LinearGradient(
+                colors: [.black, .black, .black.opacity(0.78), .clear],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
+    }
+
     private func targetHomeAIOpenOffset(for height: CGFloat) -> CGFloat {
-        height + 28
+        height - targetHomeAIPeekHeight(for: height)
+    }
+
+    private func targetHomeAIPeekHeight(for height: CGFloat) -> CGFloat {
+        max(108, min(150, height * 0.16))
     }
 
     private func rubberBandPullDistance(for translation: CGFloat) -> CGFloat {
