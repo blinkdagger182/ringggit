@@ -40,6 +40,10 @@ struct HomeView: View {
 
     @State var currentTab = "Log"
     @State private var homeAISheetOffset: CGFloat = 0
+    @State private var isBarGestureActive: Bool = false
+    @State private var isLogAtTop: Bool = true
+    @State private var isLogIdle: Bool = true
+    @State private var homeAIPullActivationTranslation: CGFloat?
 
     var topEdge: CGFloat
     var bottomEdge: CGFloat
@@ -100,11 +104,9 @@ struct HomeView: View {
                         topEdge: topEdge,
                         bottomEdge: bottomEdge,
                         launchSearch: launchSearch,
-                        onTopPullChanged: { offset in
-                            homeAIScrollPullChanged(offset, openOffset: homeAIOpenOffset)
-                        },
-                        onTopPullEnded: { predictedOffset in
-                            homeAIScrollPullEnded(predictedOffset, openOffset: homeAIOpenOffset)
+                        onScrollStateChanged: { isAtTop, isIdle in
+                            isLogAtTop = isAtTop
+                            isLogIdle = isIdle
                         }
                     )
                         .ignoresSafeArea(.all)
@@ -127,6 +129,7 @@ struct HomeView: View {
                 .environmentObject(toastPresenter)
                 .environmentObject(transactionManager)
                 .offset(y: currentTab == "Log" ? homeAISheetOffset : 0)
+                .simultaneousGesture(homeAIPullGesture(openOffset: homeAIOpenOffset))
                 .mask(
                     RoundedRectangle(
                         cornerRadius: currentTab == "Log" ? min(34, homeAIRevealProgress(openOffset: homeAIOpenOffset) * 34) : 0,
@@ -163,21 +166,6 @@ struct HomeView: View {
                         .allowsHitTesting(false)
                         .ignoresSafeArea(.container, edges: .top)
                         .zIndex(1.08)
-                }
-
-                if currentTab == "Log" {
-                    Color.clear
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                        .overlay(alignment: .top) {
-                            Rectangle()
-                                .fill(Color.clear)
-                                .frame(height: topEdge + 56)
-                                .contentShape(Rectangle())
-                                .highPriorityGesture(homeAIPullGesture(openOffset: homeAIOpenOffset))
-                        }
-                        .ignoresSafeArea(.container, edges: .top)
-                        .offset(y: homeAISheetOffset)
-                        .zIndex(1.1)
                 }
 
                 if currentTab == "Log", !homeAIAssistantViewModel.isPresented {
@@ -321,6 +309,7 @@ struct HomeView: View {
                     guard currentTab == "Log" else { return }
 
                     if homeAIAssistantViewModel.isPresented {
+                        isBarGestureActive = true
                         guard value.startLocation.y <= homeAISheetOffset + topEdge + 72 else { return }
                         let isKeyboardPresented = keyboardHeightHelper.keyboardHeight > 0
 
@@ -343,17 +332,36 @@ struct HomeView: View {
                         return
                     }
 
-                    guard value.startLocation.y <= topEdge + 72 else { return }
                     guard value.translation.height > 0 else {
                         if homeAISheetOffset > 0 {
+                            isBarGestureActive = true
                             homeAISheetOffset = max(0, homeAISheetOffset + (value.translation.height * 0.2))
+                        } else {
+                            homeAIPullActivationTranslation = nil
                         }
                         return
                     }
 
-                    homeAISheetOffset = min(rubberBandPullDistance(for: value.translation.height), openOffset)
+                    guard (isLogAtTop && isLogIdle) || homeAISheetOffset > 0 else {
+                        homeAIPullActivationTranslation = nil
+                        return
+                    }
+
+                    if homeAIPullActivationTranslation == nil {
+                        homeAIPullActivationTranslation = value.translation.height
+                    }
+
+                    let activationTranslation = homeAIPullActivationTranslation ?? value.translation.height
+                    let revealTranslation = max(0, value.translation.height - activationTranslation)
+                    guard revealTranslation > 0 || homeAISheetOffset > 0 else { return }
+
+                    isBarGestureActive = true
+                    homeAISheetOffset = min(rubberBandPullDistance(for: revealTranslation), openOffset)
                 }
                 .onEnded { value in
+                    isBarGestureActive = false
+                    defer { homeAIPullActivationTranslation = nil }
+
                     withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
                         if homeAIAssistantViewModel.isPresented {
                             guard keyboardHeightHelper.keyboardHeight == 0 else {
@@ -371,7 +379,13 @@ struct HomeView: View {
                                 homeAISheetOffset = openOffset
                             }
                         } else {
-                            let predictedOffset = min(rubberBandPullDistance(for: max(value.predictedEndTranslation.height, value.translation.height)), openOffset)
+                            guard homeAISheetOffset > 0 else { return }
+                            let activationTranslation = homeAIPullActivationTranslation ?? 0
+                            let predictedRevealTranslation = max(
+                                max(value.predictedEndTranslation.height, value.translation.height) - activationTranslation,
+                                0
+                            )
+                            let predictedOffset = min(rubberBandPullDistance(for: predictedRevealTranslation), openOffset)
                             let shouldExpand = predictedOffset > homeAIPullThreshold
 
                             if shouldExpand {
@@ -389,35 +403,6 @@ struct HomeView: View {
     private func homeAIRevealProgress(openOffset: CGFloat) -> CGFloat {
         guard openOffset > 0 else { return 0 }
         return min(max(homeAISheetOffset / openOffset, 0), 1)
-    }
-
-    private func homeAIScrollPullChanged(_ offset: CGFloat, openOffset: CGFloat) {
-        guard currentTab == "Log", !homeAIAssistantViewModel.isPresented else { return }
-
-        if offset <= 0 {
-            if homeAISheetOffset > 0 {
-                homeAISheetOffset = 0
-            }
-            return
-        }
-
-        homeAISheetOffset = min(offset * 1.12, openOffset)
-    }
-
-    private func homeAIScrollPullEnded(_ predictedOffset: CGFloat, openOffset: CGFloat) {
-        guard currentTab == "Log", !homeAIAssistantViewModel.isPresented else { return }
-        guard homeAISheetOffset > 0 else { return }
-
-        let shouldExpand = max(homeAISheetOffset, predictedOffset) > homeAIPullThreshold
-
-        withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
-            if shouldExpand {
-                homeAISheetOffset = openOffset
-                homeAIAssistantViewModel.expand()
-            } else {
-                homeAISheetOffset = 0
-            }
-        }
     }
 
     private func homeAIOverlayOffset(openOffset: CGFloat) -> CGFloat {

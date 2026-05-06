@@ -12,11 +12,108 @@ import SwiftUIIntrospect
 import Popovers
 import SwiftUI
 
-private struct LogTopPullPreferenceKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
+private struct LogScrollViewResolver: UIViewRepresentable {
+    let onResolve: (UIScrollView) -> Void
 
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = max(value, nextValue())
+    func makeUIView(context: Context) -> ResolverView {
+        let view = ResolverView()
+        view.onResolve = onResolve
+        return view
+    }
+
+    func updateUIView(_ uiView: ResolverView, context: Context) {
+        uiView.onResolve = onResolve
+        uiView.resolveIfNeeded()
+    }
+
+    final class ResolverView: UIView {
+        var onResolve: ((UIScrollView) -> Void)?
+        private weak var resolvedScrollView: UIScrollView?
+
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            resolveIfNeeded()
+        }
+
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            resolveIfNeeded()
+        }
+
+        func resolveIfNeeded() {
+            guard let scrollView = sequence(first: superview, next: { $0?.superview }).first(where: { $0 is UIScrollView }) as? UIScrollView else { return }
+            guard resolvedScrollView !== scrollView else { return }
+            resolvedScrollView = scrollView
+            onResolve?(scrollView)
+        }
+    }
+}
+
+private class LogScrollViewDelegate: NSObject, UIScrollViewDelegate, ObservableObject {
+    weak var original: UIScrollViewDelegate?
+    var onScrollStateChanged: ((Bool, Bool) -> Void)?
+    private var isAtTop = true
+    private var isIdle = true
+
+    func attach(to scrollView: UIScrollView) {
+        if scrollView.delegate !== self {
+            original = scrollView.delegate
+            scrollView.delegate = self
+        }
+        updateTopState(for: scrollView)
+    }
+
+    func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+        original?.scrollViewWillBeginDragging?(scrollView)
+        updateIdleState(false)
+        updateTopState(for: scrollView)
+    }
+
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        original?.scrollViewDidScroll?(scrollView)
+        updateTopState(for: scrollView)
+    }
+
+    func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) { original?.scrollViewWillEndDragging?(scrollView, withVelocity: velocity, targetContentOffset: targetContentOffset) }
+
+    func scrollViewWillBeginDecelerating(_ scrollView: UIScrollView) {
+        original?.scrollViewWillBeginDecelerating?(scrollView)
+        updateIdleState(false)
+    }
+    func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate d: Bool) {
+        original?.scrollViewDidEndDragging?(scrollView, willDecelerate: d)
+        updateIdleState(!d)
+        updateTopState(for: scrollView)
+    }
+    func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+        original?.scrollViewDidEndDecelerating?(scrollView)
+        updateIdleState(true)
+        updateTopState(for: scrollView)
+    }
+    func scrollViewShouldScrollToTop(_ scrollView: UIScrollView) -> Bool { original?.scrollViewShouldScrollToTop?(scrollView) ?? true }
+    func scrollViewDidScrollToTop(_ scrollView: UIScrollView) {
+        original?.scrollViewDidScrollToTop?(scrollView)
+        updateIdleState(true)
+        updateTopState(for: scrollView)
+    }
+
+    private func updateTopState(for scrollView: UIScrollView) {
+        let nextIsAtTop = scrollView.contentOffset.y <= 0.5
+        guard nextIsAtTop != isAtTop else {
+            onScrollStateChanged?(nextIsAtTop, isIdle)
+            return
+        }
+        isAtTop = nextIsAtTop
+        onScrollStateChanged?(nextIsAtTop, isIdle)
+    }
+
+    private func updateIdleState(_ nextIsIdle: Bool) {
+        guard nextIsIdle != isIdle else {
+            onScrollStateChanged?(isAtTop, nextIsIdle)
+            return
+        }
+        isIdle = nextIsIdle
+        onScrollStateChanged?(isAtTop, nextIsIdle)
     }
 }
 
@@ -64,8 +161,7 @@ struct LogView: View {
     // to show/hide tab bar
     var bottomEdge: CGFloat
     var launchSearch: Bool
-    var onTopPullChanged: (CGFloat) -> Void = { _ in }
-    var onTopPullEnded: (CGFloat) -> Void = { _ in }
+    var onScrollStateChanged: (Bool, Bool) -> Void = { _, _ in }
 
     // drag to open
 //    enum PullToReach {
@@ -75,8 +171,9 @@ struct LogView: View {
 //    @State var pullStatus: PullToReach = .none
 //    @State var released: PullToReach = .none
 
+    @StateObject private var scrollDelegate = LogScrollViewDelegate()
+
     @State var progress = 0.0
-    @State private var topPullOffset: CGFloat = 0
 
     var body: some View {
         if transactions.isEmpty {
@@ -194,15 +291,6 @@ struct LogView: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
-                        GeometryReader { proxy in
-                            Color.clear
-                                .preference(
-                                    key: LogTopPullPreferenceKey.self,
-                                    value: max(0, proxy.frame(in: .named("LogScrollView")).minY)
-                                )
-                        }
-                        .frame(height: 0)
-
                         if filter == .all {
                             LogInsightsView(navBarText: $navBarText, showCents: showCents, currencySymbol: currencySymbol)
                         }
@@ -241,18 +329,13 @@ struct LogView: View {
                         .padding(.top, 16)
                         .padding(.bottom, 70 + bottomEdge)
                     }
-                }
-                .coordinateSpace(name: "LogScrollView")
-                .onPreferenceChange(LogTopPullPreferenceKey.self) { offset in
-                    topPullOffset = offset
-                    onTopPullChanged(offset)
-                }
-                .simultaneousGesture(
-                    DragGesture(minimumDistance: 0, coordinateSpace: .named("LogScrollView"))
-                        .onEnded { value in
-                            onTopPullEnded(max(topPullOffset, value.predictedEndTranslation.height))
+                    .background(
+                        LogScrollViewResolver { scrollView in
+                            scrollDelegate.attach(to: scrollView)
+                            scrollDelegate.onScrollStateChanged = onScrollStateChanged
                         }
-                )
+                    )
+                }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .background(
