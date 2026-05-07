@@ -41,7 +41,9 @@ struct HomeAIAssistantOverlay: View {
     var body: some View {
         GeometryReader { proxy in
             let keyboardOverlap = max(0, keyboardHeightHelper.keyboardHeight - proxy.safeAreaInsets.bottom)
-            let visibleHomePadding: CGFloat = isExpanded && keyboardOverlap == 0 ? 28 : 0
+            let visibleHomePadding: CGFloat = isExpanded && keyboardOverlap == 0
+                ? max(44, homePeekHeight + 8)
+                : 0
             let baseComposerBottomPadding = max(proxy.safeAreaInsets.bottom, bottomInset) + 12 + visibleHomePadding
             let activeComposerBottomPadding: CGFloat = keyboardOverlap > 0 ? 12 : baseComposerBottomPadding
 
@@ -81,12 +83,12 @@ struct HomeAIAssistantOverlay: View {
                             endPoint: .bottom
                         )
                     )
-                    .zIndex(2)
+                    .zIndex(4)
 
                 if isExpanded && keyboardOverlap == 0 {
                     bottomHomePeek(safeBottom: max(proxy.safeAreaInsets.bottom, bottomInset))
                         .opacity(revealProgress)
-                        .zIndex(3)
+                        .zIndex(5)
                 }
             }
             .ignoresSafeArea(.keyboard, edges: .bottom)
@@ -743,20 +745,39 @@ struct HomeAIAssistantOverlay: View {
     }
 
     private func bottomHomePeek(safeBottom: CGFloat) -> some View {
-        let visibleHeight = max(homePeekHeight, 86)
+        let peekRadius: CGFloat = 36
+        let interactiveHeight = max(homePeekHeight, safeBottom + 52)
 
         return ZStack(alignment: .top) {
-            LinearGradient(
-                colors: [
-                    Color.white.opacity(0.20),
-                    Color.white.opacity(0.06),
-                    Color.clear
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .frame(height: 22)
-            .allowsHitTesting(false)
+            Rectangle()
+                .fill(Color.black.opacity(0.001))
+
+            VStack(spacing: 0) {
+                BottomHomePeekShape(cornerRadius: peekRadius)
+                    .fill(Color.clear)
+                    .overlay {
+                        BottomHomePeekShape(cornerRadius: peekRadius)
+                            .stroke(Color.white.opacity(0.30), lineWidth: 1)
+                            .blendMode(.plusLighter)
+                    }
+                    .overlay(alignment: .top) {
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.22),
+                                Color.white.opacity(0.08),
+                                Color.clear
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .frame(height: 20)
+                        .clipShape(BottomHomePeekShape(cornerRadius: peekRadius))
+                    }
+                    .frame(height: 58)
+                    .allowsHitTesting(false)
+
+                Spacer(minLength: 0)
+            }
 
             VStack(spacing: 0) {
                 Image(systemName: "chevron.up")
@@ -766,10 +787,11 @@ struct HomeAIAssistantOverlay: View {
 
                 Spacer(minLength: 0)
             }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .allowsHitTesting(false)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: visibleHeight, alignment: .top)
+        .frame(height: interactiveHeight, alignment: .top)
         .contentShape(Rectangle())
         .onTapGesture(perform: onCollapse)
         .modifier(HomeAICollapseGestureModifier(dragGesture: collapseGesture))
@@ -902,6 +924,19 @@ private struct AttachmentPreviewView: View {
             .padding(.top, 56)
             .padding(.trailing, 20)
         }
+    }
+}
+
+private struct BottomHomePeekShape: Shape {
+    let cornerRadius: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(
+            roundedRect: rect,
+            byRoundingCorners: [.topLeft, .topRight],
+            cornerRadii: CGSize(width: cornerRadius, height: cornerRadius)
+        )
+        return Path(path.cgPath)
     }
 }
 

@@ -136,6 +136,23 @@ struct HomeView: View {
                     anchor: .top
                 )
                 .simultaneousGesture(homeAIPullGesture(openOffset: homeAIOpenOffset))
+                .mask(
+                    HomeAISurfaceMaskShape(
+                        cornerRadius: currentTab == "Log"
+                            ? (24 + (homeAIRevealProgress(openOffset: homeAIOpenOffset) * 18))
+                            : 0
+                    )
+                )
+                .overlay {
+                    if currentTab == "Log" {
+                        HomeAISurfaceMaskShape(
+                            cornerRadius: 24 + (homeAIRevealProgress(openOffset: homeAIOpenOffset) * 18)
+                        )
+                        .stroke(Color.white.opacity(0.28 + (homeAIRevealProgress(openOffset: homeAIOpenOffset) * 0.08)), lineWidth: 1)
+                        .blendMode(.plusLighter)
+                        .allowsHitTesting(false)
+                    }
+                }
                 .shadow(
                     color: Color.black.opacity(currentTab == "Log" ? homeAIRevealProgress(openOffset: homeAIOpenOffset) * 0.10 : 0),
                     radius: currentTab == "Log" ? (16 + homeAIRevealProgress(openOffset: homeAIOpenOffset) * 18) : 0,
@@ -462,7 +479,7 @@ struct HomeView: View {
     }
 
     private func targetHomeAIPeekHeight(for height: CGFloat) -> CGFloat {
-        max(108, min(150, height * 0.16))
+        max(72, min(92, height * 0.11))
     }
 
     private func rubberBandPullDistance(for translation: CGFloat) -> CGFloat {
@@ -479,6 +496,21 @@ struct HomeView: View {
         let normalized = translation / homeAIMaxPullDistance
         let resistance = 1 - (1 / ((normalized * 0.92) + 1))
         return min(resistance * homeAIMaxPullDistance * 1.2, homeAIMaxPullDistance)
+    }
+}
+
+private struct HomeAISurfaceMaskShape: Shape {
+    let cornerRadius: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        guard cornerRadius > 0 else { return Path(CGRect(origin: .zero, size: rect.size)) }
+
+        let path = UIBezierPath(
+            roundedRect: rect,
+            byRoundingCorners: [.topLeft, .topRight],
+            cornerRadii: CGSize(width: cornerRadius, height: cornerRadius)
+        )
+        return Path(path.cgPath)
     }
 }
 

@@ -187,10 +187,6 @@ struct LogView: View {
         }
     }
 
-    private var homeSurfaceShape: LogHomeSurfaceShape {
-        LogHomeSurfaceShape(cornerRadius: 42)
-    }
-
     var body: some View {
         if transactions.isEmpty {
             VStack(spacing: 5) {
@@ -216,13 +212,6 @@ struct LogView: View {
             .frame(height: 250, alignment: .top)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(homeSurfaceBackground)
-            .clipShape(homeSurfaceShape)
-            .overlay {
-                homeSurfaceShape
-                    .stroke(Color.white.opacity(0.35), lineWidth: 1)
-                    .blendMode(.plusLighter)
-                    .allowsHitTesting(false)
-            }
 
         } else {
             VStack(spacing: 0) {
@@ -362,13 +351,6 @@ struct LogView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .background(homeSurfaceBackground)
-            .clipShape(homeSurfaceShape)
-            .overlay {
-                homeSurfaceShape
-                    .stroke(Color.white.opacity(0.35), lineWidth: 1)
-                    .blendMode(.plusLighter)
-                    .allowsHitTesting(false)
-            }
             .fullScreenCover(isPresented: $searchMode) {
                 SearchView()
             }
@@ -449,23 +431,6 @@ struct LogView: View {
         .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
 //        .font(.system(size: 17, weight: .medium, design: .rounded))
         .foregroundColor(Color.PrimaryText)
-    }
-}
-
-private struct LogHomeSurfaceShape: Shape {
-    let cornerRadius: CGFloat
-
-    func path(in rect: CGRect) -> Path {
-        guard cornerRadius > 0 else {
-            return Path(CGRect(origin: .zero, size: rect.size))
-        }
-
-        let path = UIBezierPath(
-            roundedRect: rect,
-            byRoundingCorners: [.topLeft, .topRight],
-            cornerRadii: CGSize(width: cornerRadius, height: cornerRadius)
-        )
-        return Path(path.cgPath)
     }
 }
 
