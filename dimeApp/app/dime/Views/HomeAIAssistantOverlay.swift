@@ -754,7 +754,17 @@ struct HomeAIAssistantOverlay: View {
 
             VStack(spacing: 0) {
                 BottomHomePeekShape(cornerRadius: peekRadius)
-                    .fill(Color.clear)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color(hex: "D7F1F0"),
+                                Color(hex: "ECF7F6"),
+                                Color.PrimaryBackground
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
                     .overlay {
                         BottomHomePeekShape(cornerRadius: peekRadius)
                             .stroke(Color.white.opacity(0.30), lineWidth: 1)
@@ -774,6 +784,7 @@ struct HomeAIAssistantOverlay: View {
                         .clipShape(BottomHomePeekShape(cornerRadius: peekRadius))
                     }
                     .frame(height: 58)
+                    .shadow(color: Color.black.opacity(0.08), radius: 8, y: 1)
                     .allowsHitTesting(false)
 
                 Spacer(minLength: 0)

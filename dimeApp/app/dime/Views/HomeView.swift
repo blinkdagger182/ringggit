@@ -139,20 +139,10 @@ struct HomeView: View {
                 .mask(
                     HomeAISurfaceMaskShape(
                         cornerRadius: currentTab == "Log"
-                            ? (24 + (homeAIRevealProgress(openOffset: homeAIOpenOffset) * 18))
+                            ? (34 + (homeAIRevealProgress(openOffset: homeAIOpenOffset) * 10))
                             : 0
                     )
                 )
-                .overlay {
-                    if currentTab == "Log" {
-                        HomeAISurfaceMaskShape(
-                            cornerRadius: 24 + (homeAIRevealProgress(openOffset: homeAIOpenOffset) * 18)
-                        )
-                        .stroke(Color.white.opacity(0.28 + (homeAIRevealProgress(openOffset: homeAIOpenOffset) * 0.08)), lineWidth: 1)
-                        .blendMode(.plusLighter)
-                        .allowsHitTesting(false)
-                    }
-                }
                 .shadow(
                     color: Color.black.opacity(currentTab == "Log" ? homeAIRevealProgress(openOffset: homeAIOpenOffset) * 0.10 : 0),
                     radius: currentTab == "Log" ? (16 + homeAIRevealProgress(openOffset: homeAIOpenOffset) * 18) : 0,
