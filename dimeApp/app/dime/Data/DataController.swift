@@ -135,6 +135,10 @@ class DataController: ObservableObject {
         let fetchRequest4: NSFetchRequest<NSFetchRequestResult> = MainBudget.fetchRequest()
         let batchDeleteRequest4 = NSBatchDeleteRequest(fetchRequest: fetchRequest4)
         _ = try? container.viewContext.executeAndMergeChanges(using: batchDeleteRequest4)
+
+        let fetchRequest5: NSFetchRequest<NSFetchRequestResult> = Bucket.fetchRequest()
+        let batchDeleteRequest5 = NSBatchDeleteRequest(fetchRequest: fetchRequest5)
+        _ = try? container.viewContext.executeAndMergeChanges(using: batchDeleteRequest5)
     }
 
     func save() {
@@ -499,6 +503,23 @@ class DataController: ObservableObject {
         itemRequest.sortDescriptors = [NSSortDescriptor(key: "order", ascending: true)]
         itemRequest.predicate = NSPredicate(format: "income = %d", income)
         return itemRequest
+    }
+
+    func fetchRequestForBuckets() -> NSFetchRequest<Bucket> {
+        let itemRequest: NSFetchRequest<Bucket> = Bucket.fetchRequest()
+        itemRequest.sortDescriptors = [NSSortDescriptor(key: "dateCreated", ascending: true)]
+        return itemRequest
+    }
+
+    func getAllBuckets() -> [Bucket] {
+        results(for: fetchRequestForBuckets())
+    }
+
+    func getBucket(id: UUID) -> Bucket? {
+        let request: NSFetchRequest<Bucket> = Bucket.fetchRequest()
+        request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+        request.fetchLimit = 1
+        return results(for: request).first
     }
 
     func getAllCategories(income: Bool) -> [Category] {

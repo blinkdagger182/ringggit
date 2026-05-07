@@ -67,7 +67,13 @@ struct InsightsView: View {
             .frame(height: 250, alignment: .top)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .ignoresSafeArea(.all)
-            .background(Color.PrimaryBackground)
+            .background(
+                ZStack {
+                    Color.PrimaryBackground
+                    HomeAIAnimatedGradientBackground()
+                        .opacity(0.9)
+                }
+            )
             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
             .onAppear {
                 print("InsightsView: empty state, transactions=0")
@@ -131,7 +137,13 @@ struct InsightsView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.PrimaryBackground)
+            .background(
+                ZStack {
+                    Color.PrimaryBackground
+                    HomeAIAnimatedGradientBackground()
+                        .opacity(0.9)
+                }
+            )
             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
             .onReceive(self.didSave) { _ in
                 self.refreshID = UUID()

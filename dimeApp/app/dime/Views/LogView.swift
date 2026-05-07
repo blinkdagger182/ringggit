@@ -1394,6 +1394,17 @@ struct SingleTransactionView: View {
                         .dynamicTypeSize(...DynamicTypeSize.xxLarge)
                         .foregroundColor(future ? Color.EvenLighterText : Color.SubtitleText)
                         .lineLimit(1)
+
+                    if let bucket = transaction.bucket {
+                        HStack(spacing: 4) {
+                            Image(systemName: "flag.fill")
+                                .font(.system(size: 9, weight: .bold))
+                            Text("\(bucket.emoji ?? "🏷️") \(bucket.name ?? "Bucket")")
+                                .lineLimit(1)
+                        }
+                        .font(.system(.caption2, design: .rounded).weight(.semibold))
+                        .foregroundColor(future ? Color.EvenLighterText : Color(hex: bucket.colour ?? "7B8FF8"))
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 

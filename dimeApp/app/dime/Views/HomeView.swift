@@ -256,6 +256,7 @@ struct HomeView: View {
         .confettiCannon(counter: $counter, num: 50, openingAngle: Angle(degrees: 0), closingAngle: Angle(degrees: 360), radius: 200)
         .onAppear {
             homeAIAssistantViewModel.dataController = dataController
+            homeAIAssistantViewModel.reloadWorkspaces()
 
             if appLockVM.isAppLockEnabled && fromURL1 {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {

@@ -484,7 +484,13 @@ struct SettingsView: View {
       }
       .navigationBarTitle("")
       .navigationBarHidden(true)
-      .background(Color.PrimaryBackground)
+      .background(
+        ZStack {
+          Color.PrimaryBackground
+          HomeAIAnimatedGradientBackground()
+            .opacity(0.9)
+        }
+      )
       .fullScreenCover(isPresented: $showTipJarMenu) {
         TipJarAlert()
       }
@@ -895,6 +901,12 @@ struct SettingsCategoryView: View {
       .navigationBarBackButtonHidden(true)
       .navigationBarTitle("")
       .navigationBarHidden(true)
-      .background(Color.PrimaryBackground)
+      .background(
+        ZStack {
+          Color.PrimaryBackground
+          HomeAIAnimatedGradientBackground()
+            .opacity(0.9)
+        }
+      )
   }
 }

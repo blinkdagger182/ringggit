@@ -314,8 +314,8 @@ struct NumberPadTextView: View {
         }
         .minimumScaleFactor(0.5)
         .lineLimit(1)
-        .padding(.horizontal, numberEntryType == 2 ? 40 : 0)
-        .frame(maxWidth: .infinity)
+        .padding(.trailing, numberEntryType == 2 ? 40 : 0)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .overlay(alignment: .trailing) {
             if numberEntryType == 2 {
                 DeleteButton()

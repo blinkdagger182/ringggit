@@ -31,6 +31,14 @@ struct AttachmentItem: Identifiable {
     }
 }
 
+struct AIConversationWorkspace: Identifiable, Equatable {
+    let id: String
+    let title: String
+    let bucketID: UUID?
+
+    static let general = AIConversationWorkspace(id: "general", title: "General", bucketID: nil)
+}
+
 @MainActor
 final class HomeAIAssistantViewModel: ObservableObject {
     private struct ExtractionPage {
@@ -58,6 +66,8 @@ final class HomeAIAssistantViewModel: ObservableObject {
     @Published var isPresented = false
     @Published var draftMessage = ""
     @Published private(set) var messages: [HomeAIMessage] = []
+    @Published private(set) var workspaces: [AIConversationWorkspace] = [.general]
+    @Published private(set) var activeWorkspaceID: String = AIConversationWorkspace.general.id
     @Published private(set) var isResponding = false
     @Published private(set) var isAnimatingReply = false
     @Published private(set) var statusText: String = ""
@@ -67,6 +77,7 @@ final class HomeAIAssistantViewModel: ObservableObject {
 
     var dataController: DataController?
     private var resumableExtractionJob: ExtractionJob?
+    private var workspaceMessages: [String: [HomeAIMessage]] = [AIConversationWorkspace.general.id: []]
 
     let quickActions: [HomeAIQuickAction] = [
         HomeAIQuickAction(title: "Add transaction", prompt: "Add transaction", systemImage: "plus.circle.fill"),
@@ -89,8 +100,19 @@ final class HomeAIAssistantViewModel: ObservableObject {
         isResponding || isAnimatingReply
     }
 
+    var activeWorkspace: AIConversationWorkspace {
+        workspaces.first(where: { $0.id == activeWorkspaceID }) ?? .general
+    }
+
+    var activeBucket: Bucket? {
+        guard let bucketID = activeWorkspace.bucketID,
+              let dc = dataController else { return nil }
+        return dc.getBucket(id: bucketID)
+    }
+
     func expand() {
         guard !isPresented else { return }
+        reloadWorkspaces()
         isPresented = true
         UIImpactFeedbackGenerator(style: .soft).impactOccurred()
     }
@@ -100,6 +122,44 @@ final class HomeAIAssistantViewModel: ObservableObject {
         isPresented = false
         UIApplication.shared.endEditing()
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
+    }
+
+    func reloadWorkspaces() {
+        var updated: [AIConversationWorkspace] = [.general]
+
+        if let dc = dataController {
+            let bucketWorkspaces = dc.getAllBuckets().sorted {
+                ($0.name ?? "").localizedCaseInsensitiveCompare($1.name ?? "") == .orderedAscending
+            }.map { bucket in
+                AIConversationWorkspace(
+                    id: "bucket-\(bucket.id?.uuidString ?? UUID().uuidString)",
+                    title: bucket.name ?? "Untitled Bucket",
+                    bucketID: bucket.id
+                )
+            }
+            updated.append(contentsOf: bucketWorkspaces)
+        }
+
+        workspaces = updated
+        updated.forEach { workspaceMessages[$0.id] = workspaceMessages[$0.id] ?? [] }
+
+        let resolvedWorkspaceID = updated.contains(where: { $0.id == activeWorkspaceID })
+            ? activeWorkspaceID
+            : AIConversationWorkspace.general.id
+        activeWorkspaceID = resolvedWorkspaceID
+        messages = workspaceMessages[resolvedWorkspaceID] ?? []
+        messageContentRevision &+= 1
+    }
+
+    func selectWorkspace(_ id: String) {
+        let resolvedWorkspaceID = workspaces.contains(where: { $0.id == id })
+            ? id
+            : AIConversationWorkspace.general.id
+        activeWorkspaceID = resolvedWorkspaceID
+        messages = workspaceMessages[resolvedWorkspaceID] ?? []
+        streamingText = ""
+        statusText = ""
+        messageContentRevision &+= 1
     }
 
     func removeAttachment(id: UUID) {
@@ -556,13 +616,13 @@ final class HomeAIAssistantViewModel: ObservableObject {
 
     private func appendUserMessage(_ text: String, attachments: [AttachmentItem] = []) {
         messages.append(HomeAIMessage(role: .user, text: text, date: .now, attachments: attachments))
-        messageContentRevision &+= 1
+        syncActiveWorkspaceMessages()
     }
 
     private func appendAssistantPlaceholder() -> UUID {
         let message = HomeAIMessage(role: .assistant, text: "", date: .now)
         messages.append(message)
-        messageContentRevision &+= 1
+        syncActiveWorkspaceMessages()
         return message.id
     }
 
@@ -588,6 +648,11 @@ final class HomeAIAssistantViewModel: ObservableObject {
         var message = messages[index]
         update(&message)
         messages[index] = message
+        syncActiveWorkspaceMessages()
+    }
+
+    private func syncActiveWorkspaceMessages() {
+        workspaceMessages[activeWorkspaceID] = messages
         messageContentRevision &+= 1
     }
 
@@ -649,7 +714,11 @@ final class HomeAIAssistantViewModel: ObservableObject {
 
         let context = dc.container.viewContext
         let req = NSFetchRequest<Transaction>(entityName: "Transaction")
-        req.predicate = NSPredicate(format: "date >= %@ AND date < %@", startDate as NSDate, endDate as NSDate)
+        if let bucket = activeBucket {
+            req.predicate = NSPredicate(format: "date >= %@ AND date < %@ AND bucket == %@", startDate as NSDate, endDate as NSDate, bucket)
+        } else {
+            req.predicate = NSPredicate(format: "date >= %@ AND date < %@", startDate as NSDate, endDate as NSDate)
+        }
         req.sortDescriptors = [NSSortDescriptor(key: "date", ascending: true)]
         let txs = (try? context.fetch(req)) ?? []
 
@@ -666,7 +735,8 @@ final class HomeAIAssistantViewModel: ObservableObject {
             let sign = tx.income ? "+" : "-"
             let cat = tx.category?.name ?? "Uncategorized"
             let note = (tx.note?.isEmpty == false) ? tx.note! : "(no note)"
-            return "\(dateStr) | \(sign)RM\(String(format: "%.2f", tx.amount)) | \(note) | \(cat)"
+            let bucketText = tx.bucket?.name.map { " | bucket: \($0)" } ?? ""
+            return "\(dateStr) | \(sign)RM\(String(format: "%.2f", tx.amount)) | \(note) | \(cat)\(bucketText)"
         }
 
         return """
@@ -699,11 +769,23 @@ final class HomeAIAssistantViewModel: ObservableObject {
         }
 
         let dateStr = DateFormatter.localizedString(from: .now, dateStyle: .full, timeStyle: .none)
+        let bucketContext: String
+        if let bucket = activeBucket {
+            bucketContext = """
+
+            Current bucket workspace: \(bucket.name ?? "Bucket").
+            In this workspace, treat imported, created, and summarized transactions as part of this bucket unless the user explicitly says otherwise.
+            When using fetch_transactions, focus on this bucket only.
+            """
+        } else {
+            bucketContext = ""
+        }
 
         return """
         You are Renvo AI, a smart financial assistant inside the Dime expense tracking app (Malaysia, currency MYR / RM).
 
         Today: \(dateStr)
+        \(bucketContext)
 
         EXPENSE categories (copy exact string, pick closest match):
         \(expenseList)
@@ -859,10 +941,11 @@ final class HomeAIAssistantViewModel: ObservableObject {
         let context = dc.container.viewContext
         let catRequest = NSFetchRequest<Category>(entityName: "Category")
         let allCategories = (try? context.fetch(catRequest)) ?? []
+        let bucket = activeBucket
 
         for action in actions {
             let category = matchCategory(name: action.categoryName, income: action.income, from: allCategories)
-            _ = dc.newTransaction(
+            let transaction = dc.newTransaction(
                 note: action.note,
                 category: category,
                 income: action.income,
@@ -872,7 +955,9 @@ final class HomeAIAssistantViewModel: ObservableObject {
                 repeatCoefficient: action.repeatCoefficient,
                 delay: false
             )
+            transaction.bucket = bucket
         }
+        dc.save()
     }
 
     private func matchCategory(name: String, income: Bool, from categories: [Category]) -> Category? {

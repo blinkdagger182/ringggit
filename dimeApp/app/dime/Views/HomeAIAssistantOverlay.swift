@@ -4,6 +4,7 @@
 //
 
 import MarkdownUI
+import Popovers
 import SwiftUI
 import UIKit
 
@@ -26,6 +27,7 @@ struct HomeAIAssistantOverlay: View {
     @State private var composerFocusRequestID = 0
     @State private var chatScrollRequestID = 0
     @State private var showAttachmentSheet = false
+    @State private var showWorkspaceMenu = false
     @State private var previewAttachment: AttachmentItem?
 
     var body: some View {
@@ -43,7 +45,7 @@ struct HomeAIAssistantOverlay: View {
                     .opacity(max(0, revealProgress))
                     .ignoresSafeArea()
 
-VStack(spacing: 0) {
+                VStack(spacing: 0) {
                     previewHeader
                         .padding(.horizontal, 24)
                         .padding(.top, max(topInset, proxy.safeAreaInsets.top) + 10)
@@ -117,31 +119,79 @@ VStack(spacing: 0) {
     }
 
     private var previewHeader: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "sparkles")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [Color(hex: "4ECDC4"), Color(hex: "9BAAF8")],
-                        startPoint: .topLeading, endPoint: .bottomTrailing
+        VStack(spacing: 10) {
+            HStack(spacing: 8) {
+                Text(assistantTitle)
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundColor(Color(.label))
+
+                Text("beta")
+                    .font(.system(size: 12, design: .rounded).weight(.medium))
+                    .foregroundColor(Color(.secondaryLabel))
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 4)
+                    .overlay(
+                        Capsule(style: .continuous)
+                            .stroke(Color(.separator), lineWidth: 1)
                     )
-                )
+            }
+            .frame(maxWidth: .infinity)
 
-            Text(assistantTitle)
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(Color(.label))
+            Button {
+                showWorkspaceMenu = true
+            } label: {
+                HStack(spacing: 4) {
+                    Text(viewModel.activeWorkspace.title)
+                        .font(.system(.body, design: .rounded).weight(.medium))
 
-            Text("beta")
-                .font(.system(size: 12, design: .rounded).weight(.medium))
-                .foregroundColor(Color(.secondaryLabel))
-                .padding(.horizontal, 9)
-                .padding(.vertical, 4)
-                .overlay(
-                    Capsule(style: .continuous)
-                        .stroke(Color(.separator), lineWidth: 1)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(.caption, design: .rounded).weight(.medium))
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .foregroundColor(activeWorkspaceTint)
+                .background(
+                    activeWorkspaceBackground,
+                    in: Capsule(style: .continuous)
                 )
+            }
+            .buttonStyle(.plain)
+            .popover(present: $showWorkspaceMenu, attributes: {
+                $0.position = .absolute(
+                    originAnchor: .bottom,
+                    popoverAnchor: .top
+                )
+                $0.rubberBandingMode = .none
+                $0.sourceFrameInset = UIEdgeInsets(top: 0, left: 0, bottom: -10, right: 0)
+                $0.presentation.animation = .easeInOut(duration: 0.2)
+                $0.dismissal.animation = .easeInOut(duration: 0.3)
+            }) {
+                HomeAIWorkspacePickerView(
+                    workspaces: viewModel.workspaces,
+                    activeWorkspaceID: viewModel.activeWorkspaceID,
+                    activeBucketID: viewModel.activeWorkspace.bucketID,
+                    onSelect: { workspaceID in
+                        viewModel.selectWorkspace(workspaceID)
+                        showWorkspaceMenu = false
+                    }
+                )
+            }
         }
         .frame(maxWidth: .infinity)
+    }
+
+    private var activeWorkspaceTint: Color {
+        if let bucket = viewModel.activeBucket {
+            return Color(hex: bucket.colour ?? "7B8FF8")
+        }
+        return Color(hex: "4ECDC4")
+    }
+
+    private var activeWorkspaceBackground: Color {
+        if viewModel.activeWorkspace.bucketID == nil {
+            return Color.SecondaryBackground
+        }
+        return activeWorkspaceTint.opacity(0.16)
     }
 
     private func messageArea(keyboardOverlap: CGFloat, composerBottomPadding: CGFloat) -> some View {
@@ -322,7 +372,7 @@ VStack(spacing: 0) {
                         .padding(.top, 2)
 
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Renvo")
+                            Text("Saku AI")
                                 .font(.system(.subheadline).weight(.semibold))
                                 .foregroundStyle(
                                     LinearGradient(
@@ -870,12 +920,25 @@ private struct HomeAIMarkdownText: View {
         .markdownTextStyle(\.code) {
             FontFamilyVariant(.monospaced)
             FontSize(.em(0.92))
-            BackgroundColor(Color(.secondarySystemBackground))
+            BackgroundColor(nil)
         }
         .markdownBlockStyle(\.paragraph) { configuration in
             configuration.label
                 .relativeLineSpacing(.em(0.22))
                 .markdownMargin(top: 0, bottom: 14)
+        }
+        .markdownBlockStyle(\.codeBlock) { configuration in
+            ScrollView(.horizontal, showsIndicators: false) {
+                configuration.label
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+            }
+            .background(Color.clear)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(Color(hex: "4ECDC4").opacity(0.22), lineWidth: 1)
+            )
+            .markdownMargin(top: 6, bottom: 16)
         }
         .markdownBlockStyle(\.blockquote) { configuration in
             configuration.label
@@ -894,6 +957,82 @@ private struct HomeAIMarkdownText: View {
         .tint(Color(hex: "4ECDC4"))
         .textSelection(.enabled)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.clear)
+    }
+}
+
+private struct HomeAIWorkspacePickerView: View {
+    let workspaces: [AIConversationWorkspace]
+    let activeWorkspaceID: String
+    let activeBucketID: UUID?
+    let onSelect: (String) -> Void
+
+    @Environment(\.colorScheme) private var colorScheme
+    @Namespace private var animation
+
+    private var darkMode: Bool {
+        colorScheme == .dark
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            ForEach(workspaces) { workspace in
+                HStack(spacing: 10) {
+                    Image(systemName: workspace.bucketID == nil ? "sparkles" : "flag.fill")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(workspaceTint(workspace))
+                        .frame(width: 22)
+
+                    Text(workspace.title)
+                        .lineLimit(1)
+
+                    Spacer()
+
+                    if workspace.id == activeWorkspaceID {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 14, weight: .medium))
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .font(.system(size: 18, weight: .medium, design: .rounded))
+                .padding(5)
+                .background {
+                    if workspace.id == activeWorkspaceID {
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(darkMode ? Color("AlwaysDarkSecondaryBackground") : Color("AlwaysLightSecondaryBackground"))
+                            .matchedGeometryEffect(id: "WORKSPACE", in: animation)
+                    }
+                }
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    onSelect(workspace.id)
+                }
+            }
+        }
+        .foregroundColor(darkMode ? Color("AlwaysLightBackground") : Color("AlwaysDarkBackground"))
+        .padding(4)
+        .frame(width: 200)
+        .background(
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .fill(darkMode ? Color("AlwaysDarkBackground") : Color("AlwaysLightBackground"))
+                .shadow(color: darkMode ? Color.clear : Color.gray.opacity(0.25), radius: 6)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .stroke(darkMode ? Color.gray.opacity(0.1) : Color.clear, lineWidth: 1.3)
+        )
+    }
+
+    private func workspaceTint(_ workspace: AIConversationWorkspace) -> Color {
+        if workspace.bucketID == nil {
+            return Color(hex: "4ECDC4")
+        }
+
+        if workspace.bucketID == activeBucketID {
+            return Color(hex: "7B8FF8")
+        }
+
+        return Color(hex: "7B8FF8")
     }
 }
 

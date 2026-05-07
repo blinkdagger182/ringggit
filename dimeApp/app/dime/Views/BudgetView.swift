@@ -6,6 +6,7 @@
 //
 
 import CrookedText
+import CoreData
 import Foundation
 import Popovers
 import SwiftUI
@@ -14,9 +15,10 @@ struct BudgetView: View {
     @FetchRequest(sortDescriptors: []) private var categories: FetchedResults<Category>
     @FetchRequest(sortDescriptors: []) private var budgets: FetchedResults<Budget>
     @FetchRequest(sortDescriptors: []) private var mainBudget: FetchedResults<MainBudget>
+    @FetchRequest(sortDescriptors: [NSSortDescriptor(key: "dateCreated", ascending: true)]) private var buckets: FetchedResults<Bucket>
 
     var body: some View {
-        if categories.isEmpty && budgets.isEmpty && mainBudget.isEmpty {
+        if categories.isEmpty && budgets.isEmpty && mainBudget.isEmpty && buckets.isEmpty {
             VStack(spacing: 5) {
                 Image("category-3")
                     .resizable()
@@ -39,7 +41,13 @@ struct BudgetView: View {
             .frame(height: 250, alignment: .top)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .ignoresSafeArea(.all)
-            .background(Color.PrimaryBackground)
+            .background(
+                ZStack {
+                    Color.PrimaryBackground
+                    HomeAIAnimatedGradientBackground()
+                        .opacity(0.9)
+                }
+            )
 
         } else {
             ActualBudgetView()
@@ -55,11 +63,15 @@ struct ActualBudgetView: View {
         SortDescriptor(\.dateCreated)
     ]) private var budgets: FetchedResults<Budget>
     @FetchRequest(sortDescriptors: []) private var mainBudget: FetchedResults<MainBudget>
+    @FetchRequest(sortDescriptors: [SortDescriptor(\.dateCreated)]) private var buckets: FetchedResults<Bucket>
     @Environment(\.managedObjectContext) var moc
     @EnvironmentObject var dataController: DataController
     @EnvironmentObject var tabBarManager: TabBarManager
 
     @State var newBudget = false
+    @State private var newBucket = false
+    @State private var bucketToEdit: Bucket?
+    @State private var bucketToDelete: Bucket?
 
     @State private var showMenu = false
 
@@ -108,7 +120,7 @@ struct ActualBudgetView: View {
                 .padding(.horizontal, 30)
                 .padding(.bottom, 20)
 
-                if !budgets.isEmpty || !mainBudget.isEmpty {
+                if !budgets.isEmpty || !mainBudget.isEmpty || !buckets.isEmpty {
                     ScrollView(showsIndicators: false) {
                         VStack {
                             if let first = mainBudget.first {
@@ -183,6 +195,70 @@ struct ActualBudgetView: View {
                                 .padding(.horizontal, 25)
                                 .padding(5)
                             }
+
+                            if !buckets.isEmpty {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    HStack {
+                                        Text("Buckets")
+                                            .font(.system(.title3, design: .rounded).weight(.semibold))
+                                            .foregroundColor(Color.PrimaryText)
+
+                                        Spacer()
+
+                                        Button {
+                                            newBucket = true
+                                        } label: {
+                                            Image(systemName: "plus")
+                                                .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                                                .foregroundColor(Color.SubtitleText)
+                                                .padding(4)
+                                                .background(Color.SecondaryBackground, in: Circle())
+                                        }
+                                    }
+                                    .padding(.horizontal, 25)
+                                    .padding(.top, 6)
+
+                                    VStack(spacing: 10) {
+                                        ForEach(buckets, id: \.self) { bucket in
+                                            BucketSummaryRow(bucket: bucket, onEdit: {
+                                                bucketToEdit = bucket
+                                            }, onDelete: {
+                                                bucketToDelete = bucket
+                                            })
+                                        }
+                                    }
+                                    .padding(.horizontal, 25)
+                                }
+                                .padding(.top, 12)
+                            } else {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    HStack {
+                                        Text("Buckets")
+                                            .font(.system(.title3, design: .rounded).weight(.semibold))
+                                            .foregroundColor(Color.PrimaryText)
+
+                                        Spacer()
+
+                                        Button {
+                                            newBucket = true
+                                        } label: {
+                                            Image(systemName: "plus")
+                                                .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                                                .foregroundColor(Color.SubtitleText)
+                                                .padding(4)
+                                                .background(Color.SecondaryBackground, in: Circle())
+                                        }
+                                    }
+                                    .padding(.horizontal, 25)
+                                    .padding(.top, 6)
+
+                                    Text("Create buckets for trips, claims, projects, and other spending workspaces.")
+                                        .font(.system(.subheadline, design: .rounded).weight(.medium))
+                                        .foregroundColor(Color.SubtitleText)
+                                        .padding(.horizontal, 25)
+                                }
+                                .padding(.top, 12)
+                            }
                         }
                         .padding(.bottom, 70)
                     }
@@ -219,7 +295,13 @@ struct ActualBudgetView: View {
             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
             .navigationBarTitle("")
             .navigationBarHidden(true)
-            .background(Color.PrimaryBackground)
+            .background(
+                ZStack {
+                    Color.PrimaryBackground
+                    HomeAIAnimatedGradientBackground()
+                        .opacity(0.9)
+                }
+            )
             .sheet(item: $toEdit, onDismiss: {
                 toEdit = nil
             }) { budget in
@@ -231,10 +313,23 @@ struct ActualBudgetView: View {
             .sheet(isPresented: $newBudget) {
                 BrandNewBudgetView(overallBudgetCreated: !mainBudget.isEmpty)
             }
+            .fullScreenCover(isPresented: $newBucket) {
+                BucketEditorSheet()
+            }
+            .fullScreenCover(item: $bucketToEdit, onDismiss: {
+                bucketToEdit = nil
+            }) { bucket in
+                BucketEditorSheet(bucket: bucket)
+            }
             .fullScreenCover(item: $toDelete, onDismiss: {
                 toDelete = nil
             }) { budget in
                 DeleteBudgetAlert(toDelete: budget)
+            }
+            .fullScreenCover(item: $bucketToDelete, onDismiss: {
+                bucketToDelete = nil
+            }) { bucket in
+                DeleteBucketAlert(bucket: bucket)
             }
             .onReceive(self.didSave) { _ in // the listener
                 withAnimation {
@@ -242,6 +337,523 @@ struct ActualBudgetView: View {
                 }
             }
         }
+    }
+}
+
+struct BucketSummaryRow: View {
+    let bucket: Bucket
+    let onEdit: () -> Void
+    let onDelete: () -> Void
+
+    @EnvironmentObject var dataController: DataController
+
+    private var transactions: [Transaction] {
+        let request: NSFetchRequest<Transaction> = Transaction.fetchRequest()
+        request.predicate = NSPredicate(format: "bucket == %@", bucket)
+        request.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
+        return (try? dataController.container.viewContext.fetch(request)) ?? []
+    }
+
+    private var totalAmount: Double {
+        transactions.reduce(0) { $0 + $1.wrappedAmount }
+    }
+
+    private var timeframeSummary: String? {
+        guard let timeframe = bucket.timeframe else { return nil }
+
+        switch timeframe {
+        case BucketTimeframeOption.thisMonth.rawValue:
+            return "This month"
+        case BucketTimeframeOption.thisYear.rawValue:
+            return "This year"
+        case BucketTimeframeOption.customRange.rawValue:
+            guard let start = bucket.startDate, let end = bucket.endDate else { return "Custom range" }
+            let formatter = DateFormatter()
+            formatter.dateFormat = "d MMM"
+            return "\(formatter.string(from: start)) - \(formatter.string(from: end))"
+        default:
+            return nil
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Text(bucket.emoji ?? "🏷️")
+                .font(.system(size: 24))
+                .frame(width: 42, height: 42)
+                .background(Color(hex: bucket.colour ?? "7B8FF8").opacity(0.15), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(bucket.name ?? "Untitled Bucket")
+                    .font(.system(.body, design: .rounded).weight(.semibold))
+                    .foregroundColor(Color.PrimaryText)
+
+                HStack(spacing: 6) {
+                    Text("\(transactions.count) \(transactions.count == 1 ? "transaction" : "transactions")")
+                        .font(.system(.caption, design: .rounded).weight(.medium))
+                        .foregroundColor(Color.SubtitleText)
+
+                    if let timeframeSummary {
+                        Circle()
+                            .fill(Color.SubtitleText.opacity(0.4))
+                            .frame(width: 3, height: 3)
+
+                        Text(timeframeSummary)
+                            .font(.system(.caption, design: .rounded).weight(.medium))
+                            .foregroundColor(Color.SubtitleText)
+                            .lineLimit(1)
+                    }
+                }
+            }
+
+            Spacer()
+
+            Text(String(format: "RM %.2f", totalAmount))
+                .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                .foregroundColor(Color.PrimaryText)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .contextMenu {
+            Button {
+                onEdit()
+            } label: {
+                Label("Edit Bucket", systemImage: "pencil")
+            }
+
+            Button(role: .destructive) {
+                onDelete()
+            } label: {
+                Label("Delete Bucket", systemImage: "trash")
+            }
+        }
+    }
+}
+
+enum BucketTimeframeOption: String, CaseIterable {
+    case none
+    case thisMonth
+    case thisYear
+    case customRange
+
+    var title: String {
+        switch self {
+        case .none: return "No time"
+        case .thisMonth: return "This month"
+        case .thisYear: return "This year"
+        case .customRange: return "Custom range"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .none: return "Keep this bucket available without date limits."
+        case .thisMonth: return "Focus it on the current month."
+        case .thisYear: return "Tie it to the current year."
+        case .customRange: return "Pick your own start and end dates."
+        }
+    }
+}
+
+struct BucketNamePreset: Hashable {
+    let emoji: String
+    let title: String
+
+    var displayName: String {
+        "\(emoji) \(title)"
+    }
+}
+
+struct BucketEditorSheet: View {
+    @Environment(\.dismiss) var dismiss
+    @Environment(\.managedObjectContext) var moc
+    @Environment(\.colorScheme) var colorScheme
+
+    let bucket: Bucket?
+
+    @State private var progress = 1
+    @State private var name: String
+    @State private var timeframe: BucketTimeframeOption
+    @State private var startDate: Date
+    @State private var endDate: Date
+    @State private var emoji: String
+    @State private var colour: String
+
+    private let presets: [BucketNamePreset] = [
+        .init(emoji: "👍", title: "Good vibes"),
+        .init(emoji: "✈️", title: "July Europe Trip"),
+        .init(emoji: "🏠", title: "House Renovation"),
+        .init(emoji: "💍", title: "Wedding"),
+        .init(emoji: "🧾", title: "Tax Claim"),
+        .init(emoji: "👨‍👩‍👧", title: "Family Expenses")
+    ]
+
+    private let swatches = [
+        "7B8FF8", "4ECDC4", "FF8A65", "F06292",
+        "F7C65B", "7CC576", "8E7DF2", "5B8DEF"
+    ]
+
+    init(bucket: Bucket? = nil) {
+        self.bucket = bucket
+        _name = State(initialValue: bucket?.name ?? "")
+        _timeframe = State(initialValue: BucketTimeframeOption(rawValue: bucket?.timeframe ?? "") ?? .none)
+        _startDate = State(initialValue: bucket?.startDate ?? Date.now)
+        _endDate = State(initialValue: bucket?.endDate ?? Date.now)
+        _emoji = State(initialValue: bucket?.emoji ?? "🏷️")
+        _colour = State(initialValue: bucket?.colour ?? "7B8FF8")
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Button {
+                    if progress == 1 {
+                        dismiss()
+                    } else {
+                        withAnimation(.interactiveSpring(response: 0.6, dampingFraction: 0.8, blendDuration: 0.8)) {
+                            progress -= 1
+                        }
+                    }
+                } label: {
+                    Image(systemName: progress == 1 ? "xmark" : "chevron.left")
+                        .font(.system(.callout, design: .rounded).weight(.semibold))
+                        .foregroundColor(Color.SubtitleText)
+                        .padding(8)
+                        .background(Color.SecondaryBackground, in: Circle())
+                }
+
+                Spacer()
+
+                CustomCapsuleProgress(percent: Double(progress) / 3, width: 4, topStroke: Color.DarkBackground, bottomStroke: Color.SecondaryBackground)
+                    .frame(width: 60)
+            }
+            .padding(.bottom, 50)
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text(progress == 1 ? "Name your bucket" : progress == 2 ? "Choose a time frame" : "Style your bucket")
+                    .foregroundColor(.PrimaryText)
+                    .font(.system(.title2, design: .rounded).weight(.semibold))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text(progress == 1 ? "Buckets work best when they feel specific and memorable." : progress == 2 ? "You can leave it open-ended or tie it to a date range." : "Pick a tag color and emoji that will stand out across the app.")
+                    .foregroundColor(.SubtitleText)
+                    .font(.system(.body, design: .rounded).weight(.medium))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(height: 130, alignment: .top)
+
+            Group {
+                if progress == 1 {
+                    bucketNameStep
+                } else if progress == 2 {
+                    bucketTimeStep
+                } else {
+                    bucketStyleStep
+                }
+            }
+
+            Spacer()
+
+            Button {
+                if progress < 3 {
+                    withAnimation(.interactiveSpring(response: 0.6, dampingFraction: 0.8, blendDuration: 0.8)) {
+                        progress += 1
+                    }
+                } else {
+                    saveBucket()
+                }
+            } label: {
+                Text(progress == 3 ? (bucket == nil ? "Create Bucket" : "Save Bucket") : "Continue")
+                    .font(.system(.body, design: .rounded).weight(.semibold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(Color.DarkBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            }
+            .disabled(!canContinue)
+            .opacity(canContinue ? 1 : 0.45)
+        }
+        .padding(.horizontal, 30)
+        .padding(.top, 20)
+        .padding(.bottom, 16)
+        .background(
+            ZStack {
+                Color.PrimaryBackground
+                HomeAIAnimatedGradientBackground()
+                    .opacity(0.9)
+            }
+        )
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+    }
+
+    private var canContinue: Bool {
+        switch progress {
+        case 1:
+            return !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case 2:
+            return timeframe != .customRange || startDate <= endDate
+        default:
+            return !emoji.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+    }
+
+    private var bucketNameStep: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            TextField("Bucket name", text: $name)
+                .font(.system(.body, design: .rounded).weight(.medium))
+                .padding(12)
+                .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                ForEach(presets, id: \.self) { preset in
+                    Button {
+                        name = preset.displayName
+                        emoji = preset.emoji
+                    } label: {
+                        Text(preset.displayName)
+                            .font(.system(.subheadline, design: .rounded).weight(.medium))
+                            .foregroundColor(Color.PrimaryText)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 12)
+                            .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private var bucketTimeStep: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(BucketTimeframeOption.allCases, id: \.self) { option in
+                    bucketTimeOptionRow(option)
+                }
+            }
+            .modifier(PickerStyle(colorScheme: colorScheme))
+
+            if timeframe == .customRange {
+                VStack(spacing: 12) {
+                    DatePicker("Start", selection: $startDate, displayedComponents: .date)
+                        .datePickerStyle(.compact)
+                    DatePicker("End", selection: $endDate, in: startDate..., displayedComponents: .date)
+                        .datePickerStyle(.compact)
+                }
+                .padding(14)
+                .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func bucketTimeOptionRow(_ option: BucketTimeframeOption) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack {
+                Text(option.title)
+                Spacer()
+
+                if option == timeframe {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(Color.PrimaryText)
+                }
+            }
+            .font(.system(.title3, design: .rounded).weight(.medium))
+            .foregroundColor(Color.PrimaryText)
+
+            Text(option.subtitle)
+                .font(.system(.subheadline, design: .rounded).weight(.medium))
+                .foregroundColor(Color.SubtitleText)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(8)
+        .background {
+            if option == timeframe {
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(Color.SecondaryBackground)
+            }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            withAnimation(.easeIn(duration: 0.15)) {
+                timeframe = option
+                if option == .thisMonth {
+                    let range = currentMonthRange()
+                    startDate = range.start
+                    endDate = range.end
+                } else if option == .thisYear {
+                    let range = currentYearRange()
+                    startDate = range.start
+                    endDate = range.end
+                }
+            }
+        }
+    }
+
+    private var bucketStyleStep: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(spacing: 12) {
+                TextField("Emoji", text: $emoji)
+                    .font(.system(.title3, design: .rounded).weight(.medium))
+                    .multilineTextAlignment(.center)
+                    .frame(width: 78)
+                    .padding(.vertical, 8)
+                    .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+                TextField("Hex color", text: $colour)
+                    .textInputAutocapitalization(.characters)
+                    .font(.system(.body, design: .rounded).weight(.medium))
+                    .padding(12)
+                    .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            }
+
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 12) {
+                ForEach(swatches, id: \.self) { swatch in
+                    Button {
+                        colour = swatch
+                    } label: {
+                        Circle()
+                            .fill(Color(hex: swatch))
+                            .frame(width: 36, height: 36)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.PrimaryBackground, lineWidth: colour == swatch ? 3 : 0)
+                            )
+                            .overlay(
+                                Circle()
+                                    .stroke(Color(hex: swatch).opacity(0.4), lineWidth: 1.5)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            HStack(spacing: 12) {
+                Text(emoji.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "🏷️" : emoji)
+                    .font(.system(size: 28))
+                    .frame(width: 48, height: 48)
+                    .background(Color(hex: colour.isEmpty ? "7B8FF8" : colour).opacity(0.15), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Untitled Bucket" : name)
+                        .font(.system(.body, design: .rounded).weight(.semibold))
+                        .foregroundColor(Color.PrimaryText)
+
+                    Text(timeframe.title)
+                        .font(.system(.caption, design: .rounded).weight(.medium))
+                        .foregroundColor(Color.SubtitleText)
+                }
+
+                Spacer()
+            }
+            .padding(14)
+            .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+    }
+
+    private func saveBucket() {
+        let target = bucket ?? Bucket(context: moc)
+        if target.id == nil {
+            target.id = UUID()
+            target.dateCreated = .now
+        }
+
+        target.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        target.emoji = emoji.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "🏷️" : emoji.trimmingCharacters(in: .whitespacesAndNewlines)
+        target.colour = colour.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "7B8FF8" : colour.trimmingCharacters(in: .whitespacesAndNewlines)
+        target.timeframe = timeframe == .none ? nil : timeframe.rawValue
+
+        switch timeframe {
+        case .none:
+            target.startDate = nil
+            target.endDate = nil
+        case .thisMonth:
+            let range = currentMonthRange()
+            target.startDate = range.start
+            target.endDate = range.end
+        case .thisYear:
+            let range = currentYearRange()
+            target.startDate = range.start
+            target.endDate = range.end
+        case .customRange:
+            target.startDate = startDate
+            target.endDate = endDate
+        }
+
+        try? moc.save()
+        dismiss()
+    }
+
+    private func currentMonthRange() -> (start: Date, end: Date) {
+        let calendar = Calendar.current
+        let start = calendar.date(from: calendar.dateComponents([.year, .month], from: Date.now)) ?? Date.now
+        let end = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: start) ?? Date.now
+        return (start, end)
+    }
+
+    private func currentYearRange() -> (start: Date, end: Date) {
+        let calendar = Calendar.current
+        let start = calendar.date(from: calendar.dateComponents([.year], from: Date.now)) ?? Date.now
+        let end = calendar.date(byAdding: DateComponents(year: 1, day: -1), to: start) ?? Date.now
+        return (start, end)
+    }
+}
+
+struct DeleteBucketAlert: View {
+    @Environment(\.dismiss) var dismiss
+    @Environment(\.managedObjectContext) var moc
+    let bucket: Bucket
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            Color.clear
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .contentShape(Rectangle())
+                .onTapGesture { dismiss() }
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Delete Bucket?")
+                    .font(.system(.title3, design: .rounded).weight(.semibold))
+                    .foregroundColor(Color.PrimaryText)
+
+                Text("Transactions will be kept, but this bucket will be removed from them.")
+                    .font(.system(.body, design: .rounded).weight(.medium))
+                    .foregroundColor(Color.SubtitleText)
+
+                Button {
+                    let request: NSFetchRequest<Transaction> = Transaction.fetchRequest()
+                    request.predicate = NSPredicate(format: "bucket == %@", bucket)
+                    let linkedTransactions = (try? moc.fetch(request)) ?? []
+                    linkedTransactions.forEach { $0.bucket = nil }
+                    moc.delete(bucket)
+                    try? moc.save()
+                    dismiss()
+                } label: {
+                    Text("Delete Bucket")
+                        .font(.system(.body, design: .rounded).weight(.semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 13)
+                        .background(Color.AlertRed, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+
+                Button("Cancel") {
+                    dismiss()
+                }
+                .font(.system(.body, design: .rounded).weight(.semibold))
+                .foregroundColor(Color.PrimaryText)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 13)
+                .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .padding(16)
+            .background(Color.PrimaryBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .padding(.horizontal, 16)
+            .padding(.bottom, 18)
+        }
+        .background(BackgroundBlurView())
     }
 }
 

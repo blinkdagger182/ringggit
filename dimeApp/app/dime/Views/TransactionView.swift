@@ -16,6 +16,8 @@ struct TransactionView: View {
     var expenseCategories: FetchedResults<Category>
     @FetchRequest(sortDescriptors: [], predicate: NSPredicate(format: "income = %d", true)) private
     var incomeCategories: FetchedResults<Category>
+    @FetchRequest(sortDescriptors: [NSSortDescriptor(key: "dateCreated", ascending: true)]) private
+    var buckets: FetchedResults<Bucket>
 
     @Environment(\.managedObjectContext) var moc
     @EnvironmentObject var dataController: DataController
@@ -31,6 +33,7 @@ struct TransactionView: View {
 
     @State private var note = ""
     @State var category: Category?
+    @State var bucket: Bucket?
     @State private var date = Date.now
     @State private var repeatType = 0
     @State private var repeatCoefficient = 1
@@ -208,6 +211,11 @@ struct TransactionView: View {
         let fontSize = UIFont.getBodyFontSize(dynamicTypeSize: dynamicTypeSize)
 
         return "Category".widthOfRoundedString(size: fontSize, weight: .semibold) + 50
+    }
+
+    var widthOfBucketButton: CGFloat {
+        let fontSize = UIFont.getBodyFontSize(dynamicTypeSize: dynamicTypeSize)
+        return "Bucket".widthOfRoundedString(size: fontSize, weight: .semibold) + 58
     }
 
     var capsuleWidth: CGFloat {
@@ -445,8 +453,15 @@ struct TransactionView: View {
                         )
 
                     // number display and note view
-                    VStack(spacing: 8) {
-                        NumberPadTextView(price: $price, isEditingDecimal: $isEditingDecimal, decimalValuesAssigned: $decimalValuesAssigned)
+                    VStack(alignment: .leading, spacing: 14) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Amount")
+                                .font(.system(.headline, design: .rounded).weight(.medium))
+                                .foregroundColor(Color.SubtitleText)
+
+                            NumberPadTextView(price: $price, isEditingDecimal: $isEditingDecimal, decimalValuesAssigned: $decimalValuesAssigned)
+                        }
+
                         HStack(spacing: 8) {
                             NoteView(note: $note, focused: $textFieldFocused)
 
@@ -468,6 +483,7 @@ struct TransactionView: View {
                             .disabled(statementProcessing)
                         }
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
@@ -514,7 +530,8 @@ struct TransactionView: View {
                     }
                     .padding(.bottom, 5)
                 } else {
-                    HStack(spacing: 8) {
+                    VStack(spacing: 8) {
+                        HStack(spacing: 8) {
                         HStack(spacing: 7) {
                             Group {
                                 if date < Date.now {
@@ -715,6 +732,10 @@ struct TransactionView: View {
                                 }
 
                             }
+                        }
+                    }
+                        if !buckets.isEmpty {
+                            bucketPickerButton
                         }
                     }
                     .padding(.bottom, 5)
@@ -1092,6 +1113,8 @@ struct TransactionView: View {
                 editedTransaction.category = unwrappedCategory
             }
 
+            editedTransaction.bucket = bucket
+
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 withAnimation(.easeInOut(duration: 0.5)) {
                     editedTransaction.amount = price
@@ -1142,6 +1165,8 @@ struct TransactionView: View {
             transaction.category = unwrappedCategory
         }
 
+        transaction.bucket = bucket
+
         transaction.amount = price
         transaction.date = date
         transaction.id = UUID()
@@ -1164,6 +1189,64 @@ struct TransactionView: View {
         try? moc.save()
 
         dismiss()
+    }
+
+    @ViewBuilder
+    private var bucketPickerButton: some View {
+        Menu {
+            Button {
+                bucket = nil
+            } label: {
+                Label("No Bucket", systemImage: bucket == nil ? "checkmark" : "flag.slash")
+            }
+
+            ForEach(buckets, id: \.self) { item in
+                Button {
+                    bucket = item
+                } label: {
+                    Label {
+                        Text(item.name ?? "Untitled Bucket")
+                    } icon: {
+                        Text(item.emoji ?? "🏷️")
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 7) {
+                Image(systemName: bucket == nil ? "flag" : "flag.fill")
+                    .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                    .foregroundColor(bucket == nil ? Color.SubtitleText : Color(hex: bucket?.colour ?? "7B8FF8"))
+
+                if let bucket {
+                    Text("\(bucket.emoji ?? "🏷️") \(bucket.name ?? "Bucket")")
+                        .font(.system(.body, design: .rounded).weight(.semibold))
+                        .lineLimit(1)
+                        .foregroundColor(Color.PrimaryText)
+                } else {
+                    Text("Bucket")
+                        .font(.system(.body, design: .rounded).weight(.semibold))
+                        .lineLimit(1)
+                        .foregroundColor(Color.SubtitleText)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(Color.SubtitleText)
+            }
+            .padding(.vertical, 8.5)
+            .padding(.horizontal, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 11.5, style: .continuous)
+                    .fill(bucket == nil ? Color.clear : Color(hex: bucket?.colour ?? "7B8FF8").opacity(0.14))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 11.5, style: .continuous)
+                    .strokeBorder(bucket == nil ? Color.Outline : Color(hex: bucket?.colour ?? "7B8FF8").opacity(0.28), lineWidth: 1.5)
+            )
+        }
     }
 
     func importStatement(from url: URL, onComplete: (() -> Void)? = nil) {
@@ -1254,6 +1337,10 @@ struct TransactionView: View {
 
             if let unwrappedCategory = transaction.category {
                 _category = State(initialValue: unwrappedCategory)
+            }
+
+            if let unwrappedBucket = transaction.bucket {
+                _bucket = State(initialValue: unwrappedBucket)
             }
 
             _income = State(initialValue: transaction.income)
