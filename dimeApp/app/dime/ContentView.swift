@@ -15,6 +15,7 @@ struct ContentView: View {
     @Environment(\.scenePhase) var scenePhase
     @AppStorage("showNotifications", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) var showNotifications: Bool = false
     @AppStorage("notificationsEnabled", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) var notificationsEnabled: Bool = true
+    @AppStorage("activeIcon", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) var activeIcon: String = "AppIcon"
 
     @AppStorage("firstLaunch", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) var firstLaunch: Bool = true
 
@@ -63,6 +64,11 @@ struct ContentView: View {
         .onAppear {
 //            UserDefaults(suiteName: "group.com.riskcreatives.duit")!.set(false, forKey: "newTransactionAdded")
 //            WidgetCenter.shared.reloadTimelines(ofKind: "TemplateTransactions")
+
+            activeIcon = "AppIcon"
+            if UIApplication.shared.supportsAlternateIcons, UIApplication.shared.alternateIconName != nil {
+                UIApplication.shared.setAlternateIconName(nil)
+            }
 
             if appLockVM.isAppLockEnabled {
                 appLockVM.appLockValidation()

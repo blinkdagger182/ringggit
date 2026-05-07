@@ -29,6 +29,14 @@ struct HomeAIAssistantOverlay: View {
     @State private var showAttachmentSheet = false
     @State private var showWorkspaceMenu = false
     @State private var previewAttachment: AttachmentItem?
+    private let landingActions: [SakuAILandingAction] = [
+        .init(title: "What can Saku AI do?", systemImage: "sparkles", prompt: "What can Saku AI do?"),
+        .init(title: "Scan receipt", systemImage: "doc.text.viewfinder", prompt: nil),
+        .init(title: "Add transaction", systemImage: "plus.circle", prompt: "Add transaction"),
+        .init(title: "Where did my money go?", systemImage: "chart.pie", prompt: "Where did my money go?"),
+        .init(title: "Upload file", systemImage: "folder", prompt: nil),
+        .init(title: "Show latest transfers", systemImage: "arrow.left.arrow.right", prompt: "Show latest transfers")
+    ]
 
     var body: some View {
         GeometryReader { proxy in
@@ -38,17 +46,14 @@ struct HomeAIAssistantOverlay: View {
             let activeComposerBottomPadding = keyboardOverlap > 0 ? 12 : baseComposerBottomPadding
 
             ZStack(alignment: .bottom) {
-                Color(.systemBackground)
+                SakuAIDarkBackgroundView()
                     .ignoresSafeArea()
-
-                HomeAIAnimatedGradientBackground()
-                    .opacity(max(0, revealProgress))
-                    .ignoresSafeArea()
+                    .opacity(max(0.28, revealProgress))
 
                 VStack(spacing: 0) {
                     previewHeader
                         .padding(.horizontal, 24)
-                        .padding(.top, max(topInset, proxy.safeAreaInsets.top) + 10)
+                        .padding(.top, max(topInset, proxy.safeAreaInsets.top) + 6)
                         .opacity(revealProgress)
 
                     messageArea(
@@ -68,9 +73,9 @@ struct HomeAIAssistantOverlay: View {
                     .background(
                         LinearGradient(
                             colors: [
-                                Color(.systemBackground).opacity(0),
-                                Color(.systemBackground).opacity(0.92),
-                                Color(.systemBackground)
+                                Color(hex: "0B1023").opacity(0),
+                                Color(hex: "0B1023").opacity(0.86),
+                                Color(hex: "0B1023")
                             ],
                             startPoint: .top,
                             endPoint: .bottom
@@ -79,11 +84,9 @@ struct HomeAIAssistantOverlay: View {
                     .zIndex(2)
 
                 if isExpanded && keyboardOverlap == 0 {
-                    collapseHandle
-                        .padding(.bottom, activeComposerBottomPadding + 104)
+                    bottomHomePeek(safeBottom: max(proxy.safeAreaInsets.bottom, bottomInset))
                         .opacity(revealProgress)
-                        .zIndex(1)
-                        .modifier(HomeAICollapseGestureModifier(dragGesture: collapseGesture))
+                        .zIndex(3)
                 }
             }
             .ignoresSafeArea(.keyboard, edges: .bottom)
@@ -120,22 +123,24 @@ struct HomeAIAssistantOverlay: View {
 
     private var previewHeader: some View {
         VStack(spacing: 10) {
-            HStack(spacing: 8) {
-                Text(assistantTitle)
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundColor(Color(.label))
+            ZStack {
+                HStack(spacing: 8) {
+                    Text("✨ \(assistantTitle)")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundColor(.white)
 
-                Text("beta")
-                    .font(.system(size: 12, design: .rounded).weight(.medium))
-                    .foregroundColor(Color(.secondaryLabel))
-                    .padding(.horizontal, 9)
-                    .padding(.vertical, 4)
-                    .overlay(
-                        Capsule(style: .continuous)
-                            .stroke(Color(.separator), lineWidth: 1)
-                    )
+                    Text("beta")
+                        .font(.system(size: 12, design: .rounded).weight(.medium))
+                        .foregroundColor(Color.white.opacity(0.78))
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 4)
+                        .overlay(
+                            Capsule(style: .continuous)
+                                .stroke(Color.white.opacity(0.24), lineWidth: 1)
+                        )
+                }
             }
-            .frame(maxWidth: .infinity)
+            .frame(height: 44)
 
             Button {
                 showWorkspaceMenu = true
@@ -189,9 +194,9 @@ struct HomeAIAssistantOverlay: View {
 
     private var activeWorkspaceBackground: Color {
         if viewModel.activeWorkspace.bucketID == nil {
-            return Color.SecondaryBackground
+            return Color.white.opacity(0.10)
         }
-        return activeWorkspaceTint.opacity(0.16)
+        return activeWorkspaceTint.opacity(0.20)
     }
 
     private func messageArea(keyboardOverlap: CGFloat, composerBottomPadding: CGFloat) -> some View {
@@ -223,7 +228,6 @@ struct HomeAIAssistantOverlay: View {
                         .onTapGesture {
                             dismissKeyboard()
                         }
-                        .modifier(HomeAICollapseGestureModifier(dragGesture: collapseGesture))
                         .id("bottom-anchor")
                 }
                 .background(
@@ -268,14 +272,65 @@ struct HomeAIAssistantOverlay: View {
             .onTapGesture {
                 dismissKeyboard()
             }
-            .modifier(HomeAICollapseGestureModifier(dragGesture: collapseGesture))
     }
 
     private var emptyState: some View {
-        VStack(spacing: 20) {
-            quickActionsSection(title: "Try asking")
+        VStack(spacing: 28) {
+            VStack(spacing: 14) {
+                Text("How can I help you?")
+                    .font(.system(size: 31, weight: .semibold, design: .rounded))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+
+                landingActionsGrid
+            }
+
+            Text("Built for your money, privately.")
+                .font(.system(.footnote, design: .rounded).weight(.medium))
+                .foregroundColor(Color.white.opacity(0.56))
         }
-        .padding(.top, 8)
+        .padding(.top, 44)
+    }
+
+    private var landingActionsGrid: some View {
+        LazyVGrid(
+            columns: [
+                GridItem(.flexible(), spacing: 14),
+                GridItem(.flexible(), spacing: 14)
+            ],
+            spacing: 14
+        ) {
+            ForEach(landingActions) { action in
+                Button {
+                    handleLandingAction(action)
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: action.systemImage)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(width: 22)
+
+                        Text(action.title)
+                            .font(.system(.body, design: .rounded).weight(.medium))
+                            .foregroundColor(.white)
+                            .multilineTextAlignment(.leading)
+
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, 16)
+                    .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .fill(Color.white.opacity(0.09))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                    .stroke(Color.white.opacity(0.10), lineWidth: 1)
+                            )
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
     }
 
     private func quickActionsSection(title: String) -> some View {
@@ -283,7 +338,7 @@ struct HomeAIAssistantOverlay: View {
             if !title.isEmpty {
                 Text(title)
                     .font(.system(.subheadline).weight(.medium))
-                    .foregroundColor(Color(.secondaryLabel))
+                    .foregroundColor(Color.white.opacity(0.62))
                     .padding(.horizontal, 2)
             }
 
@@ -317,21 +372,24 @@ struct HomeAIAssistantOverlay: View {
 
                                 Text(quickAction.title)
                                     .font(.system(.subheadline).weight(.semibold))
-                                    .foregroundColor(Color(.label))
+                                    .foregroundColor(.white)
                                     .lineLimit(2)
                                     .multilineTextAlignment(.leading)
 
                                 Text(quickActionSubtitle(for: quickAction.title))
                                     .font(.system(.caption, design: .rounded))
-                                    .foregroundColor(Color(.secondaryLabel))
+                                    .foregroundColor(Color.white.opacity(0.56))
                                     .lineLimit(2)
                             }
                             .padding(14)
                             .frame(width: 148, height: 148, alignment: .leading)
                             .background(
                                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .fill(Color(.secondarySystemBackground))
-                                    .shadow(color: Color.black.opacity(0.06), radius: 8, y: 2)
+                                    .fill(Color.white.opacity(0.08))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                                    )
                             )
                         }
                         .buttonStyle(.plain)
@@ -390,7 +448,7 @@ struct HomeAIAssistantOverlay: View {
                                 HStack(spacing: 8) {
                                     Text(viewModel.statusText.isEmpty ? "Thinking" : viewModel.statusText)
                                         .font(.system(.body))
-                                        .foregroundColor(Color(.label))
+                                        .foregroundColor(Color.white.opacity(0.82))
                                         .lineSpacing(5)
                                     AIThinkingDots()
                                 }
@@ -513,13 +571,13 @@ struct HomeAIAssistantOverlay: View {
                                 .font(.system(.footnote, design: .rounded).weight(.medium))
                                 .lineLimit(1)
                         }
-                        .foregroundColor(Color.PrimaryText.opacity(0.9))
+                        .foregroundColor(Color.white.opacity(0.92))
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
-                        .background(Color(.secondarySystemBackground).opacity(0.96), in: Capsule(style: .continuous))
+                        .background(Color.white.opacity(0.10), in: Capsule(style: .continuous))
                         .overlay(
                             Capsule(style: .continuous)
-                                .stroke(Color(.separator).opacity(0.45), lineWidth: 1)
+                                .stroke(Color.white.opacity(0.10), lineWidth: 1)
                         )
                     }
                     .buttonStyle(.plain)
@@ -551,64 +609,90 @@ struct HomeAIAssistantOverlay: View {
                     .padding(.horizontal, 14)
             }
 
-            // Input row
-            HStack(alignment: .center, spacing: 12) {
-                if keyboardHeightHelper.keyboardHeight == 0 {
-                    Button { showAttachmentSheet = true } label: {
-                        ZStack {
-                            Circle()
-                                .fill(
+            VStack(spacing: 12) {
+                HStack(alignment: .center, spacing: 12) {
+                    HomeAIComposerTextField(
+                        text: $viewModel.draftMessage,
+                        isFocused: composerFocusBinding,
+                        focusRequestID: composerFocusRequestID,
+                        placeholder: "Ask Saku AI",
+                        onSubmit: sendComposerMessage,
+                        textColor: .white,
+                        placeholderColor: UIColor.white.withAlphaComponent(0.48)
+                    )
+                    .frame(maxWidth: .infinity, minHeight: 24, maxHeight: 24, alignment: .leading)
+
+                    if viewModel.hasContent {
+                        Button { sendComposerMessage() } label: {
+                            Image(systemName: "arrow.up.circle.fill")
+                                .font(.system(size: 26, weight: .semibold))
+                                .foregroundStyle(
                                     LinearGradient(
                                         colors: [Color(hex: "4ECDC4"), Color(hex: "9BAAF8")],
-                                        startPoint: .topLeading, endPoint: .bottomTrailing
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
                                     )
                                 )
-                                .frame(width: 32, height: 32)
-                            Image(systemName: "plus")
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundColor(.white)
                         }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .frame(height: 24)
+
+                HStack(spacing: 20) {
+                    Button { showAttachmentSheet = true } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.white.opacity(0.92))
                     }
                     .buttonStyle(.plain)
-                }
 
-                HomeAIComposerTextField(
-                    text: $viewModel.draftMessage,
-                    isFocused: composerFocusBinding,
-                    focusRequestID: composerFocusRequestID,
-                    placeholder: "Ask anything about your money...",
-                    onSubmit: sendComposerMessage
-                )
-                .frame(maxWidth: .infinity, minHeight: 24, maxHeight: 24, alignment: .leading)
-
-                if viewModel.hasContent {
-                    Button { sendComposerMessage() } label: {
-                        Image(systemName: "paperplane.fill")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [Color(hex: "4ECDC4"), Color(hex: "9BAAF8")],
-                                    startPoint: .topLeading, endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(width: 32, height: 32)
+                    Button { showAttachmentSheet = true } label: {
+                        Image(systemName: "photo")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.white.opacity(0.92))
                     }
                     .buttonStyle(.plain)
+
+                    Button {
+                        viewModel.draftMessage = viewModel.draftMessage + "@"
+                        focusComposer()
+                    } label: {
+                        Image(systemName: "at")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.white.opacity(0.92))
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        if viewModel.draftMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            viewModel.draftMessage = "What can Saku AI do?"
+                        }
+                        focusComposer()
+                    } label: {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.white.opacity(0.92))
+                    }
+                    .buttonStyle(.plain)
+
+                    Spacer(minLength: 0)
                 }
+                .frame(height: 20)
             }
-            .frame(height: 56)
             .padding(.horizontal, 16)
+            .padding(.vertical, 16)
         }
         .contentShape(Rectangle())
         .onTapGesture { focusComposer() }
         .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(Color(.secondarySystemBackground))
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(Color.white.opacity(0.10))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(composerFocused ? Color(hex: "4ECDC4").opacity(0.4) : Color(.separator).opacity(0.5), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .stroke(composerFocused ? Color.white.opacity(0.24) : Color.white.opacity(0.10), lineWidth: 1)
                 )
-                .shadow(color: Color.black.opacity(composerFocused ? 0.08 : 0.04), radius: composerFocused ? 12 : 6, y: 2)
+                .shadow(color: Color.black.opacity(composerFocused ? 0.22 : 0.14), radius: composerFocused ? 24 : 14, y: 8)
         )
         .simultaneousGesture(
             DragGesture(minimumDistance: 4)
@@ -658,15 +742,41 @@ struct HomeAIAssistantOverlay: View {
         }
     }
 
-    private var collapseHandle: some View {
-        ZStack {
-            Image(systemName: "chevron.up")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(Color(.tertiaryLabel))
-                .frame(width: 48, height: 28)
+    private func bottomHomePeek(safeBottom: CGFloat) -> some View {
+        let visibleHeight = max(homePeekHeight, 86)
+        let hiddenDepth: CGFloat = max(120, safeBottom + 96)
+        let panelHeight = visibleHeight + hiddenDepth
+
+        return VStack(spacing: 0) {
+            VStack(spacing: 0) {
+                Image(systemName: "chevron.up")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(Color(.quaternaryLabel))
+                    .padding(.top, 14)
+
+                Spacer(minLength: 0)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: panelHeight)
+            .background(
+                Color.PrimaryBackground
+                    .overlay(alignment: .top) {
+                        LinearGradient(
+                            colors: [Color.white.opacity(0.30), Color.white.opacity(0)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .frame(height: 18)
+                    }
+            )
+            .clipShape(BottomHomePeekShape(cornerRadius: 34))
+            .offset(y: hiddenDepth)
         }
-        .frame(width: 112, height: 64)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         .contentShape(Rectangle())
+        .ignoresSafeArea(edges: .bottom)
+        .onTapGesture(perform: onCollapse)
+        .modifier(HomeAICollapseGestureModifier(dragGesture: collapseGesture))
         .accessibilityLabel("Swipe up to return Home")
     }
 
@@ -739,6 +849,20 @@ struct HomeAIAssistantOverlay: View {
             set: { composerFocused = $0 }
         )
     }
+
+    private func handleLandingAction(_ action: SakuAILandingAction) {
+        switch action.title {
+        case "Scan receipt", "Upload file":
+            showAttachmentSheet = true
+        default:
+            if let quickAction = viewModel.quickActions.first(where: { $0.title == action.title }) {
+                viewModel.triggerQuickAction(quickAction)
+            } else if let prompt = action.prompt {
+                viewModel.draftMessage = prompt
+                viewModel.sendDraftMessage()
+            }
+        }
+    }
 }
 
 private struct AttachmentPreviewView: View {
@@ -797,6 +921,19 @@ private struct HomeAICollapseGestureModifier: ViewModifier {
     }
 }
 
+private struct BottomHomePeekShape: Shape {
+    let cornerRadius: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(
+            roundedRect: rect,
+            byRoundingCorners: [.topLeft, .topRight],
+            cornerRadii: CGSize(width: cornerRadius, height: cornerRadius)
+        )
+        return Path(path.cgPath)
+    }
+}
+
 private struct HomeAIInteractiveKeyboardDismissModifier: ViewModifier {
     func body(content: Content) -> some View {
         if #available(iOS 16.0, *) {
@@ -825,6 +962,8 @@ private struct HomeAIComposerTextField: UIViewRepresentable {
     let focusRequestID: Int
     let placeholder: String
     let onSubmit: () -> Void
+    let textColor: UIColor
+    let placeholderColor: UIColor
 
     func makeUIView(context: Context) -> UITextField {
         let textField = UITextField(frame: .zero)
@@ -832,7 +971,7 @@ private struct HomeAIComposerTextField: UIViewRepresentable {
         textField.backgroundColor = .clear
         textField.borderStyle = .none
         textField.returnKeyType = .send
-        textField.textColor = UIColor.label
+        textField.textColor = textColor
         textField.tintColor = UIColor(red: 0.306, green: 0.804, blue: 0.769, alpha: 1)
         textField.font = UIFont.roundedSystemFont(ofSize: 17, weight: .regular)
         textField.autocorrectionType = .yes
@@ -864,6 +1003,8 @@ private struct HomeAIComposerTextField: UIViewRepresentable {
         } else if !isFocused && textField.isFirstResponder {
             textField.resignFirstResponder()
         }
+
+        textField.textColor = textColor
     }
 
     func makeCoordinator() -> Coordinator {
@@ -874,7 +1015,7 @@ private struct HomeAIComposerTextField: UIViewRepresentable {
         textField.attributedPlaceholder = NSAttributedString(
             string: placeholder,
             attributes: [
-                .foregroundColor: UIColor.placeholderText,
+                .foregroundColor: placeholderColor,
                 .font: UIFont.roundedSystemFont(ofSize: 17, weight: .regular)
             ]
         )
@@ -925,7 +1066,7 @@ private struct AIThinkingDots: View {
         HStack(spacing: 4) {
             ForEach(0..<3, id: \.self) { i in
                 Circle()
-                    .fill(Color(.tertiaryLabel))
+                    .fill(Color.white.opacity(0.48))
                     .frame(width: 5, height: 5)
                     .scaleEffect(phase == i ? 1.4 : 1.0)
                     .animation(.easeInOut(duration: 0.4).repeatForever(autoreverses: true).delay(Double(i) * 0.15), value: phase)
@@ -946,7 +1087,7 @@ private struct HomeAIMarkdownText: View {
         .markdownTheme(.gitHub)
         .markdownTextStyle(\.text) {
             FontSize(.em(1.0))
-            ForegroundColor(Color(.label))
+            ForegroundColor(.white.opacity(0.86))
             BackgroundColor(nil)
         }
         .markdownTextStyle(\.strong) {
@@ -980,7 +1121,7 @@ private struct HomeAIMarkdownText: View {
                 .padding(.leading, 14)
                 .padding(.vertical, 2)
                 .markdownTextStyle {
-                    ForegroundColor(Color(.secondaryLabel))
+                    ForegroundColor(.white.opacity(0.62))
                 }
                 .overlay(alignment: .leading) {
                     RoundedRectangle(cornerRadius: 999, style: .continuous)
@@ -1134,6 +1275,13 @@ private struct ThinkingDisclosure: View {
     }
 }
 
+private struct SakuAILandingAction: Identifiable {
+    let id = UUID()
+    let title: String
+    let systemImage: String
+    let prompt: String?
+}
+
 struct HomeAIAnimatedGradientBackground: View {
     var body: some View {
         ZStack {
@@ -1149,6 +1297,46 @@ struct HomeAIAnimatedGradientBackground: View {
                 startRadius: 0,
                 endRadius: 320
             )
+        }
+    }
+}
+
+private struct SakuAIDarkBackgroundView: View {
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    Color(hex: "07101F"),
+                    Color(hex: "0A1530"),
+                    Color(hex: "090D1B")
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            RadialGradient(
+                colors: [Color(hex: "0DA8C6").opacity(0.55), Color.clear],
+                center: .topLeading,
+                startRadius: 0,
+                endRadius: 420
+            )
+            .blur(radius: 14)
+
+            RadialGradient(
+                colors: [Color(hex: "6544F6").opacity(0.48), Color.clear],
+                center: .topTrailing,
+                startRadius: 0,
+                endRadius: 420
+            )
+            .blur(radius: 14)
+
+            RadialGradient(
+                colors: [Color(hex: "D548B8").opacity(0.34), Color.clear],
+                center: UnitPoint(x: 0.82, y: 0.34),
+                startRadius: 0,
+                endRadius: 320
+            )
+            .blur(radius: 18)
         }
     }
 }

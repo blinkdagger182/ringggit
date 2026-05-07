@@ -129,13 +129,33 @@ struct HomeView: View {
                 .environmentObject(toastPresenter)
                 .environmentObject(transactionManager)
                 .offset(y: currentTab == "Log" ? homeAISheetOffset : 0)
+                .scaleEffect(
+                    currentTab == "Log"
+                        ? (1 - (homeAIRevealProgress(openOffset: homeAIOpenOffset) * 0.018))
+                        : 1,
+                    anchor: .top
+                )
                 .simultaneousGesture(homeAIPullGesture(openOffset: homeAIOpenOffset))
                 .mask(
-                    RoundedRectangle(
-                        cornerRadius: currentTab == "Log" ? min(34, homeAIRevealProgress(openOffset: homeAIOpenOffset) * 34) : 0,
-                        style: .continuous
+                    HomeAISurfaceMaskShape(
+                        cornerRadius: currentTab == "Log" ? min(42, 18 + homeAIRevealProgress(openOffset: homeAIOpenOffset) * 24) : 0
                     )
                     .padding(.top, currentTab == "Log" ? 0 : -1200)
+                )
+                .overlay {
+                    if currentTab == "Log", homeAISheetOffset > 0 {
+                        HomeAISurfaceMaskShape(
+                            cornerRadius: min(42, 18 + homeAIRevealProgress(openOffset: homeAIOpenOffset) * 24)
+                        )
+                        .stroke(Color.white.opacity(0.34), lineWidth: 1)
+                        .blendMode(.plusLighter)
+                        .allowsHitTesting(false)
+                    }
+                }
+                .shadow(
+                    color: Color.black.opacity(currentTab == "Log" ? homeAIRevealProgress(openOffset: homeAIOpenOffset) * 0.10 : 0),
+                    radius: currentTab == "Log" ? (16 + homeAIRevealProgress(openOffset: homeAIOpenOffset) * 18) : 0,
+                    y: currentTab == "Log" ? (8 + homeAIRevealProgress(openOffset: homeAIOpenOffset) * 10) : 0
                 )
                 .overlay(alignment: .top) {
                     if currentTab == "Log" && homeAISheetOffset > 6 && !homeAIAssistantViewModel.isPresented {
@@ -476,6 +496,21 @@ struct HomeView: View {
         let normalized = translation / homeAIMaxPullDistance
         let resistance = 1 - (1 / ((normalized * 0.92) + 1))
         return min(resistance * homeAIMaxPullDistance * 1.2, homeAIMaxPullDistance)
+    }
+}
+
+private struct HomeAISurfaceMaskShape: Shape {
+    let cornerRadius: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        guard cornerRadius > 0 else { return Path(CGRect(origin: .zero, size: rect.size)) }
+
+        let path = UIBezierPath(
+            roundedRect: rect,
+            byRoundingCorners: [.topLeft, .topRight],
+            cornerRadii: CGSize(width: cornerRadius, height: cornerRadius)
+        )
+        return Path(path.cgPath)
     }
 }
 

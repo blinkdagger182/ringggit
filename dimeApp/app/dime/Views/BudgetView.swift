@@ -409,6 +409,8 @@ struct BucketSummaryRow: View {
                     Text("\(transactions.count) \(transactions.count == 1 ? "transaction" : "transactions")")
                         .font(.system(.caption, design: .rounded).weight(.medium))
                         .foregroundColor(Color.SubtitleText)
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
 
                     if let timeframeSummary {
                         Circle()
@@ -469,25 +471,21 @@ private struct OverBudgetHorizontalBar: View {
     let totalWidth: CGFloat
     let height: CGFloat
 
-    @State private var revealPercent: Double = 0
+    @State private var redOffset: CGFloat = 0
     @AppStorage("animated", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) var animated: Bool = true
 
     var body: some View {
-        let clampedReveal = min(max(revealPercent, 0), 1)
-        let greenWidth = totalWidth * clampedReveal
-        let redWidth = max(totalWidth - greenWidth, 0)
+        let greenWidth = totalWidth * min(max(boundaryPercent, 0), 1)
 
         return ZStack(alignment: .leading) {
-            HStack(spacing: 0) {
-                Rectangle()
-                    .fill(fillColor)
-                    .frame(width: greenWidth)
+            Rectangle()
+                .fill(fillColor)
+                .frame(width: greenWidth, height: height, alignment: .leading)
 
-                Rectangle()
-                    .fill(Color.BudgetRed)
-                    .frame(width: redWidth)
-            }
-            .frame(width: totalWidth, height: height)
+            Rectangle()
+                .fill(Color.BudgetRed)
+                .frame(width: totalWidth, height: height, alignment: .leading)
+                .offset(x: redOffset)
 
             BudgetLimitMarker(tint: fillColor)
                 .offset(x: min(max(greenWidth - 3.5, 0), max(totalWidth - 7, 0)))
@@ -495,12 +493,11 @@ private struct OverBudgetHorizontalBar: View {
         .frame(width: totalWidth, height: height, alignment: .leading)
         .clipShape(RoundedRectangle(cornerRadius: 11.5, style: .continuous))
         .onAppear {
-            let target = min(max(boundaryPercent, 0), 1)
             if !animated {
-                revealPercent = target
+                redOffset = greenWidth
             } else {
                 withAnimation(.easeInOut(duration: 0.7)) {
-                    revealPercent = target
+                    redOffset = greenWidth
                 }
             }
         }
@@ -556,6 +553,7 @@ struct BucketEditorSheet: View {
     @State private var emoji: String
     @State private var colour: String
     @State private var selectedColor: Color
+    @State private var showEmojiPicker = false
 
     private let presets: [BucketNamePreset] = [
         .init(emoji: "🌤️", title: "Weekend Reset"),
@@ -569,6 +567,11 @@ struct BucketEditorSheet: View {
     private let swatches = [
         "7B8FF8", "4ECDC4", "FF8A65", "F06292",
         "F7C65B", "7CC576", "8E7DF2", "5B8DEF"
+    ]
+    private let emojiChoices = [
+        "🏷️", "✈️", "🧾", "🏠", "💍", "🎉", "🛠️", "🚗",
+        "🎓", "💼", "👨‍👩‍👧", "🍜", "📦", "📚", "🏖️", "🩺",
+        "🎁", "🪑", "💻", "📸", "🏕️", "🚲", "🎟️", "🛒"
     ]
 
     init(bucket: Bucket? = nil) {
@@ -663,6 +666,15 @@ struct BucketEditorSheet: View {
             .ignoresSafeArea()
         )
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+        .sheet(isPresented: $showEmojiPicker) {
+            if #available(iOS 16.0, *) {
+                BucketEmojiPickerSheet(selectedEmoji: $emoji, emojis: emojiChoices)
+                    .presentationDetents([.height(360)])
+                    .presentationDragIndicator(.visible)
+            } else {
+                BucketEmojiPickerSheet(selectedEmoji: $emoji, emojis: emojiChoices)
+            }
+        }
     }
 
     private var canContinue: Bool {
@@ -678,10 +690,27 @@ struct BucketEditorSheet: View {
 
     private var bucketNameStep: some View {
         VStack(alignment: .leading, spacing: 16) {
-            TextField("Bucket name", text: $name)
-                .font(.system(.body, design: .rounded).weight(.medium))
-                .padding(12)
-                .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            HStack(spacing: 12) {
+                Button {
+                    showEmojiPicker = true
+                } label: {
+                    Text(displayEmoji)
+                        .font(.system(size: 26))
+                        .frame(width: 52, height: 52)
+                        .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(Color.Outline.opacity(0.8), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
+
+                TextField("Bucket name", text: $name)
+                    .font(.system(.body, design: .rounded).weight(.medium))
+                    .padding(12)
+                    .frame(maxWidth: .infinity, minHeight: 52)
+                    .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            }
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                 ForEach(presets, id: \.self) { preset in
@@ -773,12 +802,19 @@ struct BucketEditorSheet: View {
     private var bucketStyleStep: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(spacing: 12) {
-                TextField("Emoji", text: $emoji)
-                    .font(.system(.title3, design: .rounded).weight(.medium))
-                    .multilineTextAlignment(.center)
-                    .frame(width: 78)
-                    .padding(.vertical, 8)
+                Button {
+                    showEmojiPicker = true
+                } label: {
+                    Text(displayEmoji)
+                        .font(.system(size: 24))
+                        .frame(width: 58, height: 58)
                     .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(Color.Outline.opacity(0.8), lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
 
                 ColorPicker(selection: $selectedColor, supportsOpacity: false) {
                     HStack(spacing: 10) {
@@ -803,6 +839,7 @@ struct BucketEditorSheet: View {
                         Spacer()
                     }
                     .padding(12)
+                    .frame(maxWidth: .infinity, minHeight: 58)
                     .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
             }
@@ -833,34 +870,28 @@ struct BucketEditorSheet: View {
             }
 
             HStack(spacing: 12) {
-                Text(emoji.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "🏷️" : emoji)
+                Text(displayEmoji)
                     .font(.system(size: 28))
                     .frame(width: 48, height: 48)
-                    .background(Color.white.opacity(0.22), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .background(selectedColor.opacity(0.18), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Untitled Bucket" : name)
                         .font(.system(.body, design: .rounded).weight(.semibold))
-                        .foregroundColor(.white)
+                        .foregroundColor(Color.PrimaryText)
 
                     Text(timeframe.title)
                         .font(.system(.caption, design: .rounded).weight(.medium))
-                        .foregroundColor(.white.opacity(0.82))
+                        .foregroundColor(Color.SubtitleText)
                 }
 
                 Spacer()
             }
             .padding(14)
-            .background(
-                LinearGradient(
-                    colors: [
-                        selectedColor.opacity(0.92),
-                        selectedColor
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                ),
-                in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(Color.Outline.opacity(0.8), lineWidth: 1)
             )
         }
     }
@@ -873,7 +904,7 @@ struct BucketEditorSheet: View {
         }
 
         target.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        target.emoji = emoji.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "🏷️" : emoji.trimmingCharacters(in: .whitespacesAndNewlines)
+        target.emoji = displayEmoji
         target.colour = normalizedColourHex
         target.timeframe = timeframe == .none ? nil : timeframe.rawValue
 
@@ -913,6 +944,11 @@ struct BucketEditorSheet: View {
             .uppercased() ?? "7B8FF8"
     }
 
+    private var displayEmoji: String {
+        let trimmed = emoji.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "🏷️" : trimmed
+    }
+
     private func currentMonthRange() -> (start: Date, end: Date) {
         let calendar = Calendar.current
         let start = calendar.date(from: calendar.dateComponents([.year, .month], from: Date.now)) ?? Date.now
@@ -925,6 +961,45 @@ struct BucketEditorSheet: View {
         let start = calendar.date(from: calendar.dateComponents([.year], from: Date.now)) ?? Date.now
         let end = calendar.date(byAdding: DateComponents(year: 1, day: -1), to: start) ?? Date.now
         return (start, end)
+    }
+}
+
+private struct BucketEmojiPickerSheet: View {
+    @Binding var selectedEmoji: String
+    let emojis: [String]
+    @Environment(\.dismiss) private var dismiss
+
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 6)
+
+    var body: some View {
+        NavigationView {
+            ScrollView(showsIndicators: false) {
+                LazyVGrid(columns: columns, spacing: 12) {
+                    ForEach(emojis, id: \.self) { emoji in
+                        Button {
+                            selectedEmoji = emoji
+                            dismiss()
+                        } label: {
+                            Text(emoji)
+                                .font(.system(size: 28))
+                                .frame(height: 48)
+                                .frame(maxWidth: .infinity)
+                                .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(20)
+            }
+            .background(Color.PrimaryBackground.ignoresSafeArea())
+            .navigationTitle("Choose Emoji")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Close") { dismiss() }
+                }
+            }
+        }
     }
 }
 
