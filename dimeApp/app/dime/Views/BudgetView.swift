@@ -555,6 +555,7 @@ struct BucketEditorSheet: View {
     @State private var endDate: Date
     @State private var emoji: String
     @State private var colour: String
+    @State private var selectedColor: Color
 
     private let presets: [BucketNamePreset] = [
         .init(emoji: "🌤️", title: "Weekend Reset"),
@@ -578,6 +579,7 @@ struct BucketEditorSheet: View {
         _endDate = State(initialValue: bucket?.endDate ?? Date.now)
         _emoji = State(initialValue: bucket?.emoji ?? "🏷️")
         _colour = State(initialValue: bucket?.colour ?? "7B8FF8")
+        _selectedColor = State(initialValue: Color(hex: bucket?.colour ?? "7B8FF8"))
     }
 
     var body: some View {
@@ -658,6 +660,7 @@ struct BucketEditorSheet: View {
                 HomeAIAnimatedGradientBackground()
                     .opacity(0.9)
             }
+            .ignoresSafeArea()
         )
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
@@ -683,7 +686,7 @@ struct BucketEditorSheet: View {
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                 ForEach(presets, id: \.self) { preset in
                     Button {
-                        name = preset.displayName
+                        name = preset.title
                         emoji = preset.emoji
                     } label: {
                         Text(preset.displayName)
@@ -777,17 +780,41 @@ struct BucketEditorSheet: View {
                     .padding(.vertical, 8)
                     .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 
-                TextField("Hex color", text: $colour)
-                    .textInputAutocapitalization(.characters)
-                    .font(.system(.body, design: .rounded).weight(.medium))
+                ColorPicker(selection: $selectedColor, supportsOpacity: false) {
+                    HStack(spacing: 10) {
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(selectedColor)
+                            .frame(width: 32, height: 32)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .stroke(Color.PrimaryBackground.opacity(0.7), lineWidth: 1.5)
+                            )
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Bucket color")
+                                .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                                .foregroundColor(Color.PrimaryText)
+
+                            Text(normalizedColourHex)
+                                .font(.system(.caption, design: .rounded).weight(.medium))
+                                .foregroundColor(Color.SubtitleText)
+                        }
+
+                        Spacer()
+                    }
                     .padding(12)
                     .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+            }
+            .onChange(of: selectedColor) { newValue in
+                colour = normalizedHexString(from: newValue)
             }
 
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 12) {
                 ForEach(swatches, id: \.self) { swatch in
                     Button {
                         colour = swatch
+                        selectedColor = Color(hex: swatch)
                     } label: {
                         Circle()
                             .fill(Color(hex: swatch))
@@ -827,8 +854,8 @@ struct BucketEditorSheet: View {
             .background(
                 LinearGradient(
                     colors: [
-                        Color(hex: colour.isEmpty ? "7B8FF8" : colour).opacity(0.92),
-                        Color(hex: colour.isEmpty ? "7B8FF8" : colour)
+                        selectedColor.opacity(0.92),
+                        selectedColor
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -847,7 +874,7 @@ struct BucketEditorSheet: View {
 
         target.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         target.emoji = emoji.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "🏷️" : emoji.trimmingCharacters(in: .whitespacesAndNewlines)
-        target.colour = colour.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "7B8FF8" : colour.trimmingCharacters(in: .whitespacesAndNewlines)
+        target.colour = normalizedColourHex
         target.timeframe = timeframe == .none ? nil : timeframe.rawValue
 
         switch timeframe {
@@ -871,6 +898,21 @@ struct BucketEditorSheet: View {
         dismiss()
     }
 
+    private var normalizedColourHex: String {
+        let trimmed = colour.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty {
+            return "7B8FF8"
+        }
+
+        return trimmed.trimmingCharacters(in: CharacterSet.alphanumerics.inverted).uppercased()
+    }
+
+    private func normalizedHexString(from color: Color) -> String {
+        color.toHex()?
+            .trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+            .uppercased() ?? "7B8FF8"
+    }
+
     private func currentMonthRange() -> (start: Date, end: Date) {
         let calendar = Calendar.current
         let start = calendar.date(from: calendar.dateComponents([.year, .month], from: Date.now)) ?? Date.now
@@ -891,20 +933,13 @@ private struct BucketCreationProgressView: View {
     let totalSteps: Int
 
     var body: some View {
-        ZStack {
-            RingView(
-                percent: Double(currentStep) / Double(totalSteps),
-                width: 4,
-                topStroke: Color.DarkBackground,
-                bottomStroke: Color.SecondaryBackground
-            )
-            .frame(width: 34, height: 34)
-
-            Text("\(currentStep)")
-                .font(.system(.footnote, design: .rounded).weight(.bold))
-                .foregroundColor(Color.DarkBackground)
-        }
-        .frame(width: 34, height: 34)
+        CustomCapsuleProgress(
+            percent: Double(currentStep) / Double(totalSteps + 1),
+            width: 4,
+            topStroke: Color.DarkBackground,
+            bottomStroke: Color.SecondaryBackground
+        )
+        .frame(width: 60, height: 22)
     }
 }
 

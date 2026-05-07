@@ -591,7 +591,14 @@ struct BrandNewBudgetView: View {
         .padding(20)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-        .background(Color.PrimaryBackground)
+        .background(
+            ZStack {
+                Color.PrimaryBackground
+                HomeAIAnimatedGradientBackground()
+                    .opacity(0.9)
+            }
+            .ignoresSafeArea()
+        )
         .onAppear {
             DispatchQueue.main.async {
                 if let unwrappedEditedBudget = toEditBudget {
