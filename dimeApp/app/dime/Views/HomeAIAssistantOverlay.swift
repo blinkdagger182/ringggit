@@ -200,13 +200,11 @@ struct HomeAIAssistantOverlay: View {
                 LazyVStack(alignment: .leading, spacing: 16) {
                     if viewModel.messages.isEmpty {
                         emptyState
-                    } else {
-                        quickActionsSection(title: "Try asking")
+                    }
 
-                        ForEach(viewModel.messages) { message in
-                            messageBubble(message)
-                                .id(message.id)
-                        }
+                    ForEach(viewModel.messages) { message in
+                        messageBubble(message)
+                            .id(message.id)
                     }
 
                     Color.clear
@@ -469,30 +467,67 @@ struct HomeAIAssistantOverlay: View {
     }
 
     private var composerSection: some View {
-        HStack(alignment: .bottom, spacing: 10) {
-            if keyboardHeightHelper.keyboardHeight > 0 {
-                Button { showAttachmentSheet = true } label: {
-                    ZStack {
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [Color(hex: "4ECDC4"), Color(hex: "9BAAF8")],
-                                    startPoint: .topLeading, endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(width: 50, height: 50)
-                        Image(systemName: "plus")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(.white)
-                    }
-                }
-                .buttonStyle(.plain)
-                .padding(.bottom, 3)
+        VStack(spacing: 10) {
+            if !viewModel.isStreaming {
+                composerQuickPrompts
             }
 
-            composer
+            HStack(alignment: .bottom, spacing: 10) {
+                if keyboardHeightHelper.keyboardHeight > 0 {
+                    Button { showAttachmentSheet = true } label: {
+                        ZStack {
+                            Circle()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color(hex: "4ECDC4"), Color(hex: "9BAAF8")],
+                                        startPoint: .topLeading, endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(width: 50, height: 50)
+                            Image(systemName: "plus")
+                                .font(.system(size: 20, weight: .medium))
+                                .foregroundColor(.white)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.bottom, 3)
+                }
+
+                composer
+            }
         }
         .padding(.horizontal, 20)
+    }
+
+    private var composerQuickPrompts: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(viewModel.quickActions) { quickAction in
+                    Button {
+                        viewModel.triggerQuickAction(quickAction)
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: quickAction.systemImage)
+                                .font(.system(size: 11, weight: .semibold))
+                            Text(quickAction.title)
+                                .font(.system(.footnote, design: .rounded).weight(.medium))
+                                .lineLimit(1)
+                        }
+                        .foregroundColor(Color.PrimaryText.opacity(0.9))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color(.secondarySystemBackground).opacity(0.96), in: Capsule(style: .continuous))
+                        .overlay(
+                            Capsule(style: .continuous)
+                                .stroke(Color(.separator).opacity(0.45), lineWidth: 1)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 2)
+        }
+        .scrollClipDisabledIfAvailable()
     }
 
     private var composer: some View {

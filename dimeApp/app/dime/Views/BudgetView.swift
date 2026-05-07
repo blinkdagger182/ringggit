@@ -46,6 +46,13 @@ struct BudgetView: View {
                     Color.PrimaryBackground
                     HomeAIAnimatedGradientBackground()
                         .opacity(0.9)
+                        .mask(
+                            LinearGradient(
+                                colors: [.clear, .black, .black],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
                 }
             )
 
@@ -220,11 +227,14 @@ struct ActualBudgetView: View {
 
                                     VStack(spacing: 10) {
                                         ForEach(buckets, id: \.self) { bucket in
-                                            BucketSummaryRow(bucket: bucket, onEdit: {
-                                                bucketToEdit = bucket
-                                            }, onDelete: {
-                                                bucketToDelete = bucket
-                                            })
+                                            NavigationLink(destination: DetailedBucketView(bucket: bucket)) {
+                                                BucketSummaryRow(bucket: bucket, onEdit: {
+                                                    bucketToEdit = bucket
+                                                }, onDelete: {
+                                                    bucketToDelete = bucket
+                                                })
+                                            }
+                                            .buttonStyle(.plain)
                                         }
                                     }
                                     .padding(.horizontal, 25)
@@ -300,6 +310,13 @@ struct ActualBudgetView: View {
                     Color.PrimaryBackground
                     HomeAIAnimatedGradientBackground()
                         .opacity(0.9)
+                        .mask(
+                            LinearGradient(
+                                colors: [.clear, .black, .black],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
                 }
             )
             .sheet(item: $toEdit, onDismiss: {
@@ -377,7 +394,7 @@ struct BucketSummaryRow: View {
     }
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(alignment: .top, spacing: 12) {
             Text(bucket.emoji ?? "🏷️")
                 .font(.system(size: 24))
                 .frame(width: 42, height: 42)
@@ -409,11 +426,11 @@ struct BucketSummaryRow: View {
             Spacer()
 
             Text(String(format: "RM %.2f", totalAmount))
-                .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                .font(.system(.title3, design: .rounded).weight(.semibold))
                 .foregroundColor(Color.PrimaryText)
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(.vertical, 14)
         .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .contextMenu {
             Button {
@@ -426,6 +443,65 @@ struct BucketSummaryRow: View {
                 onDelete()
             } label: {
                 Label("Delete Bucket", systemImage: "trash")
+            }
+        }
+    }
+}
+
+private struct BudgetLimitMarker: View {
+    let tint: Color
+
+    var body: some View {
+        Capsule(style: .continuous)
+            .fill(Color.PrimaryBackground.opacity(0.96))
+            .frame(width: 7, height: 18)
+            .overlay(
+                Capsule(style: .continuous)
+                    .stroke(tint.opacity(0.65), lineWidth: 1.4)
+            )
+            .shadow(color: Color.black.opacity(0.08), radius: 4, y: 1)
+    }
+}
+
+private struct OverBudgetHorizontalBar: View {
+    let fillColor: Color
+    let boundaryPercent: Double
+    let totalWidth: CGFloat
+    let height: CGFloat
+
+    @State private var revealPercent: Double = 0
+    @AppStorage("animated", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) var animated: Bool = true
+
+    var body: some View {
+        let clampedReveal = min(max(revealPercent, 0), 1)
+        let greenWidth = totalWidth * clampedReveal
+        let redWidth = max(totalWidth - greenWidth, 0)
+
+        return ZStack(alignment: .leading) {
+            HStack(spacing: 0) {
+                Rectangle()
+                    .fill(fillColor)
+                    .frame(width: greenWidth)
+
+                Rectangle()
+                    .fill(Color.BudgetRed)
+                    .frame(width: redWidth)
+            }
+            .frame(width: totalWidth, height: height)
+
+            BudgetLimitMarker(tint: fillColor)
+                .offset(x: min(max(greenWidth - 3.5, 0), max(totalWidth - 7, 0)))
+        }
+        .frame(width: totalWidth, height: height, alignment: .leading)
+        .clipShape(RoundedRectangle(cornerRadius: 11.5, style: .continuous))
+        .onAppear {
+            let target = min(max(boundaryPercent, 0), 1)
+            if !animated {
+                revealPercent = target
+            } else {
+                withAnimation(.easeInOut(duration: 0.7)) {
+                    revealPercent = target
+                }
             }
         }
     }
@@ -815,21 +891,20 @@ private struct BucketCreationProgressView: View {
     let totalSteps: Int
 
     var body: some View {
-        HStack(spacing: 8) {
-            ForEach(1...totalSteps, id: \.self) { step in
-                Capsule(style: .continuous)
-                    .fill(step <= currentStep ? Color.DarkBackground : Color.SecondaryBackground)
-                    .frame(width: step == currentStep ? 26 : 18, height: 8)
-                    .animation(.easeInOut(duration: 0.2), value: currentStep)
-            }
+        ZStack {
+            RingView(
+                percent: Double(currentStep) / Double(totalSteps),
+                width: 4,
+                topStroke: Color.DarkBackground,
+                bottomStroke: Color.SecondaryBackground
+            )
+            .frame(width: 34, height: 34)
+
+            Text("\(currentStep)")
+                .font(.system(.footnote, design: .rounded).weight(.bold))
+                .foregroundColor(Color.DarkBackground)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(Color.PrimaryBackground, in: Capsule(style: .continuous))
-        .overlay(
-            Capsule(style: .continuous)
-                .stroke(Color.Outline.opacity(0.6), lineWidth: 1)
-        )
+        .frame(width: 34, height: 34)
     }
 }
 
@@ -837,6 +912,7 @@ struct DeleteBucketAlert: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.managedObjectContext) var moc
     let bucket: Bucket
+    var onDelete: () -> Void = {}
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -861,6 +937,7 @@ struct DeleteBucketAlert: View {
                     linkedTransactions.forEach { $0.bucket = nil }
                     moc.delete(bucket)
                     try? moc.save()
+                    onDelete()
                     dismiss()
                 } label: {
                     Text("Delete Bucket")
@@ -1004,6 +1081,15 @@ struct MainBudgetView: View {
         return abs(budgetAmount - totalSpent)
     }
 
+    var isOverBudget: Bool {
+        budgetAmount > 0 && totalSpent > budgetAmount
+    }
+
+    var overBudgetBoundaryPercent: Double {
+        guard totalSpent > 0 else { return 1 }
+        return min(max(budgetAmount / totalSpent, 0), 1)
+    }
+
     var percentString: String {
         if !budget.isFault {
             return "\(Int(round(100 - (totalSpent / budgetAmount) * 100)))%"
@@ -1030,20 +1116,66 @@ struct MainBudgetView: View {
 
     @Environment(\.colorScheme) var colorScheme
 
+    var budgetBoundaryOffset: (x: Double, y: Double) {
+        offsetOnCurvedBudgetGraph(for: overBudgetBoundaryPercent)
+    }
+
+    var budgetBoundaryRotation: Double {
+        rotationOnCurvedBudgetGraph(for: overBudgetBoundaryPercent)
+    }
+
+    private func offsetOnCurvedBudgetGraph(for percent: Double) -> (x: Double, y: Double) {
+        let clamped = min(max(percent, 0), 1)
+        let radius = Double(width / 2) - 5
+
+        if clamped > 0.5 {
+            let angle = Double.pi * (1 - clamped)
+            return (radius * cos(angle), (radius - (radius * sin(angle))) - 6)
+        } else if clamped < 0.5 {
+            let angle = Double.pi * clamped
+            return (-(radius * cos(angle)), (radius - (radius * sin(angle))) - 6)
+        } else {
+            return (0, -6)
+        }
+    }
+
+    private func rotationOnCurvedBudgetGraph(for percent: Double) -> Double {
+        if percent > 0.5 {
+            return ((percent - 0.5) / 0.5) * 90
+        } else if percent < 0.5 {
+            return -((0.5 - percent) / 0.5) * 90
+        } else {
+            return 0
+        }
+    }
+
     var body: some View {
         VStack(spacing: 5) {
             ZStack(alignment: .bottom) {
                 ZStack {
                     DonutSemicircle(percent: 1, cornerRadius: 6.5, width: soloBudget ? 35 : 25)
-                        .fill(soloBudget ? Color.SecondaryBackground : Color.SecondaryBackground.opacity(0.45))
+                        .fill(Color.SecondaryBackground)
                         .frame(width: width, height: width / 2)
 
-                    if totalSpent / budgetAmount < 0.97 {
+                    if isOverBudget {
+                        OverBudgetCurvedBarGraphMainBudget(
+                            boundaryPercent: overBudgetBoundaryPercent,
+                            cornerRadius: 6.5,
+                            width: soloBudget ? 35 : 25
+                        )
+                        .frame(width: width, height: width / 2)
+                    } else if totalSpent / budgetAmount < 0.97 {
                         AnimatedCurvedBarGraphMainBudget(transactions: transactions, budgetTotal: budgetAmount, cornerRadius: 6.5, width: soloBudget ? 35 : 25)
                             .frame(width: width, height: width / 2)
                     }
                 }
                 .overlay(alignment: .top) {
+                    if isOverBudget {
+                        BudgetLimitMarker(tint: Color.IncomeGreen)
+                            .rotationEffect(.degrees(budgetBoundaryRotation))
+                            .offset(x: budgetBoundaryOffset.x, y: budgetBoundaryOffset.y)
+                    }
+
                     if budget.type != 1 && totalSpent < budgetAmount && targetPercent > 0 {
                         RoundedTriangle(cornerRadius: 2)
 
@@ -1271,6 +1403,15 @@ struct SingleBudgetView: View {
         }
     }
 
+    var isOverBudget: Bool {
+        budgetAmount > 0 && totalSpent > budgetAmount
+    }
+
+    var overBudgetBoundaryPercent: Double {
+        guard totalSpent > 0 else { return 1 }
+        return min(max(budgetAmount / totalSpent, 0), 1)
+    }
+
     var targetPercent: Double {
         let calendar = Calendar.current
 
@@ -1494,7 +1635,11 @@ struct SingleBudgetView: View {
                                 .fill(Color.SecondaryBackground.opacity(0.5))
                                 .frame(width: proxy.size.width)
 
-                            if totalSpent / budgetAmount < 0.98 {
+                            if isOverBudget {
+                                if let category = budget.category {
+                                    OverBudgetHorizontalBar(fillColor: Color.IncomeGreen, boundaryPercent: overBudgetBoundaryPercent, totalWidth: proxy.size.width, height: 17.5)
+                                }
+                            } else if totalSpent / budgetAmount < 0.98 {
                                 if let category = budget.category {
                                     AnimatedHorizontalBarGraphBudget(category: category)
                                         .frame(width: proxy.size.width * (1 - totalSpent / budgetAmount))
@@ -1950,6 +2095,161 @@ struct DetailedBudgetView: View {
     }
 }
 
+struct DetailedBucketView: View {
+    @Environment(\.presentationMode) var presentationMode: Binding<PresentationMode>
+    let bucket: Bucket
+
+    @State private var toEdit: Bucket?
+    @State private var toDelete: Bucket?
+
+    var body: some View {
+        VStack(spacing: 15) {
+            HStack {
+                Button {
+                    self.presentationMode.wrappedValue.dismiss()
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                            .foregroundColor(Color.SubtitleText)
+
+                        Text("Back")
+                            .font(.system(.body, design: .rounded).weight(.semibold))
+                            .foregroundColor(Color.SubtitleText)
+                    }
+                    .padding(.vertical, 6)
+                    .padding(.horizontal, 8)
+                    .background(Color.SecondaryBackground, in: Capsule())
+                }
+
+                Spacer()
+
+                DetailedBudgetViewTopBarButton(imageName: "pencil", color: Color("6")) {
+                    toEdit = bucket
+                }
+
+                DetailedBudgetViewTopBarButton(imageName: "trash.fill", color: Color.AlertRed) {
+                    toDelete = bucket
+                }
+            }
+            .padding(.horizontal, 20)
+
+            BucketTransactionsView(bucket: bucket)
+        }
+        .padding(.vertical, 15)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .navigationBarBackButtonHidden(true)
+        .navigationBarTitle("")
+        .navigationBarHidden(true)
+        .background(Color.PrimaryBackground)
+        .fullScreenCover(item: $toEdit, onDismiss: {
+            toEdit = nil
+        }) { bucket in
+            BucketEditorSheet(bucket: bucket)
+        }
+        .fullScreenCover(item: $toDelete, onDismiss: {
+            toDelete = nil
+        }) { bucket in
+            DeleteBucketAlert(bucket: bucket) {
+                self.presentationMode.wrappedValue.dismiss()
+            }
+        }
+    }
+}
+
+struct BucketTransactionsView: View {
+    let bucket: Bucket
+
+    @SectionedFetchRequest<Date?, Transaction> private var transactions: SectionedFetchResults<Date?, Transaction>
+    @State private var totalSpent = 0.0
+
+    @AppStorage("currency", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) var currency: String = Locale.current.currencyCode!
+    var currencySymbol: String {
+        return Locale.current.localizedCurrencySymbol(forCurrencyCode: currency)!
+    }
+
+    private var timeframeSummary: String {
+        guard let timeframe = bucket.timeframe else { return "All transactions" }
+
+        switch timeframe {
+        case BucketTimeframeOption.thisMonth.rawValue:
+            return "This month"
+        case BucketTimeframeOption.thisYear.rawValue:
+            return "This year"
+        case BucketTimeframeOption.customRange.rawValue:
+            guard let start = bucket.startDate, let end = bucket.endDate else { return "Custom range" }
+            let formatter = DateFormatter()
+            formatter.dateFormat = "d MMM"
+            return "\(formatter.string(from: start)) - \(formatter.string(from: end))"
+        default:
+            return "All transactions"
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 20) {
+            VStack(spacing: 10) {
+                HStack(spacing: 7.5) {
+                    Text(bucket.emoji ?? "🏷️")
+                        .font(.system(.subheadline, design: .rounded))
+                    Text(bucket.name ?? "Untitled Bucket")
+                        .font(.system(.title3, design: .rounded).weight(.medium))
+                        .lineLimit(1)
+                }
+                .foregroundColor(Color.PrimaryText)
+
+                Text(timeframeSummary)
+                    .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                    .foregroundColor(Color.SubtitleText)
+            }
+            .padding(.bottom, 10)
+
+            VStack(spacing: -4) {
+                DetailedBudgetDifferenceDollarView(amount: totalSpent, red: false)
+
+                Text("\(transactions.flatMap { $0 }.count) \(transactions.flatMap { $0 }.count == 1 ? "transaction" : "transactions")")
+                    .font(.system(.subheadline, design: .rounded).weight(.medium))
+                    .foregroundColor(Color.SubtitleText)
+            }
+            .padding(.horizontal, 25)
+
+            ScrollView(showsIndicators: false) {
+                if transactions.count == 0 {
+                    NoResultsView(fullscreen: false)
+                } else {
+                    ListView(transactions: _transactions)
+                }
+            }
+            .frame(maxHeight: .infinity)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .onAppear {
+            refreshTotal()
+        }
+    }
+
+    private func refreshTotal() {
+        totalSpent = transactions.flatMap { $0 }.reduce(0) { $0 + $1.wrappedAmount }
+    }
+
+    init(bucket: Bucket) {
+        self.bucket = bucket
+
+        let bucketPredicate = NSPredicate(format: "bucket == %@", bucket)
+        let incomePredicate = NSPredicate(format: "income = %d", false)
+        let predicate = NSCompoundPredicate(type: .and, subpredicates: [bucketPredicate, incomePredicate])
+
+        _transactions = SectionedFetchRequest<Date?, Transaction>(
+            sectionIdentifier: \.day,
+            sortDescriptors: [
+                SortDescriptor(\.day, order: .reverse),
+                SortDescriptor(\.date, order: .reverse)
+            ],
+            predicate: predicate
+        )
+    }
+}
+
 struct DetailedMainBudgetView: View {
     @Environment(\.presentationMode) var presentationMode: Binding<PresentationMode>
     @Environment(\.managedObjectContext) var moc
@@ -2199,6 +2499,15 @@ struct TimeBudgetView: View {
         }
     }
 
+    var isOverBudget: Bool {
+        budgetAmount > 0 && totalSpent > budgetAmount
+    }
+
+    var overBudgetBoundaryPercent: Double {
+        guard totalSpent > 0 else { return 1 }
+        return min(max(budgetAmount / totalSpent, 0), 1)
+    }
+
     var body: some View {
         VStack(spacing: 20) {
             // budget name and emoji and time left
@@ -2269,7 +2578,11 @@ struct TimeBudgetView: View {
                             .fill(Color.SecondaryBackground.opacity(0.5))
                             .frame(width: proxy.size.width)
 
-                        if totalSpent / budgetAmount < 0.98 {
+                        if isOverBudget {
+                            if let category = budget.category {
+                                OverBudgetHorizontalBar(fillColor: Color.IncomeGreen, boundaryPercent: overBudgetBoundaryPercent, totalWidth: proxy.size.width, height: 28)
+                            }
+                        } else if totalSpent / budgetAmount < 0.98 {
                             if let category = budget.category {
                                 AnimatedHorizontalBarGraphBudget(category: category)
                                     .frame(width: proxy.size.width * (1 - totalSpent / budgetAmount))
@@ -2693,6 +3006,15 @@ struct TimeMainBudgetView: View {
         }
     }
 
+    var isOverBudget: Bool {
+        budgetAmount > 0 && totalSpent > budgetAmount
+    }
+
+    var overBudgetBoundaryPercent: Double {
+        guard totalSpent > 0 else { return 1 }
+        return min(max(budgetAmount / totalSpent, 0), 1)
+    }
+
     var body: some View {
         VStack(spacing: 20) {
             // budget name and emoji and time left
@@ -2757,7 +3079,9 @@ struct TimeMainBudgetView: View {
                             .fill(Color.SecondaryBackground)
                             .frame(width: proxy.size.width)
 
-                        if totalSpent / budgetAmount < 0.98 {
+                        if isOverBudget {
+                            OverBudgetHorizontalBar(fillColor: Color.IncomeGreen, boundaryPercent: overBudgetBoundaryPercent, totalWidth: proxy.size.width, height: 28)
+                        } else if totalSpent / budgetAmount < 0.98 {
                             AnimatedHorizontalBarGraphMainBudget()
                                 .frame(width: proxy.size.width * (1 - totalSpent / budgetAmount))
                         }
@@ -2814,7 +3138,7 @@ struct AnimatedHorizontalBarGraphBudget: View {
     var body: some View {
         HStack(spacing: 0) {
             RoundedRectangle(cornerRadius: 11.5, style: .continuous)
-                .foregroundColor(Color(hex: category.wrappedColour))
+                .foregroundColor(Color.IncomeGreen)
                 .frame(width: showBar ? nil : 0, alignment: .leading)
 
             Spacer(minLength: 0)
@@ -2840,7 +3164,7 @@ struct AnimatedHorizontalBarGraphMainBudget: View {
     var body: some View {
         HStack(spacing: 0) {
             RoundedRectangle(cornerRadius: 11.5, style: .continuous)
-                .fill(Color.DarkBackground)
+                .fill(Color.IncomeGreen)
                 .frame(width: showBar ? nil : 0, alignment: .leading)
 
             Spacer(minLength: 0)
@@ -2920,6 +3244,42 @@ struct AnimatedCurvedBarGraphMainBudget: View {
                     }
                 }
             }
+    }
+}
+
+struct OverBudgetCurvedBarGraphMainBudget: View {
+    let boundaryPercent: Double
+    let cornerRadius: Double
+    let width: Double
+
+    @State private var revealPercent: Double = 0
+
+    @AppStorage("animated", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) var animated: Bool = true
+
+    var body: some View {
+        ZStack {
+            DonutSemicircle(percent: revealPercent, cornerRadius: cornerRadius, width: width)
+                .fill(Color.IncomeGreen)
+
+            DonutSemicircle(percent: 1, cornerRadius: cornerRadius, width: width)
+                .fill(Color.BudgetRed)
+                .overlay {
+                    DonutSemicircle(percent: revealPercent, cornerRadius: cornerRadius, width: width)
+                        .fill(Color.black)
+                        .blendMode(.destinationOut)
+                }
+                .compositingGroup()
+        }
+        .onAppear {
+            let target = min(max(boundaryPercent, 0), 1)
+            if !animated {
+                revealPercent = target
+            } else {
+                withAnimation(.easeInOut(duration: 0.7)) {
+                    revealPercent = target
+                }
+            }
+        }
     }
 }
 

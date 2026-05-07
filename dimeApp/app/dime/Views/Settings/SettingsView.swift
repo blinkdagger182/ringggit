@@ -489,6 +489,13 @@ struct SettingsView: View {
           Color.PrimaryBackground
           HomeAIAnimatedGradientBackground()
             .opacity(0.9)
+            .mask(
+              LinearGradient(
+                colors: [.clear, .black, .black],
+                startPoint: .top,
+                endPoint: .bottom
+              )
+            )
         }
       )
       .fullScreenCover(isPresented: $showTipJarMenu) {
@@ -906,6 +913,13 @@ struct SettingsCategoryView: View {
           Color.PrimaryBackground
           HomeAIAnimatedGradientBackground()
             .opacity(0.9)
+            .mask(
+              LinearGradient(
+                colors: [.clear, .black, .black],
+                startPoint: .top,
+                endPoint: .bottom
+              )
+            )
         }
       )
   }

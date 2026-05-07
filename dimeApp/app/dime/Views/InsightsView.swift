@@ -72,6 +72,13 @@ struct InsightsView: View {
                     Color.PrimaryBackground
                     HomeAIAnimatedGradientBackground()
                         .opacity(0.9)
+                        .mask(
+                            LinearGradient(
+                                colors: [.clear, .black, .black],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
                 }
             )
             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
@@ -142,6 +149,13 @@ struct InsightsView: View {
                     Color.PrimaryBackground
                     HomeAIAnimatedGradientBackground()
                         .opacity(0.9)
+                        .mask(
+                            LinearGradient(
+                                colors: [.clear, .black, .black],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
                 }
             )
             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)

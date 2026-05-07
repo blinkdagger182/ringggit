@@ -174,7 +174,7 @@ struct HomeAIAttachmentSheet: View {
                 scannedDocumentDraft = ScannedDocumentDraft(pages: pages)
             }
         }
-        .sheet(item: $scannedDocumentDraft) { draft in
+        .fullScreenCover(item: $scannedDocumentDraft) { draft in
             ScannedDocumentPreviewView(pages: draft.pages) { pages, sourceText in
                 let filename = pages.count == 1 ? "Scanned Receipt" : "Scanned Document"
                 attachments.append(AttachmentItem(pdfPages: pages, filename: filename, sourceText: sourceText))
@@ -386,6 +386,7 @@ struct PDFDocumentPickerView: UIViewControllerRepresentable {
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: [UTType.pdf])
         picker.delegate = context.coordinator
         picker.allowsMultipleSelection = false
+        picker.modalPresentationStyle = .fullScreen
         return picker
     }
 
@@ -481,6 +482,7 @@ struct DocumentScannerView: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> VNDocumentCameraViewController {
         let controller = VNDocumentCameraViewController()
         controller.delegate = context.coordinator
+        controller.modalPresentationStyle = .fullScreen
         return controller
     }
 
@@ -527,96 +529,105 @@ private struct ScannedDocumentPreviewView: View {
 
     var body: some View {
         NavigationView {
-            VStack(spacing: 16) {
-                TabView(selection: $currentPage) {
-                    ForEach(Array(pages.enumerated()), id: \.offset) { index, image in
-                        GeometryReader { proxy in
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                    .fill(Color(.secondarySystemBackground))
+            ZStack {
+                Color.PrimaryBackground
+                    .ignoresSafeArea()
 
-                                Image(uiImage: image)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(
-                                        width: proxy.size.width - 24,
-                                        height: proxy.size.height - 24
-                                    )
+                VStack(spacing: 16) {
+                    TabView(selection: $currentPage) {
+                        ForEach(Array(pages.enumerated()), id: \.offset) { index, image in
+                            GeometryReader { proxy in
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                        .fill(Color(.secondarySystemBackground))
+
+                                    Image(uiImage: image)
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(
+                                            width: proxy.size.width - 24,
+                                            height: proxy.size.height - 24
+                                        )
+                                }
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 4)
                             }
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 4)
+                            .tag(index)
                         }
-                        .tag(index)
                     }
-                }
-                .tabViewStyle(.page(indexDisplayMode: .never))
-                .frame(height: 360)
+                    .tabViewStyle(.page(indexDisplayMode: .never))
+                    .frame(height: 360)
 
-                HStack {
-                    Text("\(pages.count) \(pages.count == 1 ? "page" : "pages") scanned")
-                        .font(.system(.subheadline, design: .rounded).weight(.medium))
-                        .foregroundColor(.primary)
+                    HStack {
+                        Text("\(pages.count) \(pages.count == 1 ? "page" : "pages") scanned")
+                            .font(.system(.subheadline, design: .rounded).weight(.medium))
+                            .foregroundColor(.primary)
 
-                    Spacer()
+                        Spacer()
 
-                    if pages.count > 1 {
-                        Text("Page \(currentPage + 1) of \(pages.count)")
-                            .font(.system(.footnote, design: .rounded))
-                            .foregroundColor(.secondary)
+                        if pages.count > 1 {
+                            Text("Page \(currentPage + 1) of \(pages.count)")
+                                .font(.system(.footnote, design: .rounded))
+                                .foregroundColor(.secondary)
+                        }
                     }
-                }
-                .padding(.horizontal, 20)
+                    .padding(.horizontal, 20)
 
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Text extraction")
-                        .font(.system(.headline, design: .rounded).weight(.semibold))
+#if DEBUG
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Text extraction")
+                            .font(.system(.headline, design: .rounded).weight(.semibold))
 
-                    if isRecognizingText {
-                        HStack(spacing: 10) {
-                            ProgressView()
-                            Text("Reading scanned text...")
+                        if isRecognizingText {
+                            HStack(spacing: 10) {
+                                ProgressView()
+                                Text("Reading scanned text...")
+                                    .font(.system(.subheadline, design: .rounded))
+                                    .foregroundColor(.secondary)
+                            }
+                        } else if let recognizedText, !recognizedText.isEmpty {
+                            ScrollView {
+                                Text(recognizedText)
+                                    .font(.system(.footnote, design: .monospaced))
+                                    .foregroundColor(.secondary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .frame(maxHeight: 140)
+                            .padding(12)
+                            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        } else {
+                            Text("No text detected. You can still attach the scan and let the AI read the images directly.")
                                 .font(.system(.subheadline, design: .rounded))
                                 .foregroundColor(.secondary)
                         }
-                    } else if let recognizedText, !recognizedText.isEmpty {
-                        ScrollView {
-                            Text(recognizedText)
-                                .font(.system(.footnote, design: .monospaced))
-                                .foregroundColor(.secondary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .padding(.horizontal, 20)
+#endif
+
+                    Spacer(minLength: 0)
+
+                    HStack(spacing: 12) {
+                        Button("Retake") {
+                            dismiss()
                         }
-                        .frame(maxHeight: 140)
-                        .padding(12)
+                        .font(.system(.body, design: .rounded).weight(.medium))
+                        .foregroundColor(.primary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
                         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    } else {
-                        Text("No text detected. You can still attach the scan and let the AI read the images directly.")
-                            .font(.system(.subheadline, design: .rounded))
-                            .foregroundColor(.secondary)
-                    }
-                }
-                .padding(.horizontal, 20)
 
-                HStack(spacing: 12) {
-                    Button("Retake") {
-                        dismiss()
+                        Button("Attach Scan") {
+                            onConfirm(pages, recognizedText)
+                        }
+                        .font(.system(.body, design: .rounded).weight(.semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                     }
-                    .font(.system(.body, design: .rounded).weight(.medium))
-                    .foregroundColor(.primary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-
-                    Button("Attach Scan") {
-                        onConfirm(pages, recognizedText)
-                    }
-                    .font(.system(.body, design: .rounded).weight(.semibold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 8)
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 8)
             }
             .navigationTitle("Preview Scan")
             .navigationBarTitleDisplayMode(.inline)
