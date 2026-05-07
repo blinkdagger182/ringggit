@@ -86,8 +86,7 @@ struct HomeAIAssistantOverlay: View {
                     .zIndex(4)
 
                 if isExpanded && keyboardOverlap == 0 {
-                    bottomHomePeek(safeBottom: max(proxy.safeAreaInsets.bottom, bottomInset))
-                        .opacity(revealProgress)
+                    bottomHomeGestureRegion(safeBottom: max(proxy.safeAreaInsets.bottom, bottomInset))
                         .zIndex(5)
                 }
             }
@@ -744,25 +743,10 @@ struct HomeAIAssistantOverlay: View {
         }
     }
 
-    private func bottomHomePeek(safeBottom: CGFloat) -> some View {
+    private func bottomHomeGestureRegion(safeBottom: CGFloat) -> some View {
         let interactiveHeight = max(homePeekHeight, safeBottom + 52)
 
-        return ZStack(alignment: .top) {
-            BottomHomePeekShape(cornerRadius: 30)
-                .fill(Color("AlwaysLightBackground"))
-                .shadow(color: Color.black.opacity(0.12), radius: 22, y: -8)
-
-            VStack(spacing: 0) {
-                Image(systemName: "chevron.up")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(Color(.quaternaryLabel))
-                    .padding(.top, 14)
-
-                Spacer(minLength: 0)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .allowsHitTesting(false)
-        }
+        return Color.black.opacity(0.001)
         .frame(maxWidth: .infinity)
         .frame(height: interactiveHeight, alignment: .top)
         .contentShape(Rectangle())
@@ -897,19 +881,6 @@ private struct AttachmentPreviewView: View {
             .padding(.top, 56)
             .padding(.trailing, 20)
         }
-    }
-}
-
-private struct BottomHomePeekShape: Shape {
-    let cornerRadius: CGFloat
-
-    func path(in rect: CGRect) -> Path {
-        let path = UIBezierPath(
-            roundedRect: rect,
-            byRoundingCorners: [.topLeft, .topRight],
-            cornerRadii: CGSize(width: cornerRadius, height: cornerRadius)
-        )
-        return Path(path.cgPath)
     }
 }
 

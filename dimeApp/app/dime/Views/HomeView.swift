@@ -43,7 +43,6 @@ struct HomeView: View {
     @State private var isBarGestureActive: Bool = false
     @State private var isLogAtTop: Bool = true
     @State private var isLogIdle: Bool = true
-    @State private var homeAIPullActivationTranslation: CGFloat?
     @State private var logSurfaceTopY: CGFloat = 0
 
     var topEdge: CGFloat
@@ -171,20 +170,6 @@ struct HomeView: View {
                     radius: currentTab == "Log" ? (12 + homeAIProgress * 20) : 0,
                     y: currentTab == "Log" ? (6 + homeAIProgress * 10) : 0
                 )
-                .overlay(alignment: .top) {
-                    if currentTab == "Log" && homeAISheetOffset > 6 && !homeAIAssistantViewModel.isPresented {
-                        VStack(spacing: 10) {
-                            Image(systemName: "chevron.compact.up")
-                                .font(.system(size: 22, weight: .medium))
-                                .foregroundColor(Color.PrimaryText.opacity(0.14))
-
-                            Text(homeAISheetOffset > homeAIPullThreshold * 0.82 ? "Release for ✨ Saku AI" : "Pull more for ✨ Saku AI")
-                                .font(.system(.title3, design: .rounded).weight(.medium))
-                                .foregroundColor(Color(.label).opacity(0.72))
-                        }
-                        .padding(.top, max(48, homeAISheetOffset - 108))
-                    }
-                }
                 .zIndex(1)
 
                 CustomTabBar(currentTab: $currentTab, topEdge: topEdge, bottomEdge: bottomEdge, counter: $counter, launchAdd: launchAdd)
@@ -193,8 +178,7 @@ struct HomeView: View {
                     .zIndex(1.05)
 
                 if currentTab == "Log", homeAIAssistantViewModel.isPresented {
-                    homeAIBottomPeek(height: max(homeAIPeekHeight, bottomEdge + 52))
-                        .opacity(homeAIProgress)
+                    homeAIBottomGestureRegion(height: max(homeAIPeekHeight, bottomEdge + 52))
                         .highPriorityGesture(homeAIPullGesture(openOffset: homeAIOpenOffset))
                         .onTapGesture {
                             withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
@@ -354,23 +338,15 @@ struct HomeView: View {
                         if homeAISheetOffset > 0 {
                             isBarGestureActive = true
                             homeAISheetOffset = max(0, homeAISheetOffset + (value.translation.height * 0.2))
-                        } else {
-                            homeAIPullActivationTranslation = nil
                         }
                         return
                     }
 
                     guard (isLogAtTop && isLogIdle) || homeAISheetOffset > 0 else {
-                        homeAIPullActivationTranslation = nil
                         return
                     }
 
-                    if homeAIPullActivationTranslation == nil {
-                        homeAIPullActivationTranslation = value.translation.height
-                    }
-
-                    let activationTranslation = homeAIPullActivationTranslation ?? value.translation.height
-                    let revealTranslation = max(0, value.translation.height - activationTranslation)
+                    let revealTranslation = max(0, value.translation.height)
                     guard revealTranslation > 0 || homeAISheetOffset > 0 else { return }
 
                     isBarGestureActive = true
@@ -378,7 +354,6 @@ struct HomeView: View {
                 }
                 .onEnded { value in
                     isBarGestureActive = false
-                    defer { homeAIPullActivationTranslation = nil }
 
                     withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
                         if homeAIAssistantViewModel.isPresented {
@@ -398,9 +373,8 @@ struct HomeView: View {
                             }
                         } else {
                             guard homeAISheetOffset > 0 else { return }
-                            let activationTranslation = homeAIPullActivationTranslation ?? 0
                             let predictedRevealTranslation = max(
-                                max(value.predictedEndTranslation.height, value.translation.height) - activationTranslation,
+                                max(value.predictedEndTranslation.height, value.translation.height),
                                 0
                             )
                             let predictedOffset = min(rubberBandPullDistance(for: predictedRevealTranslation), openOffset)
@@ -509,17 +483,8 @@ struct HomeView: View {
         }
     }
 
-    private func homeAIBottomPeek(height: CGFloat) -> some View {
-        ZStack(alignment: .top) {
-            HomeAIBottomPeekShape(cornerRadius: 30)
-                .fill(Color("AlwaysLightBackground"))
-                .shadow(color: Color.black.opacity(0.12), radius: 22, y: -8)
-
-            Image(systemName: "chevron.up")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundColor(Color(.quaternaryLabel))
-                .padding(.top, 14)
-        }
+    private func homeAIBottomGestureRegion(height: CGFloat) -> some View {
+        Color.black.opacity(0.001)
         .frame(maxWidth: .infinity)
         .frame(height: height, alignment: .top)
         .contentShape(Rectangle())
@@ -547,19 +512,6 @@ struct HomeView: View {
         return min(resistance * homeAIMaxPullDistance * 1.55, homeAIMaxPullDistance)
     }
 
-}
-
-private struct HomeAIBottomPeekShape: Shape {
-    let cornerRadius: CGFloat
-
-    func path(in rect: CGRect) -> Path {
-        let path = UIBezierPath(
-            roundedRect: rect,
-            byRoundingCorners: [.topLeft, .topRight],
-            cornerRadii: CGSize(width: cornerRadius, height: cornerRadius)
-        )
-        return Path(path.cgPath)
-    }
 }
 
 private struct HomeAISurfaceMaskShape: Shape {

@@ -114,14 +114,12 @@ final class HomeAIAssistantViewModel: ObservableObject {
         guard !isPresented else { return }
         reloadWorkspaces()
         isPresented = true
-        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
     }
 
     func collapse() {
         guard isPresented else { return }
         isPresented = false
         UIApplication.shared.endEditing()
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }
 
     func reloadWorkspaces() {
