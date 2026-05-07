@@ -181,6 +181,7 @@ final class HomeAIAssistantViewModel: ObservableObject {
             ? (hasResumableExtraction ? "Continue extraction" : "Please extract all transactions from the attached image(s).")
             : trimmed
         let capturedAttachments = pendingAttachments
+        let capturedAttachmentReference = capturedAttachments.first.flatMap { TransactionAttachmentStore.saveAIAttachment($0)?.serializedReference }
 
         appendUserMessage(messageText, attachments: capturedAttachments)
         let assistantMessageID = appendAssistantPlaceholder()
@@ -213,7 +214,7 @@ final class HomeAIAssistantViewModel: ObservableObject {
                 let systemPrompt = buildSystemPrompt()
                 if let existingJob = resumableExtractionJob,
                    capturedAttachments.isEmpty {
-                    await processExtractionJob(existingJob, systemPrompt: systemPrompt, assistantMessageID: assistantMessageID)
+                    await processExtractionJob(existingJob, systemPrompt: systemPrompt, assistantMessageID: assistantMessageID, reference: nil)
                     return
                 }
 
@@ -235,7 +236,7 @@ final class HomeAIAssistantViewModel: ObservableObject {
                         loggedActions: []
                     )
                     resumableExtractionJob = job
-                    await processExtractionJob(job, systemPrompt: systemPrompt, assistantMessageID: assistantMessageID)
+                    await processExtractionJob(job, systemPrompt: systemPrompt, assistantMessageID: assistantMessageID, reference: capturedAttachmentReference)
                     return
                 }
 
@@ -245,7 +246,7 @@ final class HomeAIAssistantViewModel: ObservableObject {
                     toolExecutor: toolExecutor
                 )
                 statusText = "Writing response"
-                executeActions(response.actions)
+                executeActions(response.actions, reference: capturedAttachmentReference)
                 await animateReply(response, assistantMessageID: assistantMessageID)
                 statusText = ""
             } catch AIServiceError.apiError(let msg) {
@@ -267,7 +268,8 @@ final class HomeAIAssistantViewModel: ObservableObject {
     private func processExtractionJob(
         _ initialJob: ExtractionJob,
         systemPrompt: String,
-        assistantMessageID: UUID
+        assistantMessageID: UUID,
+        reference: String?
     ) async {
         var job = initialJob
         var loggedActions = job.loggedActions
@@ -303,7 +305,7 @@ final class HomeAIAssistantViewModel: ObservableObject {
                     aiActions: response.actions,
                     candidates: Self.transactionCandidates(in: batchRawText)
                 )
-                executeActions(reconciledActions)
+                executeActions(reconciledActions, reference: reference)
                 loggedActions.append(contentsOf: reconciledActions)
                 job.loggedActions = loggedActions
                 job.nextPageIndex = endIndex
@@ -935,7 +937,7 @@ final class HomeAIAssistantViewModel: ObservableObject {
 
     // MARK: - Execute AI Actions
 
-    private func executeActions(_ actions: [AITransactionAction]) {
+    private func executeActions(_ actions: [AITransactionAction], reference: String? = nil) {
         guard let dc = dataController, !actions.isEmpty else { return }
 
         let context = dc.container.viewContext
@@ -956,6 +958,7 @@ final class HomeAIAssistantViewModel: ObservableObject {
                 delay: false
             )
             transaction.bucket = bucket
+            transaction.reference = reference
         }
         dc.save()
     }

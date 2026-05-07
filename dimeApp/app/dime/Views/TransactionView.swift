@@ -7,6 +7,7 @@
 
 import Combine
 import Foundation
+import PDFKit
 import Popovers
 import SwiftUI
 import UniformTypeIdentifiers
@@ -233,8 +234,10 @@ struct TransactionView: View {
     @State var decimalValuesAssigned: AssignedDecimal = .none
     @State private var priceString: String = "0"
 
-    @State private var importingStatement = false
-    @State private var statementProcessing = false
+    @State private var showingAttachmentImporter = false
+    @State private var attachmentReference: TransactionAttachmentReference?
+    @State private var legacyReferenceText: String?
+    @State private var previewAttachmentReference: TransactionAttachmentReference?
 
     var body: some View {
         GeometryReader { proxy in
@@ -462,26 +465,9 @@ struct TransactionView: View {
                             NumberPadTextView(price: $price, isEditingDecimal: $isEditingDecimal, decimalValuesAssigned: $decimalValuesAssigned)
                         }
 
-                        HStack(spacing: 8) {
-                            NoteView(note: $note, focused: $textFieldFocused)
+                        NoteView(note: $note, focused: $textFieldFocused)
 
-                            Button {
-                                importingStatement = true
-                            } label: {
-                                Image(systemName: "tray.and.arrow.up")
-                                    .font(.system(.subheadline, design: .rounded).weight(.semibold))
-                                    .foregroundColor(Color.SubtitleText)
-                                    .frame(width: 34, height: 34)
-                                    .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 11.5, style: .continuous))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 11.5, style: .continuous)
-                                            .stroke(Color.Outline, lineWidth: 1.5)
-                                    )
-                            }
-                            .accessibilityLabel("Import Maybank Statement")
-                            .opacity(statementProcessing ? 0.5 : 1)
-                            .disabled(statementProcessing)
-                        }
+                        transactionAttachmentBox
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 }
@@ -901,32 +887,9 @@ struct TransactionView: View {
                 .allowsHitTesting(showingDatePicker)
                 .animation(.easeOut(duration: 0.25), value: showingDatePicker)
             }
-            .overlay {
-                if statementProcessing {
-                    ZStack {
-                        Color.black.opacity(0.25)
-                            .ignoresSafeArea()
-
-                        VStack(spacing: 10) {
-                            ProgressView()
-                                .controlSize(.large)
-                                .scaleEffect(0.9)
-
-                            Text("Importing Statement")
-                                .font(.system(.body, design: .rounded).weight(.semibold))
-                                .foregroundColor(Color.PrimaryText)
-                        }
-                        .padding(.vertical, 16)
-                        .padding(.horizontal, 22)
-                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    }
-                    .transition(.opacity)
-                }
-            }
         }
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         .animation(.easeOut(duration: 0.2), value: showToast)
-        .animation(.easeOut(duration: 0.2), value: statementProcessing)
         .ignoresSafeArea(.keyboard, edges: .all)
         .frame(maxHeight: .infinity)
         .background(Color.PrimaryBackground)
@@ -966,6 +929,8 @@ struct TransactionView: View {
                         isEditingDecimal = true
                         decimalValuesAssigned = .second
                     }
+                    attachmentReference = TransactionAttachmentReference.decode(from: transaction.reference)
+                    legacyReferenceText = TransactionAttachmentReference.legacyText(from: transaction.reference)
 
                     if transaction.wrappedDate > Date.now {
                         animateIcon = true
@@ -987,17 +952,23 @@ struct TransactionView: View {
                     repeatType: $repeatType, repeatCoefficient: $repeatCoefficient, showPicker: $showPicker)
             }
         }
-        .fileImporter(
-            isPresented: $importingStatement,
-            allowedContentTypes: [.pdf]
-        ) { result in
+        .fileImporter(isPresented: $showingAttachmentImporter, allowedContentTypes: [.pdf, .image]) { result in
             switch result {
             case let .success(file):
                 let accessedSecurityScope = file.startAccessingSecurityScopedResource()
-                importStatement(from: file) {
+                defer {
                     if accessedSecurityScope {
                         file.stopAccessingSecurityScopedResource()
                     }
+                }
+
+                if let savedReference = TransactionAttachmentStore.saveImportedFile(from: file) {
+                    attachmentReference = savedReference
+                    legacyReferenceText = nil
+                } else {
+                    toastImage = "xmark"
+                    toastTitle = "Couldn't attach file"
+                    showToast = true
                 }
             case let .failure(error):
                 toastImage = "xmark"
@@ -1009,6 +980,9 @@ struct TransactionView: View {
             if income {
                 swipingOffset = capsuleWidth
             }
+        }
+        .sheet(item: $previewAttachmentReference) { reference in
+            TransactionAttachmentPreviewSheet(reference: reference)
         }
     }
 
@@ -1114,6 +1088,7 @@ struct TransactionView: View {
             }
 
             editedTransaction.bucket = bucket
+            editedTransaction.reference = attachmentReference?.serializedReference ?? legacyReferenceText
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 withAnimation(.easeInOut(duration: 0.5)) {
@@ -1166,6 +1141,7 @@ struct TransactionView: View {
         }
 
         transaction.bucket = bucket
+        transaction.reference = attachmentReference?.serializedReference ?? legacyReferenceText
 
         transaction.amount = price
         transaction.date = date
@@ -1249,86 +1225,66 @@ struct TransactionView: View {
         }
     }
 
-    func importStatement(from url: URL, onComplete: (() -> Void)? = nil) {
-        statementProcessing = true
-
-        Task {
-            do {
-                let localURL = try prepareImportFile(from: url)
-                let result = try await MaybankStatementImporter.importTransactions(from: localURL)
-                let imported = await dataController.importMaybankTransactions(result.transactions)
-
-                await MainActor.run {
-                    statementProcessing = false
-                    toastImage = "checkmark"
-                    toastTitle = "Imported \(imported) Transactions"
-                    showToast = true
-                    onComplete?()
+    @ViewBuilder
+    private var transactionAttachmentBox: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let attachmentReference {
+                Button {
+                    previewAttachmentReference = attachmentReference
+                } label: {
+                    TransactionAttachmentCard(
+                        reference: attachmentReference,
+                        legacyReferenceText: legacyReferenceText,
+                        onRemove: {
+                            self.attachmentReference = nil
+                        }
+                    )
                 }
-            } catch {
-                await MainActor.run {
-                    statementProcessing = false
-                    toastImage = "xmark"
-                    let resolvedErrorMessage = importErrorMessage(from: error)
-                    print("[MaybankImport] Import failed: \(resolvedErrorMessage)")
-                    if let importError = error as? MaybankStatementImportError {
-                        print("[MaybankImport] Error enum: \(importError)")
-                    } else {
-                        print("[MaybankImport] Raw error: \(error)")
+                .buttonStyle(.plain)
+            } else if let legacyReferenceText {
+                TransactionAttachmentCard(
+                    reference: nil,
+                    legacyReferenceText: legacyReferenceText,
+                    onRemove: {
+                        self.legacyReferenceText = nil
                     }
-                    toastTitle = resolvedErrorMessage
-                    showToast = true
-                    onComplete?()
+                )
+            } else {
+                Button {
+                    showingAttachmentImporter = true
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "paperclip")
+                            .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                            .foregroundColor(Color.SubtitleText)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Add Attachment")
+                                .font(.system(.body, design: .rounded).weight(.semibold))
+                                .foregroundColor(Color.PrimaryText)
+
+                            Text("Receipt, reference image, or PDF")
+                                .font(.system(.footnote, design: .rounded).weight(.medium))
+                                .foregroundColor(Color.SubtitleText)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "plus")
+                            .font(.system(.caption, design: .rounded).weight(.bold))
+                            .foregroundColor(Color.SubtitleText)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 11)
+                    .background(Color.SecondaryBackground.opacity(0.55), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(Color.Outline, lineWidth: 1.5)
+                    )
                 }
+                .buttonStyle(.plain)
             }
         }
-    }
-
-    private func prepareImportFile(from sourceURL: URL) throws -> URL {
-        let tempURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("statement-\(UUID().uuidString).pdf")
-
-        var fileData: Data?
-        var coordinationError: NSError?
-
-        let coordinator = NSFileCoordinator()
-        coordinator.coordinate(readingItemAt: sourceURL, options: [], error: &coordinationError) { coordinatedURL in
-            fileData = try? Data(contentsOf: coordinatedURL)
-        }
-
-        if let data = fileData, !data.isEmpty {
-            try data.write(to: tempURL, options: .atomic)
-            return tempURL
-        }
-
-        if let data = try? Data(contentsOf: sourceURL), !data.isEmpty {
-            try data.write(to: tempURL, options: .atomic)
-            return tempURL
-        }
-
-        throw MaybankStatementImportError.invalidFile
-    }
-
-    private func importErrorMessage(from error: Error) -> String {
-        if let importError = error as? MaybankStatementImportError {
-            switch importError {
-            case .invalidFile:
-                return "Invalid or unreadable PDF"
-            case let .network(statusCode, message):
-                return "API Error (\(statusCode)): \(message)"
-            case .malformedResponse:
-                return "Unexpected API response"
-            case .noTransactions:
-                return "No transactions found in statement"
-            }
-        }
-
-        let fallback = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-        if fallback.isEmpty || fallback == "The operation couldn’t be completed." {
-            return "Import Failed"
-        }
-
-        return fallback
     }
 
     init(toEdit: Transaction? = nil) {
@@ -1688,6 +1644,145 @@ struct NoteView: View {
     func limitText(_ upper: Int) {
         if note.count > upper {
             note = String(note.prefix(upper))
+        }
+    }
+}
+
+private struct TransactionAttachmentCard: View {
+    let reference: TransactionAttachmentReference?
+    let legacyReferenceText: String?
+    let onRemove: () -> Void
+
+    @State private var thumbnail: UIImage?
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color.SecondaryBackground)
+                    .frame(width: 54, height: 54)
+
+                if let thumbnail {
+                    Image(uiImage: thumbnail)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 54, height: 54)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                } else {
+                    Image(systemName: reference?.kind == .pdf ? "doc.richtext.fill" : "photo")
+                        .font(.system(.title3, design: .rounded).weight(.semibold))
+                        .foregroundColor(reference?.kind == .pdf ? Color(hex: "F7C65B") : Color(hex: "4ECDC4"))
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(reference?.displayName ?? "Reference")
+                    .font(.system(.body, design: .rounded).weight(.semibold))
+                    .foregroundColor(Color.PrimaryText)
+                    .lineLimit(1)
+
+                if let sourceLabel = reference?.sourceLabel {
+                    Text(sourceLabel)
+                        .font(.system(.footnote, design: .rounded).weight(.medium))
+                        .foregroundColor(Color.SubtitleText)
+                        .lineLimit(1)
+                } else if let legacyReferenceText {
+                    Text(legacyReferenceText)
+                        .font(.system(.footnote, design: .rounded).weight(.medium))
+                        .foregroundColor(Color.SubtitleText)
+                        .lineLimit(2)
+                }
+
+                if let reference, reference.pageCount > 1 {
+                    Text("\(reference.pageCount) pages")
+                        .font(.system(.caption, design: .rounded).weight(.medium))
+                        .foregroundColor(Color.SubtitleText)
+                }
+            }
+
+            Spacer()
+
+            Button {
+                onRemove()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(Color.SubtitleText)
+                    .frame(width: 24, height: 24)
+                    .background(Color.PrimaryBackground.opacity(0.82), in: Circle())
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color.SecondaryBackground.opacity(0.55), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.Outline, lineWidth: 1.5)
+        )
+        .onAppear {
+            guard let reference else { return }
+            thumbnail = TransactionAttachmentStore.thumbnail(for: reference)
+        }
+    }
+}
+
+private struct TransactionAttachmentPreviewSheet: View {
+    let reference: TransactionAttachmentReference
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationView {
+            Group {
+                if reference.kind == .pdf, let url = reference.fileURL {
+                    TransactionPDFPreview(url: url)
+                } else if let url = reference.fileURL,
+                          let data = try? Data(contentsOf: url),
+                          let image = UIImage(data: data) {
+                    ZStack {
+                        Color.black.opacity(0.96).ignoresSafeArea()
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFit()
+                            .padding(16)
+                    }
+                } else {
+                    VStack(spacing: 12) {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.system(size: 28, weight: .semibold))
+                            .foregroundColor(Color.AlertRed)
+                        Text("Attachment unavailable")
+                            .font(.system(.headline, design: .rounded).weight(.semibold))
+                            .foregroundColor(Color.PrimaryText)
+                    }
+                }
+            }
+            .navigationTitle(reference.displayName)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Close") { dismiss() }
+                }
+            }
+        }
+    }
+}
+
+private struct TransactionPDFPreview: UIViewRepresentable {
+    let url: URL
+
+    func makeUIView(context: Context) -> PDFView {
+        let view = PDFView()
+        view.autoScales = true
+        view.displayMode = .singlePageContinuous
+        view.displayDirection = .vertical
+        view.document = PDFDocument(url: url)
+        return view
+    }
+
+    func updateUIView(_ uiView: PDFView, context: Context) {
+        if uiView.document?.documentURL != url {
+            uiView.document = PDFDocument(url: url)
         }
     }
 }
