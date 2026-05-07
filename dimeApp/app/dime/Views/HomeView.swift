@@ -44,6 +44,7 @@ struct HomeView: View {
     @State private var isLogAtTop: Bool = true
     @State private var isLogIdle: Bool = true
     @State private var homeAIPullActivationTranslation: CGFloat?
+    @State private var logSurfaceTopY: CGFloat = 0
 
     var topEdge: CGFloat
     var bottomEdge: CGFloat
@@ -78,6 +79,12 @@ struct HomeView: View {
 
             ZStack(alignment: .bottom) {
                 if currentTab == "Log", homeAIAssistantViewModel.isPresented || homeAISheetOffset > 0.5 {
+                    homeAISurfaceBackdrop
+                        .ignoresSafeArea()
+                        .zIndex(-1)
+                }
+
+                if currentTab == "Log", homeAIAssistantViewModel.isPresented || homeAISheetOffset > 0.5 {
                     HomeAIAssistantOverlay(
                         viewModel: homeAIAssistantViewModel,
                         namespace: homeAINamespace,
@@ -104,6 +111,12 @@ struct HomeView: View {
                         topEdge: topEdge,
                         bottomEdge: bottomEdge,
                         launchSearch: launchSearch,
+                        onHomeSurfaceTopChanged: { topY in
+                            guard !homeAIAssistantViewModel.isPresented, homeAISheetOffset < 1 else { return }
+                            if abs(logSurfaceTopY - topY) > 0.5 {
+                                logSurfaceTopY = topY
+                            }
+                        },
                         onScrollStateChanged: { isAtTop, isIdle in
                             isLogAtTop = isAtTop
                             isLogIdle = isIdle
@@ -129,6 +142,18 @@ struct HomeView: View {
                 .environmentObject(toastPresenter)
                 .environmentObject(transactionManager)
                 .offset(y: currentTab == "Log" ? homeAISheetOffset : 0)
+                .mask(
+                    Group {
+                        if currentTab == "Log" {
+                            HomeAISurfaceMaskShape(
+                                topInset: max(0, homeAISheetOffset + logSurfaceTopY),
+                                cornerRadius: 38 * homeAIRevealProgress(openOffset: homeAIOpenOffset)
+                            )
+                        } else {
+                            Rectangle()
+                        }
+                    }
+                )
                 .scaleEffect(
                     currentTab == "Log"
                         ? (1 - (homeAIRevealProgress(openOffset: homeAIOpenOffset) * 0.018))
@@ -136,13 +161,6 @@ struct HomeView: View {
                     anchor: .top
                 )
                 .simultaneousGesture(homeAIPullGesture(openOffset: homeAIOpenOffset))
-                .mask(
-                    HomeAISurfaceMaskShape(
-                        cornerRadius: currentTab == "Log"
-                            ? (34 + (homeAIRevealProgress(openOffset: homeAIOpenOffset) * 10))
-                            : 0
-                    )
-                )
                 .shadow(
                     color: Color.black.opacity(currentTab == "Log" ? homeAIRevealProgress(openOffset: homeAIOpenOffset) * 0.10 : 0),
                     radius: currentTab == "Log" ? (16 + homeAIRevealProgress(openOffset: homeAIOpenOffset) * 18) : 0,
@@ -464,12 +482,51 @@ struct HomeView: View {
         )
     }
 
+    private var homeAISurfaceBackdrop: some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    Color(hex: "0B1023"),
+                    Color(hex: "11234D"),
+                    Color(hex: "3F2368")
+                ],
+                startPoint: .bottom,
+                endPoint: .topTrailing
+            )
+
+            RadialGradient(
+                colors: [
+                    Color(hex: "18B7C7").opacity(0.56),
+                    Color.clear
+                ],
+                center: .topLeading,
+                startRadius: 20,
+                endRadius: 360
+            )
+
+            RadialGradient(
+                colors: [
+                    Color(hex: "B24CFF").opacity(0.34),
+                    Color.clear
+                ],
+                center: .topTrailing,
+                startRadius: 20,
+                endRadius: 340
+            )
+        }
+    }
+
     private func targetHomeAIOpenOffset(for height: CGFloat) -> CGFloat {
-        height - targetHomeAIPeekHeight(for: height)
+        let baseSurfaceTop = max(0, logSurfaceTopY)
+        guard baseSurfaceTop > 0 else {
+            return max(0, height - targetHomeAIPeekHeight(for: height))
+        }
+
+        return max(0, height - targetHomeAIPeekHeight(for: height) - baseSurfaceTop)
     }
 
     private func targetHomeAIPeekHeight(for height: CGFloat) -> CGFloat {
-        max(72, min(92, height * 0.11))
+        max(156, min(184, height * 0.19))
     }
 
     private func rubberBandPullDistance(for translation: CGFloat) -> CGFloat {
@@ -490,13 +547,23 @@ struct HomeView: View {
 }
 
 private struct HomeAISurfaceMaskShape: Shape {
+    let topInset: CGFloat
     let cornerRadius: CGFloat
 
     func path(in rect: CGRect) -> Path {
-        guard cornerRadius > 0 else { return Path(CGRect(origin: .zero, size: rect.size)) }
+        let visibleTop = min(max(0, topInset), rect.maxY)
+        let visibleRect = CGRect(
+            x: rect.minX,
+            y: visibleTop,
+            width: rect.width,
+            height: max(0, rect.maxY - visibleTop)
+        )
+
+        guard cornerRadius > 0 else { return Path(visibleRect) }
+        guard !visibleRect.isEmpty else { return Path() }
 
         let path = UIBezierPath(
-            roundedRect: rect,
+            roundedRect: visibleRect,
             byRoundingCorners: [.topLeft, .topRight],
             cornerRadii: CGSize(width: cornerRadius, height: cornerRadius)
         )

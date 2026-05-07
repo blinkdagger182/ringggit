@@ -745,7 +745,6 @@ struct HomeAIAssistantOverlay: View {
     }
 
     private func bottomHomePeek(safeBottom: CGFloat) -> some View {
-        let peekRadius: CGFloat = 36
         let interactiveHeight = max(homePeekHeight, safeBottom + 52)
 
         return ZStack(alignment: .top) {
@@ -753,48 +752,10 @@ struct HomeAIAssistantOverlay: View {
                 .fill(Color.black.opacity(0.001))
 
             VStack(spacing: 0) {
-                BottomHomePeekShape(cornerRadius: peekRadius)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color(hex: "D7F1F0"),
-                                Color(hex: "ECF7F6"),
-                                Color.PrimaryBackground
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .overlay {
-                        BottomHomePeekShape(cornerRadius: peekRadius)
-                            .stroke(Color.white.opacity(0.30), lineWidth: 1)
-                            .blendMode(.plusLighter)
-                    }
-                    .overlay(alignment: .top) {
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.22),
-                                Color.white.opacity(0.08),
-                                Color.clear
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                        .frame(height: 20)
-                        .clipShape(BottomHomePeekShape(cornerRadius: peekRadius))
-                    }
-                    .frame(height: 58)
-                    .shadow(color: Color.black.opacity(0.08), radius: 8, y: 1)
-                    .allowsHitTesting(false)
-
-                Spacer(minLength: 0)
-            }
-
-            VStack(spacing: 0) {
                 Image(systemName: "chevron.up")
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(Color(.quaternaryLabel))
-                    .padding(.top, 12)
+                    .padding(.top, 14)
 
                 Spacer(minLength: 0)
             }

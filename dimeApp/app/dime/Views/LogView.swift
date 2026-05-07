@@ -117,6 +117,19 @@ private class LogScrollViewDelegate: NSObject, UIScrollViewDelegate, ObservableO
     }
 }
 
+private struct LogHomeTopSurfaceShape: Shape {
+    let cornerRadius: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(
+            roundedRect: rect,
+            byRoundingCorners: [.topLeft, .topRight],
+            cornerRadii: CGSize(width: cornerRadius, height: cornerRadius)
+        )
+        return Path(path.cgPath)
+    }
+}
+
 struct LogView: View {
     @ObservedObject var syncMonitor = SyncMonitor.shared
 
@@ -161,6 +174,7 @@ struct LogView: View {
     // to show/hide tab bar
     var bottomEdge: CGFloat
     var launchSearch: Bool
+    var onHomeSurfaceTopChanged: (CGFloat) -> Void = { _ in }
     var onScrollStateChanged: (Bool, Bool) -> Void = { _, _ in }
 
     // drag to open
@@ -238,119 +252,135 @@ struct LogView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, topEdge + 6)
 
-                // Filter label row
-                HStack(spacing: 6) {
-                    Button { showFilter = true } label: {
-                        HStack(spacing: 4) {
-                            Text(filter == .all ? "All entries" : filter.rawValue)
-                                .font(.system(.subheadline, design: .rounded).weight(.medium))
-                                .foregroundColor(Color.SubtitleText)
-                            Image(systemName: "chevron.down")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundColor(Color.SubtitleText)
+                VStack(spacing: 0) {
+                    // Filter label row
+                    HStack(spacing: 6) {
+                        Button { showFilter = true } label: {
+                            HStack(spacing: 4) {
+                                Text(filter == .all ? "All entries" : filter.rawValue)
+                                    .font(.system(.subheadline, design: .rounded).weight(.medium))
+                                    .foregroundColor(Color.SubtitleText)
+                                Image(systemName: "chevron.down")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundColor(Color.SubtitleText)
+                            }
                         }
-                    }
-                    .popover(present: $showFilter, attributes: {
-                        $0.position = .absolute(
-                            originAnchor: .bottomLeft,
-                            popoverAnchor: .topLeft
-                        )
-                        $0.rubberBandingMode = .none
-                        $0.sourceFrameInset = UIEdgeInsets(top: 0, left: 0, bottom: -10, right: 0)
-                        $0.presentation.animation = .easeInOut(duration: 0.2)
-                        $0.dismissal.animation = .easeInOut(duration: 0.3)
-                    }) {
-                        FilterPickerView(filterType: $filter, showMenu: $showFilter)
-                    }
-
-                    if filter != .all {
-                        Button {
-                            withAnimation(.easeIn(duration: 0.15)) { filter = .all }
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 15))
-                                .foregroundColor(Color.SubtitleText.opacity(0.7))
-                        }
-                    }
-
-                    Spacer()
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 10)
-                .padding(.bottom, 2)
-
-                // Date steppers when filter active
-                if filter != .all && filter != .recurring && filter != .upcoming {
-                    Group {
-                        switch filter {
-                        case .category:
-                            CategoryStepperView(categoryFilter: $categoryFilter)
-                        case .day:
-                            DateStepperView(date: $dateFilter)
-                        case .week:
-                            WeekStepperView(showingDate: $weekFilter)
-                        case .month:
-                            MonthStepperView(showingDate: $monthFilter)
-                        case .type:
-                            IncomeFilterToggleView(income: $income)
-                        default:
-                            EmptyView()
-                        }
-                    }
-                    .padding(.horizontal, 25)
-                    .padding(.bottom, 8)
-                }
-
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 0) {
-                        if filter == .all {
-                            LogInsightsView(navBarText: $navBarText, showCents: showCents, currencySymbol: currencySymbol)
+                        .popover(present: $showFilter, attributes: {
+                            $0.position = .absolute(
+                                originAnchor: .bottomLeft,
+                                popoverAnchor: .topLeft
+                            )
+                            $0.rubberBandingMode = .none
+                            $0.sourceFrameInset = UIEdgeInsets(top: 0, left: 0, bottom: -10, right: 0)
+                            $0.presentation.animation = .easeInOut(duration: 0.2)
+                            $0.dismissal.animation = .easeInOut(duration: 0.3)
+                        }) {
+                            FilterPickerView(filterType: $filter, showMenu: $showFilter)
                         }
 
-                        // Recent activity card
+                        if filter != .all {
+                            Button {
+                                withAnimation(.easeIn(duration: 0.15)) { filter = .all }
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 15))
+                                    .foregroundColor(Color.SubtitleText.opacity(0.7))
+                            }
+                        }
+
+                        Spacer()
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 16)
+                    .padding(.bottom, 2)
+
+                    if filter != .all && filter != .recurring && filter != .upcoming {
+                        Group {
+                            switch filter {
+                            case .category:
+                                CategoryStepperView(categoryFilter: $categoryFilter)
+                            case .day:
+                                DateStepperView(date: $dateFilter)
+                            case .week:
+                                WeekStepperView(showingDate: $weekFilter)
+                            case .month:
+                                MonthStepperView(showingDate: $monthFilter)
+                            case .type:
+                                IncomeFilterToggleView(income: $income)
+                            default:
+                                EmptyView()
+                            }
+                        }
+                        .padding(.horizontal, 25)
+                        .padding(.bottom, 8)
+                    }
+
+                    ScrollView(showsIndicators: false) {
                         VStack(spacing: 0) {
-                            HStack {
-                                Text("Recent activity")
-                                    .font(.system(.body, design: .rounded).weight(.semibold))
-                                    .foregroundColor(Color.PrimaryText)
-                                Spacer()
-                                Button { searchMode = true } label: {
-                                    HStack(spacing: 3) {
-                                        Text("View all")
-                                            .font(.system(.subheadline, design: .rounded))
-                                            .foregroundColor(Color.SubtitleText)
-                                        Image(systemName: "chevron.right")
-                                            .font(.system(size: 11, weight: .semibold))
-                                            .foregroundColor(Color.SubtitleText)
+                            if filter == .all {
+                                LogInsightsView(navBarText: $navBarText, showCents: showCents, currencySymbol: currencySymbol)
+                            }
+
+                            VStack(spacing: 0) {
+                                HStack {
+                                    Text("Recent activity")
+                                        .font(.system(.body, design: .rounded).weight(.semibold))
+                                        .foregroundColor(Color.PrimaryText)
+                                    Spacer()
+                                    Button { searchMode = true } label: {
+                                        HStack(spacing: 3) {
+                                            Text("View all")
+                                                .font(.system(.subheadline, design: .rounded))
+                                                .foregroundColor(Color.SubtitleText)
+                                            Image(systemName: "chevron.right")
+                                                .font(.system(size: 11, weight: .semibold))
+                                                .foregroundColor(Color.SubtitleText)
+                                        }
                                     }
                                 }
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.top, 18)
-                            .padding(.bottom, 12)
+                                .padding(.horizontal, 20)
+                                .padding(.top, 18)
+                                .padding(.bottom, 12)
 
-                            TransactionsList(filter: filter, category: categoryFilter, date: dateFilter, week: weekFilter, month: monthFilter, income: income)
-                                .padding(.horizontal, 4)
-                                .padding(.bottom, 14)
+                                TransactionsList(filter: filter, category: categoryFilter, date: dateFilter, week: weekFilter, month: monthFilter, income: income)
+                                    .padding(.horizontal, 4)
+                                    .padding(.bottom, 14)
+                            }
+                            .background(
+                                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                    .fill(Color.SecondaryBackground)
+                            )
+                            .padding(.horizontal, 16)
+                            .padding(.top, 16)
+                            .padding(.bottom, 70 + bottomEdge)
                         }
                         .background(
-                            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                .fill(Color.SecondaryBackground)
+                            LogScrollViewResolver { scrollView in
+                                scrollDelegate.attach(to: scrollView)
+                                scrollDelegate.onScrollStateChanged = onScrollStateChanged
+                            }
                         )
-                        .padding(.horizontal, 16)
-                        .padding(.top, 16)
-                        .padding(.bottom, 70 + bottomEdge)
                     }
-                    .background(
-                        LogScrollViewResolver { scrollView in
-                            scrollDelegate.attach(to: scrollView)
-                            scrollDelegate.onScrollStateChanged = onScrollStateChanged
-                        }
-                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(homeSurfaceBackground)
+                .clipShape(LogHomeTopSurfaceShape(cornerRadius: 38))
+                .background {
+                    GeometryReader { geometry in
+                        let topY = geometry.frame(in: .global).minY
+
+                        Color.clear
+                            .onAppear {
+                                onHomeSurfaceTopChanged(topY)
+                            }
+                            .onChange(of: topY) { newValue in
+                                onHomeSurfaceTopChanged(newValue)
+                            }
+                    }
+                }
+                .padding(.top, 10)
             }
-            .background(homeSurfaceBackground)
+            .background(Color.clear)
             .fullScreenCover(isPresented: $searchMode) {
                 SearchView()
             }
