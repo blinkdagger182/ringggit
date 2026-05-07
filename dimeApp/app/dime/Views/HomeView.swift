@@ -136,22 +136,6 @@ struct HomeView: View {
                     anchor: .top
                 )
                 .simultaneousGesture(homeAIPullGesture(openOffset: homeAIOpenOffset))
-                .mask(
-                    HomeAISurfaceMaskShape(
-                        cornerRadius: currentTab == "Log" ? min(42, 18 + homeAIRevealProgress(openOffset: homeAIOpenOffset) * 24) : 0
-                    )
-                    .padding(.top, currentTab == "Log" ? 0 : -1200)
-                )
-                .overlay {
-                    if currentTab == "Log", homeAISheetOffset > 0 {
-                        HomeAISurfaceMaskShape(
-                            cornerRadius: min(42, 18 + homeAIRevealProgress(openOffset: homeAIOpenOffset) * 24)
-                        )
-                        .stroke(Color.white.opacity(0.34), lineWidth: 1)
-                        .blendMode(.plusLighter)
-                        .allowsHitTesting(false)
-                    }
-                }
                 .shadow(
                     color: Color.black.opacity(currentTab == "Log" ? homeAIRevealProgress(openOffset: homeAIOpenOffset) * 0.10 : 0),
                     radius: currentTab == "Log" ? (16 + homeAIRevealProgress(openOffset: homeAIOpenOffset) * 18) : 0,
@@ -331,7 +315,6 @@ struct HomeView: View {
 
                     if homeAIAssistantViewModel.isPresented {
                         isBarGestureActive = true
-                        guard value.startLocation.y <= homeAISheetOffset + topEdge + 72 else { return }
                         let isKeyboardPresented = keyboardHeightHelper.keyboardHeight > 0
 
                         if isKeyboardPresented {
@@ -343,7 +326,7 @@ struct HomeView: View {
 
                         if value.translation.height < 0 {
                             UIApplication.shared.endEditing()
-                            homeAISheetOffset = max(0, openOffset - collapseRubberBandDistance(for: -value.translation.height))
+                            homeAISheetOffset = max(0, openOffset + value.translation.height)
                         } else {
                             if value.translation.height > 8 {
                                 UIApplication.shared.endEditing()
@@ -391,7 +374,7 @@ struct HomeView: View {
                             }
 
                             let collapseDistance = max(0, openOffset - homeAISheetOffset)
-                            let shouldCollapse = value.predictedEndTranslation.height < -180 || collapseDistance > 180
+                            let shouldCollapse = value.predictedEndTranslation.height < -180 || collapseDistance > (openOffset * 0.22)
 
                             if shouldCollapse {
                                 homeAISheetOffset = 0
@@ -496,21 +479,6 @@ struct HomeView: View {
         let normalized = translation / homeAIMaxPullDistance
         let resistance = 1 - (1 / ((normalized * 0.92) + 1))
         return min(resistance * homeAIMaxPullDistance * 1.2, homeAIMaxPullDistance)
-    }
-}
-
-private struct HomeAISurfaceMaskShape: Shape {
-    let cornerRadius: CGFloat
-
-    func path(in rect: CGRect) -> Path {
-        guard cornerRadius > 0 else { return Path(CGRect(origin: .zero, size: rect.size)) }
-
-        let path = UIBezierPath(
-            roundedRect: rect,
-            byRoundingCorners: [.topLeft, .topRight],
-            cornerRadii: CGSize(width: cornerRadius, height: cornerRadius)
-        )
-        return Path(path.cgPath)
     }
 }
 

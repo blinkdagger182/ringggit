@@ -41,9 +41,9 @@ struct HomeAIAssistantOverlay: View {
     var body: some View {
         GeometryReader { proxy in
             let keyboardOverlap = max(0, keyboardHeightHelper.keyboardHeight - proxy.safeAreaInsets.bottom)
-            let visibleHomePadding = isExpanded && keyboardOverlap == 0 ? homePeekHeight : 0
+            let visibleHomePadding: CGFloat = isExpanded && keyboardOverlap == 0 ? 28 : 0
             let baseComposerBottomPadding = max(proxy.safeAreaInsets.bottom, bottomInset) + 12 + visibleHomePadding
-            let activeComposerBottomPadding = keyboardOverlap > 0 ? 12 : baseComposerBottomPadding
+            let activeComposerBottomPadding: CGFloat = keyboardOverlap > 0 ? 12 : baseComposerBottomPadding
 
             ZStack(alignment: .bottom) {
                 SakuAIDarkBackgroundView()
@@ -744,37 +744,33 @@ struct HomeAIAssistantOverlay: View {
 
     private func bottomHomePeek(safeBottom: CGFloat) -> some View {
         let visibleHeight = max(homePeekHeight, 86)
-        let hiddenDepth: CGFloat = max(120, safeBottom + 96)
-        let panelHeight = visibleHeight + hiddenDepth
 
-        return VStack(spacing: 0) {
+        return ZStack(alignment: .top) {
+            LinearGradient(
+                colors: [
+                    Color.white.opacity(0.20),
+                    Color.white.opacity(0.06),
+                    Color.clear
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 22)
+            .allowsHitTesting(false)
+
             VStack(spacing: 0) {
                 Image(systemName: "chevron.up")
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(Color(.quaternaryLabel))
-                    .padding(.top, 14)
+                    .padding(.top, 12)
 
                 Spacer(minLength: 0)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: panelHeight)
-            .background(
-                Color.PrimaryBackground
-                    .overlay(alignment: .top) {
-                        LinearGradient(
-                            colors: [Color.white.opacity(0.30), Color.white.opacity(0)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                        .frame(height: 18)
-                    }
-            )
-            .clipShape(BottomHomePeekShape(cornerRadius: 34))
-            .offset(y: hiddenDepth)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+        .frame(maxWidth: .infinity)
+        .frame(height: visibleHeight, alignment: .top)
         .contentShape(Rectangle())
-        .ignoresSafeArea(edges: .bottom)
         .onTapGesture(perform: onCollapse)
         .modifier(HomeAICollapseGestureModifier(dragGesture: collapseGesture))
         .accessibilityLabel("Swipe up to return Home")
@@ -918,19 +914,6 @@ private struct HomeAICollapseGestureModifier: ViewModifier {
         } else {
             content
         }
-    }
-}
-
-private struct BottomHomePeekShape: Shape {
-    let cornerRadius: CGFloat
-
-    func path(in rect: CGRect) -> Path {
-        let path = UIBezierPath(
-            roundedRect: rect,
-            byRoundingCorners: [.topLeft, .topRight],
-            cornerRadii: CGSize(width: cornerRadius, height: cornerRadius)
-        )
-        return Path(path.cgPath)
     }
 }
 

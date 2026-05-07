@@ -175,6 +175,22 @@ struct LogView: View {
 
     @State var progress = 0.0
 
+    private var homeSurfaceBackground: some View {
+        ZStack(alignment: .top) {
+            Color.PrimaryBackground
+
+            LinearGradient(
+                colors: [Color(hex: "BEE8E8").opacity(0.65), Color(hex: "D5F5E3").opacity(0.32), Color.clear],
+                startPoint: .top,
+                endPoint: .init(x: 0.5, y: 0.4)
+            )
+        }
+    }
+
+    private var homeSurfaceShape: LogHomeSurfaceShape {
+        LogHomeSurfaceShape(cornerRadius: 42)
+    }
+
     var body: some View {
         if transactions.isEmpty {
             VStack(spacing: 5) {
@@ -199,7 +215,14 @@ struct LogView: View {
             .padding(.horizontal, 30)
             .frame(height: 250, alignment: .top)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.PrimaryBackground)
+            .background(homeSurfaceBackground)
+            .clipShape(homeSurfaceShape)
+            .overlay {
+                homeSurfaceShape
+                    .stroke(Color.white.opacity(0.35), lineWidth: 1)
+                    .blendMode(.plusLighter)
+                    .allowsHitTesting(false)
+            }
 
         } else {
             VStack(spacing: 0) {
@@ -338,17 +361,14 @@ struct LogView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .background(
-                ZStack(alignment: .top) {
-                    Color.PrimaryBackground.ignoresSafeArea()
-                    LinearGradient(
-                        colors: [Color(hex: "BEE8E8").opacity(0.65), Color(hex: "D5F5E3").opacity(0.32), Color.clear],
-                        startPoint: .top,
-                        endPoint: .init(x: 0.5, y: 0.4)
-                    )
-                    .ignoresSafeArea()
-                }
-            )
+            .background(homeSurfaceBackground)
+            .clipShape(homeSurfaceShape)
+            .overlay {
+                homeSurfaceShape
+                    .stroke(Color.white.opacity(0.35), lineWidth: 1)
+                    .blendMode(.plusLighter)
+                    .allowsHitTesting(false)
+            }
             .fullScreenCover(isPresented: $searchMode) {
                 SearchView()
             }
@@ -431,6 +451,24 @@ struct LogView: View {
         .foregroundColor(Color.PrimaryText)
     }
 }
+
+private struct LogHomeSurfaceShape: Shape {
+    let cornerRadius: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        guard cornerRadius > 0 else {
+            return Path(CGRect(origin: .zero, size: rect.size))
+        }
+
+        let path = UIBezierPath(
+            roundedRect: rect,
+            byRoundingCorners: [.topLeft, .topRight],
+            cornerRadii: CGSize(width: cornerRadius, height: cornerRadius)
+        )
+        return Path(path.cgPath)
+    }
+}
+
 
 struct NumberView: AnimatableModifier {
     var number: Double
