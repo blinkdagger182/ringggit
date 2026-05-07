@@ -158,11 +158,11 @@ struct HomeView: View {
                     .allowsHitTesting(!homeAIAssistantViewModel.isPresented)
                     .zIndex(1.05)
 
-                if currentTab == "Log", !homeAIAssistantViewModel.isPresented {
+                if !homeAIAssistantViewModel.isPresented {
                     homeAIConnectedTopGradient
-                        .frame(height: topEdge + 132 + min(homeAISheetOffset, 88))
+                        .frame(height: topGradientHeight)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                        .opacity(max(CGFloat(0.92), CGFloat(1) - homeAIRevealProgress(openOffset: homeAIOpenOffset) * CGFloat(0.18)))
+                        .opacity(topGradientOpacity(openOffset: homeAIOpenOffset))
                         .allowsHitTesting(false)
                         .ignoresSafeArea(.container, edges: .top)
                         .zIndex(1.08)
@@ -412,6 +412,22 @@ struct HomeView: View {
         let progress = homeAIRevealProgress(openOffset: openOffset)
         let initialLift = min(180, openOffset * 0.22)
         return -(1 - progress) * initialLift
+    }
+
+    private var topGradientHeight: CGFloat {
+        if currentTab == "Log" {
+            return topEdge + 132 + min(homeAISheetOffset, 88)
+        } else {
+            return topEdge + 120
+        }
+    }
+
+    private func topGradientOpacity(openOffset: CGFloat) -> CGFloat {
+        if currentTab == "Log" {
+            return max(CGFloat(0.92), CGFloat(1) - homeAIRevealProgress(openOffset: openOffset) * CGFloat(0.18))
+        } else {
+            return 0.98
+        }
     }
 
     private var homeAIConnectedTopGradient: some View {

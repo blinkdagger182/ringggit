@@ -481,7 +481,7 @@ struct BucketEditorSheet: View {
     @State private var colour: String
 
     private let presets: [BucketNamePreset] = [
-        .init(emoji: "👍", title: "Good vibes"),
+        .init(emoji: "🌤️", title: "Weekend Reset"),
         .init(emoji: "✈️", title: "July Europe Trip"),
         .init(emoji: "🏠", title: "House Renovation"),
         .init(emoji: "💍", title: "Wedding"),
@@ -525,8 +525,7 @@ struct BucketEditorSheet: View {
 
                 Spacer()
 
-                CustomCapsuleProgress(percent: Double(progress) / 3, width: 4, topStroke: Color.DarkBackground, bottomStroke: Color.SecondaryBackground)
-                    .frame(width: 60)
+                BucketCreationProgressView(currentStep: progress, totalSteps: 3)
             }
             .padding(.bottom, 50)
 
@@ -734,22 +733,32 @@ struct BucketEditorSheet: View {
                 Text(emoji.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "🏷️" : emoji)
                     .font(.system(size: 28))
                     .frame(width: 48, height: 48)
-                    .background(Color(hex: colour.isEmpty ? "7B8FF8" : colour).opacity(0.15), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .background(Color.white.opacity(0.22), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Untitled Bucket" : name)
                         .font(.system(.body, design: .rounded).weight(.semibold))
-                        .foregroundColor(Color.PrimaryText)
+                        .foregroundColor(.white)
 
                     Text(timeframe.title)
                         .font(.system(.caption, design: .rounded).weight(.medium))
-                        .foregroundColor(Color.SubtitleText)
+                        .foregroundColor(.white.opacity(0.82))
                 }
 
                 Spacer()
             }
             .padding(14)
-            .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .background(
+                LinearGradient(
+                    colors: [
+                        Color(hex: colour.isEmpty ? "7B8FF8" : colour).opacity(0.92),
+                        Color(hex: colour.isEmpty ? "7B8FF8" : colour)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+            )
         }
     }
 
@@ -798,6 +807,29 @@ struct BucketEditorSheet: View {
         let start = calendar.date(from: calendar.dateComponents([.year], from: Date.now)) ?? Date.now
         let end = calendar.date(byAdding: DateComponents(year: 1, day: -1), to: start) ?? Date.now
         return (start, end)
+    }
+}
+
+private struct BucketCreationProgressView: View {
+    let currentStep: Int
+    let totalSteps: Int
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(1...totalSteps, id: \.self) { step in
+                Capsule(style: .continuous)
+                    .fill(step <= currentStep ? Color.DarkBackground : Color.SecondaryBackground)
+                    .frame(width: step == currentStep ? 26 : 18, height: 8)
+                    .animation(.easeInOut(duration: 0.2), value: currentStep)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(Color.PrimaryBackground, in: Capsule(style: .continuous))
+        .overlay(
+            Capsule(style: .continuous)
+                .stroke(Color.Outline.opacity(0.6), lineWidth: 1)
+        )
     }
 }
 
@@ -1003,7 +1035,7 @@ struct MainBudgetView: View {
             ZStack(alignment: .bottom) {
                 ZStack {
                     DonutSemicircle(percent: 1, cornerRadius: 6.5, width: soloBudget ? 35 : 25)
-                        .fill(Color.SecondaryBackground)
+                        .fill(soloBudget ? Color.SecondaryBackground : Color.SecondaryBackground.opacity(0.45))
                         .frame(width: width, height: width / 2)
 
                     if totalSpent / budgetAmount < 0.97 {
@@ -1062,7 +1094,10 @@ struct MainBudgetView: View {
         }
         .padding(.bottom)
         .frame(width: width + 30, height: soloBudget ? 230 : 200, alignment: .bottom)
-        .background(soloBudget ? Color.Outline.opacity(0.2) : Color.PrimaryBackground, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+        .background(
+            soloBudget ? Color.Outline.opacity(0.2) : Color.SecondaryBackground.opacity(0.5),
+            in: RoundedRectangle(cornerRadius: 13, style: .continuous)
+        )
         .contentShape(RoundedRectangle(cornerRadius: 13))
         .contextMenu {
             Button {
@@ -1456,7 +1491,7 @@ struct SingleBudgetView: View {
                     GeometryReader { proxy in
                         ZStack(alignment: .leading) {
                             RoundedRectangle(cornerRadius: 11.5, style: .continuous)
-                                .fill(Color.SecondaryBackground)
+                                .fill(Color.SecondaryBackground.opacity(0.5))
                                 .frame(width: proxy.size.width)
 
                             if totalSpent / budgetAmount < 0.98 {
@@ -2231,7 +2266,7 @@ struct TimeBudgetView: View {
                 GeometryReader { proxy in
                     ZStack(alignment: .leading) {
                         RoundedRectangle(cornerRadius: 11.5, style: .continuous)
-                            .fill(Color.SecondaryBackground)
+                            .fill(Color.SecondaryBackground.opacity(0.5))
                             .frame(width: proxy.size.width)
 
                         if totalSpent / budgetAmount < 0.98 {
