@@ -76,34 +76,45 @@ struct HomeView: View {
         GeometryReader { proxy in
             let homeAIPeekHeight = targetHomeAIPeekHeight(for: proxy.size.height)
             let homeAIOpenOffset = targetHomeAIOpenOffset(for: proxy.size.height)
+            let homeAIProgress = homeAIRevealProgress(openOffset: homeAIOpenOffset)
 
             ZStack(alignment: .bottom) {
-                if currentTab == "Log", homeAIAssistantViewModel.isPresented || homeAISheetOffset > 0.5 {
+                if currentTab == "Log" {
                     homeAISurfaceBackdrop
                         .ignoresSafeArea()
                         .zIndex(-1)
                 }
 
-                if currentTab == "Log", homeAIAssistantViewModel.isPresented || homeAISheetOffset > 0.5 {
+                if currentTab == "Log" {
                     HomeAIAssistantOverlay(
                         viewModel: homeAIAssistantViewModel,
                         namespace: homeAINamespace,
                         topInset: topEdge,
                         bottomInset: bottomEdge,
-                        revealProgress: homeAIRevealProgress(openOffset: homeAIOpenOffset),
+                        revealProgress: homeAIProgress,
                         isExpanded: homeAIAssistantViewModel.isPresented,
                         homePeekHeight: homeAIPeekHeight,
                         onCollapse: {
-                        withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
-                            homeAISheetOffset = 0
-                            homeAIAssistantViewModel.collapse()
-                        }
+                            withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
+                                homeAISheetOffset = 0
+                                homeAIAssistantViewModel.collapse()
+                            }
                         },
                         collapseGesture: homeAIPullGesture(openOffset: homeAIOpenOffset)
                     )
                     .ignoresSafeArea()
-                    .offset(y: homeAIOverlayOffset(openOffset: homeAIOpenOffset))
+                    .allowsHitTesting(homeAIAssistantViewModel.isPresented)
                     .zIndex(0)
+                }
+
+                if currentTab == "Log", !homeAIAssistantViewModel.isPresented {
+                    homeAIHomeHeader
+                        .padding(.horizontal, 20)
+                        .padding(.top, max(topEdge, proxy.safeAreaInsets.top) + 10)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                        .opacity(max(CGFloat(0), CGFloat(1) - (homeAIProgress * CGFloat(1.35))))
+                        .allowsHitTesting(false)
+                        .zIndex(0.4)
                 }
 
                 TabView(selection: $currentTab) {
@@ -147,24 +158,18 @@ struct HomeView: View {
                         if currentTab == "Log" {
                             HomeAISurfaceMaskShape(
                                 topInset: max(0, homeAISheetOffset + logSurfaceTopY),
-                                cornerRadius: 38 * homeAIRevealProgress(openOffset: homeAIOpenOffset)
+                                cornerRadius: currentTab == "Log" ? 38 : 0
                             )
                         } else {
                             Rectangle()
                         }
                     }
                 )
-                .scaleEffect(
-                    currentTab == "Log"
-                        ? (1 - (homeAIRevealProgress(openOffset: homeAIOpenOffset) * 0.018))
-                        : 1,
-                    anchor: .top
-                )
                 .simultaneousGesture(homeAIPullGesture(openOffset: homeAIOpenOffset))
                 .shadow(
-                    color: Color.black.opacity(currentTab == "Log" ? homeAIRevealProgress(openOffset: homeAIOpenOffset) * 0.10 : 0),
-                    radius: currentTab == "Log" ? (16 + homeAIRevealProgress(openOffset: homeAIOpenOffset) * 18) : 0,
-                    y: currentTab == "Log" ? (8 + homeAIRevealProgress(openOffset: homeAIOpenOffset) * 10) : 0
+                    color: Color.black.opacity(currentTab == "Log" ? (0.08 + homeAIProgress * 0.08) : 0),
+                    radius: currentTab == "Log" ? (12 + homeAIProgress * 20) : 0,
+                    y: currentTab == "Log" ? (6 + homeAIProgress * 10) : 0
                 )
                 .overlay(alignment: .top) {
                     if currentTab == "Log" && homeAISheetOffset > 6 && !homeAIAssistantViewModel.isPresented {
@@ -187,33 +192,17 @@ struct HomeView: View {
                     .allowsHitTesting(!homeAIAssistantViewModel.isPresented)
                     .zIndex(1.05)
 
-                if !homeAIAssistantViewModel.isPresented {
-                    homeAIConnectedTopGradient
-                        .frame(height: topGradientHeight)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                        .opacity(topGradientOpacity(openOffset: homeAIOpenOffset))
-                        .allowsHitTesting(false)
-                        .ignoresSafeArea(.container, edges: .top)
-                        .zIndex(1.08)
-                }
-
-                if currentTab == "Log", !homeAIAssistantViewModel.isPresented {
-                    HomeAIAssistantBar(
-                        viewModel: homeAIAssistantViewModel,
-                        namespace: homeAINamespace,
-                        topInset: topEdge,
-                        pullOffset: homeAISheetOffset,
-                        mode: .idlePill,
-                        dragGesture: homeAIPullGesture(openOffset: homeAIOpenOffset)
-                    ) {
-                        withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) {
-                            homeAIAssistantViewModel.expand()
-                            homeAISheetOffset = homeAIOpenOffset
+                if currentTab == "Log", homeAIAssistantViewModel.isPresented {
+                    homeAIBottomPeek(height: max(homeAIPeekHeight, bottomEdge + 52))
+                        .opacity(homeAIProgress)
+                        .highPriorityGesture(homeAIPullGesture(openOffset: homeAIOpenOffset))
+                        .onTapGesture {
+                            withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
+                                homeAISheetOffset = 0
+                                homeAIAssistantViewModel.collapse()
+                            }
                         }
-                    }
-                    .allowsHitTesting(true)
-                    .padding(.horizontal, 20)
-                    .zIndex(1.15)
+                        .zIndex(2)
                 }
 
                 if showPopup {
@@ -434,54 +423,6 @@ struct HomeView: View {
         return min(max(homeAISheetOffset / openOffset, 0), 1)
     }
 
-    private func homeAIOverlayOffset(openOffset: CGFloat) -> CGFloat {
-        guard !homeAIAssistantViewModel.isPresented else { return 0 }
-
-        let progress = homeAIRevealProgress(openOffset: openOffset)
-        let initialLift = min(180, openOffset * 0.22)
-        return -(1 - progress) * initialLift
-    }
-
-    private var topGradientHeight: CGFloat {
-        if currentTab == "Log" {
-            return topEdge + 132 + min(homeAISheetOffset, 88)
-        } else {
-            return topEdge + 120
-        }
-    }
-
-    private func topGradientOpacity(openOffset: CGFloat) -> CGFloat {
-        if currentTab == "Log" {
-            return max(CGFloat(0.92), CGFloat(1) - homeAIRevealProgress(openOffset: openOffset) * CGFloat(0.18))
-        } else {
-            return 0.98
-        }
-    }
-
-    private var homeAIConnectedTopGradient: some View {
-        ZStack(alignment: .bottom) {
-            HomeAIAnimatedGradientBackground()
-
-            LinearGradient(
-                colors: [
-                    Color(.systemBackground).opacity(0),
-                    Color(.systemBackground).opacity(0.38),
-                    Color(.systemBackground)
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .frame(height: 54)
-        }
-        .mask(
-            LinearGradient(
-                colors: [.black, .black, .black.opacity(0.78), .clear],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
-    }
-
     private var homeAISurfaceBackdrop: some View {
         ZStack {
             LinearGradient(
@@ -516,6 +457,75 @@ struct HomeView: View {
         }
     }
 
+    private var homeAIHomeHeader: some View {
+        HStack(alignment: .center) {
+            ZStack {
+                Circle()
+                    .fill(Color.white.opacity(0.18))
+                    .frame(width: 46, height: 46)
+
+                Text("ME")
+                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+            }
+
+            Spacer()
+
+            HStack(spacing: 8) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 16, weight: .semibold))
+
+                Text("Saku AI")
+                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+
+                Text("beta")
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .overlay(
+                        Capsule(style: .continuous)
+                            .stroke(Color.white.opacity(0.45), lineWidth: 1)
+                    )
+            }
+            .foregroundColor(.white.opacity(0.94))
+
+            Spacer()
+
+            ZStack(alignment: .topTrailing) {
+                Circle()
+                    .fill(Color.white.opacity(0.16))
+                    .frame(width: 46, height: 46)
+
+                Image(systemName: "bell")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(.white)
+                    .frame(width: 46, height: 46)
+
+                Circle()
+                    .fill(Color.AlertRed)
+                    .frame(width: 10, height: 10)
+                    .offset(x: -4, y: 3)
+            }
+        }
+    }
+
+    private func homeAIBottomPeek(height: CGFloat) -> some View {
+        ZStack(alignment: .top) {
+            HomeAIBottomPeekShape(cornerRadius: 30)
+                .fill(Color("AlwaysLightBackground"))
+                .shadow(color: Color.black.opacity(0.12), radius: 22, y: -8)
+
+            Image(systemName: "chevron.up")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundColor(Color(.quaternaryLabel))
+                .padding(.top, 14)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: height, alignment: .top)
+        .contentShape(Rectangle())
+        .accessibilityLabel("Swipe up to return Home")
+    }
+
     private func targetHomeAIOpenOffset(for height: CGFloat) -> CGFloat {
         let baseSurfaceTop = max(0, logSurfaceTopY)
         guard baseSurfaceTop > 0 else {
@@ -537,12 +547,18 @@ struct HomeView: View {
         return min(resistance * homeAIMaxPullDistance * 1.55, homeAIMaxPullDistance)
     }
 
-    private func collapseRubberBandDistance(for translation: CGFloat) -> CGFloat {
-        guard translation > 0 else { return 0 }
+}
 
-        let normalized = translation / homeAIMaxPullDistance
-        let resistance = 1 - (1 / ((normalized * 0.92) + 1))
-        return min(resistance * homeAIMaxPullDistance * 1.2, homeAIMaxPullDistance)
+private struct HomeAIBottomPeekShape: Shape {
+    let cornerRadius: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(
+            roundedRect: rect,
+            byRoundingCorners: [.topLeft, .topRight],
+            cornerRadii: CGSize(width: cornerRadius, height: cornerRadius)
+        )
+        return Path(path.cgPath)
     }
 }
 

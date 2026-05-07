@@ -50,7 +50,7 @@ struct HomeAIAssistantOverlay: View {
             ZStack(alignment: .bottom) {
                 SakuAIDarkBackgroundView()
                     .ignoresSafeArea()
-                    .opacity(max(0.28, revealProgress))
+                    .opacity(revealProgress)
 
                 VStack(spacing: 0) {
                     previewHeader
@@ -748,8 +748,9 @@ struct HomeAIAssistantOverlay: View {
         let interactiveHeight = max(homePeekHeight, safeBottom + 52)
 
         return ZStack(alignment: .top) {
-            Rectangle()
-                .fill(Color.black.opacity(0.001))
+            BottomHomePeekShape(cornerRadius: 30)
+                .fill(Color("AlwaysLightBackground"))
+                .shadow(color: Color.black.opacity(0.12), radius: 22, y: -8)
 
             VStack(spacing: 0) {
                 Image(systemName: "chevron.up")
