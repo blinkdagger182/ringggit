@@ -93,12 +93,7 @@ struct HomeView: View {
                         revealProgress: homeAIProgress,
                         isExpanded: homeAIAssistantViewModel.isPresented,
                         homePeekHeight: homeAIPeekHeight,
-                        onCollapse: {
-                            withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
-                                homeAISheetOffset = 0
-                                homeAIAssistantViewModel.collapse()
-                            }
-                        },
+                        onCollapse: { collapseAI() },
                         collapseGesture: homeAIPullGesture(openOffset: homeAIOpenOffset)
                     )
                     .ignoresSafeArea()
@@ -121,6 +116,7 @@ struct HomeView: View {
                         topEdge: topEdge,
                         bottomEdge: bottomEdge,
                         launchSearch: launchSearch,
+                        isScrollLocked: homeAISheetOffset > 0 || homeAIAssistantViewModel.isPresented,
                         onHomeSurfaceTopChanged: { topY in
                             guard !homeAIAssistantViewModel.isPresented, homeAISheetOffset < 1 else { return }
                             if abs(logSurfaceTopY - topY) > 0.5 {
@@ -151,12 +147,11 @@ struct HomeView: View {
                 .allowsHitTesting(showPopup ? false : !homeAIAssistantViewModel.isPresented)
                 .environmentObject(toastPresenter)
                 .environmentObject(transactionManager)
-                .offset(y: currentTab == "Log" ? homeAISheetOffset : 0)
                 .mask(
                     Group {
                         if currentTab == "Log" {
                             HomeAISurfaceMaskShape(
-                                topInset: max(0, homeAISheetOffset + logSurfaceTopY),
+                                topInset: max(0, logSurfaceTopY),
                                 cornerRadius: currentTab == "Log" ? 38 : 0
                             )
                         } else {
@@ -164,6 +159,7 @@ struct HomeView: View {
                         }
                     }
                 )
+                .offset(y: currentTab == "Log" ? homeAISheetOffset : 0)
                 .simultaneousGesture(homeAIPullGesture(openOffset: homeAIOpenOffset))
                 .shadow(
                     color: Color.black.opacity(currentTab == "Log" ? (0.08 + homeAIProgress * 0.08) : 0),
@@ -176,18 +172,6 @@ struct HomeView: View {
                     .offset(y: (currentTab == "Log" ? homeAISheetOffset : 0) + (tabBarManager.hideTab ? (70 + bottomEdge) : 0))
                     .allowsHitTesting(!homeAIAssistantViewModel.isPresented)
                     .zIndex(1.05)
-
-                if currentTab == "Log", homeAIAssistantViewModel.isPresented {
-                    homeAIBottomGestureRegion(height: max(homeAIPeekHeight, bottomEdge + 52))
-                        .highPriorityGesture(homeAIPullGesture(openOffset: homeAIOpenOffset))
-                        .onTapGesture {
-                            withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
-                                homeAISheetOffset = 0
-                                homeAIAssistantViewModel.collapse()
-                            }
-                        }
-                        .zIndex(2)
-                }
 
                 if showPopup {
                     Rectangle()
@@ -240,12 +224,12 @@ struct HomeView: View {
             }
         }
         .onChange(of: currentTab) { newValue in
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.88)) {
+            withAnimation(homeAISettleAnimation) {
                 homeAISheetOffset = 0
             }
 
             if newValue != "Log" {
-                withAnimation(.spring(response: 0.42, dampingFraction: 0.88)) {
+                withAnimation(homeAISettleAnimation) {
                     homeAIAssistantViewModel.collapse()
                 }
             }
@@ -296,7 +280,7 @@ struct HomeView: View {
             } else if url.host == "aioverlay" {
                 currentTab = "Log"
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) {
+                    withAnimation(homeAISettleAnimation) {
                         homeAIAssistantViewModel.expand()
                         homeAISheetOffset = targetHomeAIOpenOffset(for: UIScreen.main.bounds.height)
                     }
@@ -325,12 +309,13 @@ struct HomeView: View {
                         if value.translation.height < 0 {
                             UIApplication.shared.endEditing()
                             homeAISheetOffset = max(0, openOffset + value.translation.height)
-                        } else {
+                        } else if value.translation.height > 0 {
                             if value.translation.height > 8 {
                                 UIApplication.shared.endEditing()
                             }
                             homeAISheetOffset = min(openOffset + (rubberBandPullDistance(for: value.translation.height) * 0.08), openOffset + 18)
                         }
+                        // zero translation → ignore (prevents spurious final-callback reset)
                         return
                     }
 
@@ -355,7 +340,7 @@ struct HomeView: View {
                 .onEnded { value in
                     isBarGestureActive = false
 
-                    withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+                    withAnimation(homeAISettleAnimation) {
                         if homeAIAssistantViewModel.isPresented {
                             guard keyboardHeightHelper.keyboardHeight == 0 else {
                                 homeAISheetOffset = openOffset
@@ -367,9 +352,9 @@ struct HomeView: View {
 
                             if shouldCollapse {
                                 homeAISheetOffset = 0
-                                homeAIAssistantViewModel.collapse()
                             } else {
                                 homeAISheetOffset = openOffset
+                                return
                             }
                         } else {
                             guard homeAISheetOffset > 0 else { return }
@@ -395,6 +380,10 @@ struct HomeView: View {
     private func homeAIRevealProgress(openOffset: CGFloat) -> CGFloat {
         guard openOffset > 0 else { return 0 }
         return min(max(homeAISheetOffset / openOffset, 0), 1)
+    }
+
+    private var homeAISettleAnimation: Animation {
+        .easeOut(duration: 0.24)
     }
 
     private var homeAISurfaceBackdrop: some View {
@@ -481,14 +470,6 @@ struct HomeView: View {
                     .offset(x: -4, y: 3)
             }
         }
-    }
-
-    private func homeAIBottomGestureRegion(height: CGFloat) -> some View {
-        Color.black.opacity(0.001)
-        .frame(maxWidth: .infinity)
-        .frame(height: height, alignment: .top)
-        .contentShape(Rectangle())
-        .accessibilityLabel("Swipe up to return Home")
     }
 
     private func targetHomeAIOpenOffset(for height: CGFloat) -> CGFloat {

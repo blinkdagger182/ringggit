@@ -54,12 +54,19 @@ private class LogScrollViewDelegate: NSObject, UIScrollViewDelegate, ObservableO
     var onScrollStateChanged: ((Bool, Bool) -> Void)?
     private var isAtTop = true
     private var isIdle = true
+    private weak var attachedScrollView: UIScrollView?
+
+    var isLocked: Bool = false {
+        didSet { attachedScrollView?.isScrollEnabled = !isLocked }
+    }
 
     func attach(to scrollView: UIScrollView) {
         if scrollView.delegate !== self {
             original = scrollView.delegate
             scrollView.delegate = self
         }
+        attachedScrollView = scrollView
+        scrollView.isScrollEnabled = !isLocked
         updateTopState(for: scrollView)
     }
 
@@ -174,6 +181,7 @@ struct LogView: View {
     // to show/hide tab bar
     var bottomEdge: CGFloat
     var launchSearch: Bool
+    var isScrollLocked: Bool = false
     var onHomeSurfaceTopChanged: (CGFloat) -> Void = { _ in }
     var onScrollStateChanged: (Bool, Bool) -> Void = { _, _ in }
 
@@ -315,45 +323,43 @@ struct LogView: View {
                         .padding(.bottom, 8)
                     }
 
+                    if filter == .all {
+                        LogInsightsView(navBarText: $navBarText, showCents: showCents, currencySymbol: currencySymbol)
+                    }
+
                     ScrollView(showsIndicators: false) {
                         VStack(spacing: 0) {
-                            if filter == .all {
-                                LogInsightsView(navBarText: $navBarText, showCents: showCents, currencySymbol: currencySymbol)
-                            }
-
-                            VStack(spacing: 0) {
-                                HStack {
-                                    Text("Recent activity")
-                                        .font(.system(.body, design: .rounded).weight(.semibold))
-                                        .foregroundColor(Color.PrimaryText)
-                                    Spacer()
-                                    Button { searchMode = true } label: {
-                                        HStack(spacing: 3) {
-                                            Text("View all")
-                                                .font(.system(.subheadline, design: .rounded))
-                                                .foregroundColor(Color.SubtitleText)
-                                            Image(systemName: "chevron.right")
-                                                .font(.system(size: 11, weight: .semibold))
-                                                .foregroundColor(Color.SubtitleText)
-                                        }
+                            HStack {
+                                Text("Recent activity")
+                                    .font(.system(.body, design: .rounded).weight(.semibold))
+                                    .foregroundColor(Color.PrimaryText)
+                                Spacer()
+                                Button { searchMode = true } label: {
+                                    HStack(spacing: 3) {
+                                        Text("View all")
+                                            .font(.system(.subheadline, design: .rounded))
+                                            .foregroundColor(Color.SubtitleText)
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 11, weight: .semibold))
+                                            .foregroundColor(Color.SubtitleText)
                                     }
                                 }
-                                .padding(.horizontal, 20)
-                                .padding(.top, 18)
-                                .padding(.bottom, 12)
-
-                                TransactionsList(filter: filter, category: categoryFilter, date: dateFilter, week: weekFilter, month: monthFilter, income: income)
-                                    .padding(.horizontal, 4)
-                                    .padding(.bottom, 14)
                             }
-                            .background(
-                                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                    .fill(Color.SecondaryBackground)
-                            )
-                            .padding(.horizontal, 16)
-                            .padding(.top, 16)
-                            .padding(.bottom, 70 + bottomEdge)
+                            .padding(.horizontal, 20)
+                            .padding(.top, 18)
+                            .padding(.bottom, 12)
+
+                            TransactionsList(filter: filter, category: categoryFilter, date: dateFilter, week: weekFilter, month: monthFilter, income: income)
+                                .padding(.horizontal, 4)
+                                .padding(.bottom, 14)
                         }
+                        .background(
+                            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                .fill(Color.SecondaryBackground)
+                        )
+                        .padding(.horizontal, 16)
+                        .padding(.top, 16)
+                        .padding(.bottom, 70 + bottomEdge)
                         .background(
                             LogScrollViewResolver { scrollView in
                                 scrollDelegate.attach(to: scrollView)
@@ -413,6 +419,9 @@ struct LogView: View {
                 if !NSUbiquitousKeyValueStore.default.bool(forKey: "icloud_sync") {
                     dataController.updateRecurringTransactions()
                 }
+            }
+            .onChange(of: isScrollLocked) { newValue in
+                scrollDelegate.isLocked = newValue
             }
 //            .animation(.spring(duration: 0.5), value: released)
 //            .animation(.spring(response: 0.4, dampingFraction: 0.6), value: pullStatus)
