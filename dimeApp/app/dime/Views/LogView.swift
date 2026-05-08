@@ -218,7 +218,9 @@ struct LogView: View {
     var bottomEdge: CGFloat
     var launchSearch: Bool
     var isScrollLocked: Bool = false
-    var onHomeSurfaceTopChanged: (CGFloat) -> Void = { _ in }
+    // Drives the white card's drop shadow as the AI sheet is revealed.
+    // Owned by HomeView; here we just turn it into shadow params.
+    var revealProgress: CGFloat = 0
     var onScrollStateChanged: (Bool, Bool) -> Void = { _, _ in }
     var onScrollRevealGesture: (UIGestureRecognizer.State, CGFloat, CGFloat) -> Void = { _, _, _ in }
 
@@ -274,7 +276,9 @@ struct LogView: View {
 
         } else {
             VStack(spacing: 0) {
-                // Header row
+                // Header row — kept for layout (reserves the same space the mask
+                // used to clip away), but visually hidden so the AI home header
+                // shows through and the visual is identical to the masked version.
                 HStack(spacing: 0) {
                     Button { searchMode = true } label: {
                         Image(systemName: "magnifyingglass")
@@ -296,6 +300,7 @@ struct LogView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, topEdge + 6)
+                .hidden()
 
                 VStack(spacing: 0) {
                     // Filter label row
@@ -413,19 +418,14 @@ struct LogView: View {
                 }
                 .background(homeSurfaceBackground)
                 .clipShape(LogHomeTopSurfaceShape(cornerRadius: 38))
-                .background {
-                    GeometryReader { geometry in
-                        let topY = geometry.frame(in: .global).minY
-
-                        Color.clear
-                            .onAppear {
-                                onHomeSurfaceTopChanged(topY)
-                            }
-                            .onChange(of: topY) { newValue in
-                                onHomeSurfaceTopChanged(newValue)
-                            }
-                    }
-                }
+                // Shadow follows the rounded card outline. Previously rendered
+                // around the TabView's masked shape; pulled inside LogView so it
+                // is part of the same atomic render as the card content.
+                .shadow(
+                    color: Color.black.opacity(0.08 + revealProgress * 0.08),
+                    radius: 12 + revealProgress * 20,
+                    y: 6 + revealProgress * 10
+                )
                 .padding(.top, 10)
             }
             .background(Color.clear)

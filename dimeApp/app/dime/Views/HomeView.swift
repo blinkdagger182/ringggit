@@ -43,10 +43,20 @@ struct HomeView: View {
     @State private var isBarGestureActive: Bool = false
     @State private var isLogAtTop: Bool = true
     @State private var isLogIdle: Bool = true
-    @State private var logSurfaceTopY: CGFloat = 0
 
     var topEdge: CGFloat
     var bottomEdge: CGFloat
+
+    // Top of the LogView's white surface card in LogView-local coordinates.
+    // Deterministic from layout: search/bell row top padding (6) + row height (40)
+    // + white card top padding (10) = topEdge + 56. Used only for sizing the
+    // peek/open offset of the AI sheet; layout/clip is owned by LogView itself.
+    private static let logHeaderRowHeight: CGFloat = 40
+    private static let logHeaderTopPadding: CGFloat = 6
+    private static let logSurfaceTopPadding: CGFloat = 10
+    private var logSurfaceTopY: CGFloat {
+        topEdge + Self.logHeaderTopPadding + Self.logHeaderRowHeight + Self.logSurfaceTopPadding
+    }
 
     @State var fromURL1: Bool = false
     @State var fromURL2: Bool = false
@@ -117,12 +127,7 @@ struct HomeView: View {
                         bottomEdge: bottomEdge,
                         launchSearch: launchSearch,
                         isScrollLocked: homeAISheetOffset > 0 || homeAIAssistantViewModel.isPresented,
-                        onHomeSurfaceTopChanged: { topY in
-                            guard !homeAIAssistantViewModel.isPresented, homeAISheetOffset < 1 else { return }
-                            if abs(logSurfaceTopY - topY) > 0.5 {
-                                logSurfaceTopY = topY
-                            }
-                        },
+                        revealProgress: homeAIProgress,
                         onScrollStateChanged: { isAtTop, isIdle in
                             isLogAtTop = isAtTop
                             isLogIdle = isIdle
@@ -133,6 +138,13 @@ struct HomeView: View {
                     )
                         .ignoresSafeArea(.all)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        // Apply translation on LogView (a SwiftUI host) instead of the TabView
+                        // (UITabBarController-backed) so the rounded card, its background and
+                        // the inner UIScrollView translate as a single atomic CALayer transform.
+                        // Combining .mask + .offset on the TabView causes a one-frame race
+                        // where the rasterized mask edge moves before the live scroll content,
+                        // visible as the "card-moves-but-content-lags" jitter at swipe start.
+                        .offset(y: currentTab == "Log" ? homeAISheetOffset : 0)
                         .tag("Log")
 
                     InsightsView()
@@ -150,25 +162,7 @@ struct HomeView: View {
                 .allowsHitTesting(showPopup ? false : !homeAIAssistantViewModel.isPresented)
                 .environmentObject(toastPresenter)
                 .environmentObject(transactionManager)
-                .mask(
-                    Group {
-                        if currentTab == "Log" {
-                            HomeAISurfaceMaskShape(
-                                topInset: max(0, logSurfaceTopY),
-                                cornerRadius: currentTab == "Log" ? 38 : 0
-                            )
-                        } else {
-                            Rectangle()
-                        }
-                    }
-                )
-                .offset(y: currentTab == "Log" ? homeAISheetOffset : 0)
                 .simultaneousGesture(homeAIPullGesture(openOffset: homeAIOpenOffset))
-                .shadow(
-                    color: Color.black.opacity(currentTab == "Log" ? (0.08 + homeAIProgress * 0.08) : 0),
-                    radius: currentTab == "Log" ? (12 + homeAIProgress * 20) : 0,
-                    y: currentTab == "Log" ? (6 + homeAIProgress * 10) : 0
-                )
                 .zIndex(1)
 
                 CustomTabBar(currentTab: $currentTab, topEdge: topEdge, bottomEdge: bottomEdge, counter: $counter, launchAdd: launchAdd)
@@ -457,12 +451,7 @@ struct HomeView: View {
     }
 
     private func targetHomeAIOpenOffset(for height: CGFloat) -> CGFloat {
-        let baseSurfaceTop = max(0, logSurfaceTopY)
-        guard baseSurfaceTop > 0 else {
-            return max(0, height - targetHomeAIPeekHeight(for: height))
-        }
-
-        return max(0, height - targetHomeAIPeekHeight(for: height) - baseSurfaceTop)
+        max(0, height - targetHomeAIPeekHeight(for: height) - logSurfaceTopY)
     }
 
     private func targetHomeAIPeekHeight(for height: CGFloat) -> CGFloat {
@@ -486,31 +475,6 @@ struct HomeView: View {
         return min(resistance * homeAIMaxPullDistance * 1.55, homeAIMaxPullDistance)
     }
 
-}
-
-private struct HomeAISurfaceMaskShape: Shape {
-    let topInset: CGFloat
-    let cornerRadius: CGFloat
-
-    func path(in rect: CGRect) -> Path {
-        let visibleTop = min(max(0, topInset), rect.maxY)
-        let visibleRect = CGRect(
-            x: rect.minX,
-            y: visibleTop,
-            width: rect.width,
-            height: max(0, rect.maxY - visibleTop)
-        )
-
-        guard cornerRadius > 0 else { return Path(visibleRect) }
-        guard !visibleRect.isEmpty else { return Path() }
-
-        let path = UIBezierPath(
-            roundedRect: visibleRect,
-            byRoundingCorners: [.topLeft, .topRight],
-            cornerRadii: CGSize(width: cornerRadius, height: cornerRadius)
-        )
-        return Path(path.cgPath)
-    }
 }
 
 struct AppLockView: View {
