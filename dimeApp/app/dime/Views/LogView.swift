@@ -218,9 +218,6 @@ struct LogView: View {
     var bottomEdge: CGFloat
     var launchSearch: Bool
     var isScrollLocked: Bool = false
-    // Drives the white card's drop shadow as the AI sheet is revealed.
-    // Owned by HomeView; here we just turn it into shadow params.
-    var revealProgress: CGFloat = 0
     var onScrollStateChanged: (Bool, Bool) -> Void = { _, _ in }
     var onScrollRevealGesture: (UIGestureRecognizer.State, CGFloat, CGFloat) -> Void = { _, _, _ in }
 
@@ -276,32 +273,6 @@ struct LogView: View {
 
         } else {
             VStack(spacing: 0) {
-                // Header row — kept for layout (reserves the same space the mask
-                // used to clip away), but visually hidden so the AI home header
-                // shows through and the visual is identical to the masked version.
-                HStack(spacing: 0) {
-                    Button { searchMode = true } label: {
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(.title3, design: .rounded).weight(.regular))
-                            .dynamicTypeSize(...DynamicTypeSize.xxLarge)
-                            .foregroundColor(Color.DarkIcon)
-                            .frame(width: 40, height: 40)
-                            .contentShape(Rectangle())
-                    }
-                    .accessibilityLabel("Search")
-
-                    Spacer()
-
-                    Image(systemName: "bell.badge.fill")
-                        .font(.system(.title3, design: .rounded).weight(.regular))
-                        .dynamicTypeSize(...DynamicTypeSize.xxLarge)
-                        .foregroundColor(Color.DarkIcon)
-                        .frame(width: 40, height: 40)
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, topEdge + 6)
-                .hidden()
-
                 VStack(spacing: 0) {
                     // Filter label row
                     HStack(spacing: 6) {
@@ -418,15 +389,12 @@ struct LogView: View {
                 }
                 .background(homeSurfaceBackground)
                 .clipShape(LogHomeTopSurfaceShape(cornerRadius: 38))
-                // Shadow follows the rounded card outline. Previously rendered
-                // around the TabView's masked shape; pulled inside LogView so it
-                // is part of the same atomic render as the card content.
-                .shadow(
-                    color: Color.black.opacity(0.08 + revealProgress * 0.08),
-                    radius: 12 + revealProgress * 20,
-                    y: 6 + revealProgress * 10
-                )
-                .padding(.top, 10)
+                // The card top sits at `topEdge + 56` from the top of the
+                // screen — the same position the (now-removed) search/bell
+                // row used to push it to. Kept intentionally aligned with
+                // `logSurfaceTopY` in HomeView so the AI mask edge and the
+                // card's rounded clip edge always coincide.
+                .padding(.top, topEdge + 56)
             }
             .background(Color.clear)
             .fullScreenCover(isPresented: $searchMode) {
