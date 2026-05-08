@@ -340,23 +340,22 @@ struct HomeView: View {
                 .onEnded { value in
                     isBarGestureActive = false
 
-                    withAnimation(homeAISettleAnimation) {
-                        if homeAIAssistantViewModel.isPresented {
-                            guard keyboardHeightHelper.keyboardHeight == 0 else {
-                                homeAISheetOffset = openOffset
-                                return
-                            }
+                    if homeAIAssistantViewModel.isPresented {
+                        guard keyboardHeightHelper.keyboardHeight == 0 else {
+                            withAnimation(homeAISettleAnimation) { homeAISheetOffset = openOffset }
+                            return
+                        }
 
-                            let collapseDistance = max(0, openOffset - homeAISheetOffset)
-                            let shouldCollapse = value.predictedEndTranslation.height < -180 || collapseDistance > (openOffset * 0.22)
+                        let collapseDistance = max(0, openOffset - homeAISheetOffset)
+                        let shouldCollapse = value.predictedEndTranslation.height < -180 || collapseDistance > (openOffset * 0.22)
 
-                            if shouldCollapse {
-                                homeAISheetOffset = 0
-                            } else {
-                                homeAISheetOffset = openOffset
-                                return
-                            }
+                        if shouldCollapse {
+                            collapseAI()
                         } else {
+                            withAnimation(homeAISettleAnimation) { homeAISheetOffset = openOffset }
+                        }
+                    } else {
+                        withAnimation(homeAISettleAnimation) {
                             guard homeAISheetOffset > 0 else { return }
                             let predictedRevealTranslation = max(
                                 max(value.predictedEndTranslation.height, value.translation.height),
@@ -483,6 +482,15 @@ struct HomeView: View {
 
     private func targetHomeAIPeekHeight(for height: CGFloat) -> CGFloat {
         max(156, min(184, height * 0.19))
+    }
+
+    private func collapseAI() {
+        withAnimation(homeAISettleAnimation) {
+            homeAISheetOffset = 0
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.27) {
+            homeAIAssistantViewModel.collapse()
+        }
     }
 
     private func rubberBandPullDistance(for translation: CGFloat) -> CGFloat {
