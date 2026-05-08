@@ -49,12 +49,14 @@ private struct LogScrollViewResolver: UIViewRepresentable {
     }
 }
 
-private class LogScrollViewDelegate: NSObject, UIScrollViewDelegate, ObservableObject {
+private class LogScrollViewDelegate: NSObject, UIScrollViewDelegate, UIGestureRecognizerDelegate, ObservableObject {
     weak var original: UIScrollViewDelegate?
     var onScrollStateChanged: ((Bool, Bool) -> Void)?
+    var onRevealPan: ((UIGestureRecognizer.State, CGFloat, CGFloat) -> Void)?
     private var isAtTop = true
     private var isIdle = true
     private weak var attachedScrollView: UIScrollView?
+    private weak var revealPanRecognizer: UIPanGestureRecognizer?
 
     var isLocked: Bool = false {
         didSet { attachedScrollView?.isScrollEnabled = !isLocked }
@@ -66,8 +68,42 @@ private class LogScrollViewDelegate: NSObject, UIScrollViewDelegate, ObservableO
             scrollView.delegate = self
         }
         attachedScrollView = scrollView
+        scrollView.bounces = false
         scrollView.isScrollEnabled = !isLocked
         updateTopState(for: scrollView)
+        attachRevealRecognizer(to: scrollView)
+    }
+
+    private func attachRevealRecognizer(to scrollView: UIScrollView) {
+        if let old = revealPanRecognizer {
+            guard old.view !== scrollView else { return }
+            old.view?.removeGestureRecognizer(old)
+        }
+        let pan = UIPanGestureRecognizer(target: self, action: #selector(handleRevealPan(_:)))
+        pan.delegate = self
+        scrollView.addGestureRecognizer(pan)
+        revealPanRecognizer = pan
+    }
+
+    @objc private func handleRevealPan(_ pan: UIPanGestureRecognizer) {
+        guard let view = pan.view else { return }
+        let translation = pan.translation(in: view).y
+        let velocity = pan.velocity(in: view).y
+        onRevealPan?(pan.state, translation, velocity)
+    }
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+                           shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
+        gestureRecognizer === revealPanRecognizer
+    }
+
+    func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        guard gestureRecognizer === revealPanRecognizer,
+              let pan = gestureRecognizer as? UIPanGestureRecognizer,
+              let view = pan.view else { return true }
+        let v = pan.velocity(in: view)
+        guard abs(v.x) + abs(v.y) > 0 else { return true }
+        return abs(v.y) > abs(v.x)
     }
 
     func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
@@ -184,6 +220,7 @@ struct LogView: View {
     var isScrollLocked: Bool = false
     var onHomeSurfaceTopChanged: (CGFloat) -> Void = { _ in }
     var onScrollStateChanged: (Bool, Bool) -> Void = { _, _ in }
+    var onScrollRevealGesture: (UIGestureRecognizer.State, CGFloat, CGFloat) -> Void = { _, _, _ in }
 
     // drag to open
 //    enum PullToReach {
@@ -323,47 +360,52 @@ struct LogView: View {
                         .padding(.bottom, 8)
                     }
 
-                    if filter == .all {
-                        LogInsightsView(navBarText: $navBarText, showCents: showCents, currencySymbol: currencySymbol)
-                    }
-
                     ScrollView(showsIndicators: false) {
                         VStack(spacing: 0) {
-                            HStack {
-                                Text("Recent activity")
-                                    .font(.system(.body, design: .rounded).weight(.semibold))
-                                    .foregroundColor(Color.PrimaryText)
-                                Spacer()
-                                Button { searchMode = true } label: {
-                                    HStack(spacing: 3) {
-                                        Text("View all")
-                                            .font(.system(.subheadline, design: .rounded))
-                                            .foregroundColor(Color.SubtitleText)
-                                        Image(systemName: "chevron.right")
-                                            .font(.system(size: 11, weight: .semibold))
-                                            .foregroundColor(Color.SubtitleText)
+                            if filter == .all {
+                                LogInsightsView(navBarText: $navBarText, showCents: showCents, currencySymbol: currencySymbol)
+                            }
+
+                            VStack(spacing: 0) {
+                                HStack {
+                                    Text("Recent activity")
+                                        .font(.system(.body, design: .rounded).weight(.semibold))
+                                        .foregroundColor(Color.PrimaryText)
+                                    Spacer()
+                                    Button { searchMode = true } label: {
+                                        HStack(spacing: 3) {
+                                            Text("View all")
+                                                .font(.system(.subheadline, design: .rounded))
+                                                .foregroundColor(Color.SubtitleText)
+                                            Image(systemName: "chevron.right")
+                                                .font(.system(size: 11, weight: .semibold))
+                                                .foregroundColor(Color.SubtitleText)
+                                        }
                                     }
                                 }
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.top, 18)
-                            .padding(.bottom, 12)
+                                .padding(.horizontal, 20)
+                                .padding(.top, 18)
+                                .padding(.bottom, 12)
 
-                            TransactionsList(filter: filter, category: categoryFilter, date: dateFilter, week: weekFilter, month: monthFilter, income: income)
-                                .padding(.horizontal, 4)
-                                .padding(.bottom, 14)
+                                TransactionsList(filter: filter, category: categoryFilter, date: dateFilter, week: weekFilter, month: monthFilter, income: income)
+                                    .padding(.horizontal, 4)
+                                    .padding(.bottom, 14)
+                            }
+                            .background(
+                                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                    .fill(Color.SecondaryBackground)
+                            )
+                            .padding(.horizontal, 16)
+                            .padding(.top, 16)
+                            .padding(.bottom, 70 + bottomEdge)
                         }
-                        .background(
-                            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                .fill(Color.SecondaryBackground)
-                        )
-                        .padding(.horizontal, 16)
-                        .padding(.top, 16)
-                        .padding(.bottom, 70 + bottomEdge)
                         .background(
                             LogScrollViewResolver { scrollView in
                                 scrollDelegate.attach(to: scrollView)
                                 scrollDelegate.onScrollStateChanged = onScrollStateChanged
+                                scrollDelegate.onRevealPan = { state, t, v in
+                                    onScrollRevealGesture(state, t, v)
+                                }
                             }
                         )
                     }

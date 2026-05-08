@@ -126,6 +126,9 @@ struct HomeView: View {
                         onScrollStateChanged: { isAtTop, isIdle in
                             isLogAtTop = isAtTop
                             isLogIdle = isIdle
+                        },
+                        onScrollRevealGesture: { state, t, v in
+                            handleScrollRevealGesture(state: state, translationY: t, velocityY: v)
                         }
                     )
                         .ignoresSafeArea(.all)
@@ -293,87 +296,69 @@ struct HomeView: View {
         AnyGesture(
             DragGesture(minimumDistance: 4, coordinateSpace: .global)
                 .onChanged { value in
-                    guard currentTab == "Log" else { return }
-
-                    if homeAIAssistantViewModel.isPresented {
-                        isBarGestureActive = true
-                        let isKeyboardPresented = keyboardHeightHelper.keyboardHeight > 0
-
-                        if isKeyboardPresented {
-                            if value.translation.height > 8 {
-                                UIApplication.shared.endEditing()
-                            }
-                            return
-                        }
-
-                        if value.translation.height < 0 {
-                            UIApplication.shared.endEditing()
-                            homeAISheetOffset = max(0, openOffset + value.translation.height)
-                        } else if value.translation.height > 0 {
-                            if value.translation.height > 8 {
-                                UIApplication.shared.endEditing()
-                            }
-                            homeAISheetOffset = min(openOffset + (rubberBandPullDistance(for: value.translation.height) * 0.08), openOffset + 18)
-                        }
-                        // zero translation → ignore (prevents spurious final-callback reset)
-                        return
-                    }
-
-                    guard value.translation.height > 0 else {
-                        if homeAISheetOffset > 0 {
-                            isBarGestureActive = true
-                            homeAISheetOffset = max(0, homeAISheetOffset + (value.translation.height * 0.2))
-                        }
-                        return
-                    }
-
-                    guard (isLogAtTop && isLogIdle) || homeAISheetOffset > 0 else {
-                        return
-                    }
-
-                    let revealTranslation = max(0, value.translation.height)
-                    guard revealTranslation > 0 || homeAISheetOffset > 0 else { return }
-
+                    guard currentTab == "Log", homeAIAssistantViewModel.isPresented else { return }
                     isBarGestureActive = true
-                    homeAISheetOffset = min(rubberBandPullDistance(for: revealTranslation), openOffset)
+                    let isKeyboardPresented = keyboardHeightHelper.keyboardHeight > 0
+                    if isKeyboardPresented {
+                        if value.translation.height > 8 { UIApplication.shared.endEditing() }
+                        return
+                    }
+                    if value.translation.height < 0 {
+                        UIApplication.shared.endEditing()
+                        homeAISheetOffset = max(0, openOffset + value.translation.height)
+                    } else if value.translation.height > 0 {
+                        if value.translation.height > 8 { UIApplication.shared.endEditing() }
+                        homeAISheetOffset = min(openOffset + (rubberBandPullDistance(for: value.translation.height) * 0.08), openOffset + 18)
+                    }
                 }
                 .onEnded { value in
                     isBarGestureActive = false
-
-                    if homeAIAssistantViewModel.isPresented {
-                        guard keyboardHeightHelper.keyboardHeight == 0 else {
-                            withAnimation(homeAISettleAnimation) { homeAISheetOffset = openOffset }
-                            return
-                        }
-
-                        let collapseDistance = max(0, openOffset - homeAISheetOffset)
-                        let shouldCollapse = value.predictedEndTranslation.height < -180 || collapseDistance > (openOffset * 0.22)
-
-                        if shouldCollapse {
-                            collapseAI()
-                        } else {
-                            withAnimation(homeAISettleAnimation) { homeAISheetOffset = openOffset }
-                        }
+                    guard homeAIAssistantViewModel.isPresented else { return }
+                    guard keyboardHeightHelper.keyboardHeight == 0 else {
+                        withAnimation(homeAISettleAnimation) { homeAISheetOffset = openOffset }
+                        return
+                    }
+                    let collapseDistance = max(0, openOffset - homeAISheetOffset)
+                    let shouldCollapse = value.predictedEndTranslation.height < -180 || collapseDistance > (openOffset * 0.22)
+                    if shouldCollapse {
+                        collapseAI()
                     } else {
-                        withAnimation(homeAISettleAnimation) {
-                            guard homeAISheetOffset > 0 else { return }
-                            let predictedRevealTranslation = max(
-                                max(value.predictedEndTranslation.height, value.translation.height),
-                                0
-                            )
-                            let predictedOffset = min(rubberBandPullDistance(for: predictedRevealTranslation), openOffset)
-                            let shouldExpand = predictedOffset > homeAIPullThreshold
-
-                            if shouldExpand {
-                                homeAISheetOffset = openOffset
-                                homeAIAssistantViewModel.expand()
-                            } else {
-                                homeAISheetOffset = 0
-                            }
-                        }
+                        withAnimation(homeAISettleAnimation) { homeAISheetOffset = openOffset }
                     }
                 }
         )
+    }
+
+    private func handleScrollRevealGesture(state: UIGestureRecognizer.State, translationY: CGFloat, velocityY: CGFloat) {
+        guard currentTab == "Log", !homeAIAssistantViewModel.isPresented else { return }
+        let openOffset = targetHomeAIOpenOffset(for: UIScreen.main.bounds.height)
+
+        switch state {
+        case .changed:
+            if translationY > 0 {
+                guard (isLogAtTop && isLogIdle) || homeAISheetOffset > 0 else { return }
+                isBarGestureActive = true
+                homeAISheetOffset = min(rubberBandPullDistance(for: translationY), openOffset)
+            } else if translationY < 0, homeAISheetOffset > 0 {
+                isBarGestureActive = true
+                homeAISheetOffset = max(0, homeAISheetOffset + translationY * 0.2)
+            }
+        case .ended, .cancelled:
+            isBarGestureActive = false
+            guard homeAISheetOffset > 0 else { return }
+            let predicted = max(max(translationY + velocityY * 0.2, translationY), 0)
+            let predictedOffset = min(rubberBandPullDistance(for: predicted), openOffset)
+            withAnimation(homeAISettleAnimation) {
+                if predictedOffset > homeAIPullThreshold {
+                    homeAISheetOffset = openOffset
+                    homeAIAssistantViewModel.expand()
+                } else {
+                    homeAISheetOffset = 0
+                }
+            }
+        default:
+            break
+        }
     }
 
     private func homeAIRevealProgress(openOffset: CGFloat) -> CGFloat {
