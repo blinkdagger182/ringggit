@@ -69,6 +69,11 @@ private class LogScrollViewDelegate: NSObject, UIScrollViewDelegate, UIGestureRe
         }
         attachedScrollView = scrollView
         scrollView.bounces = false
+        // UIScrollView defaults to `clipsToBounds == false`. Without this, nested
+        // views (e.g. the navy Income card in LogInsightsView) can paint outside
+        // the scroll view's frame during layer transforms — visible as a rounded
+        // dark band above the home peek when AI reveal offsets LogView.
+        scrollView.clipsToBounds = true
         scrollView.isScrollEnabled = !isLocked
         updateTopState(for: scrollView)
         attachRevealRecognizer(to: scrollView)
@@ -274,6 +279,15 @@ struct LogView: View {
         } else {
             VStack(spacing: 0) {
                 VStack(spacing: 0) {
+                    // Reserve the same top inset as `logSurfaceTopY` in HomeView, but
+                    // keep it *inside* `.clipShape` so nothing draws in an unclipped
+                    // transparent band above the rounded surface (that band was
+                    // letting the TabView backdrop / shadows read as a separate
+                    // navy “container” above the peek during AI reveal).
+                    Color.clear
+                        .frame(height: topEdge + 56)
+                        .frame(maxWidth: .infinity)
+
                     // Filter label row
                     HStack(spacing: 6) {
                         Button { showFilter = true } label: {
@@ -386,15 +400,13 @@ struct LogView: View {
                         )
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    // Extra guard: UIKit scroll layers can escape SwiftUI clipping during
+                    // combined transforms (AI sheet offset + rounded clip).
+                    .clipped()
                 }
                 .background(homeSurfaceBackground)
+                .compositingGroup()
                 .clipShape(LogHomeTopSurfaceShape(cornerRadius: 38))
-                // The card top sits at `topEdge + 56` from the top of the
-                // screen — the same position the (now-removed) search/bell
-                // row used to push it to. Kept intentionally aligned with
-                // `logSurfaceTopY` in HomeView so the AI mask edge and the
-                // card's rounded clip edge always coincide.
-                .padding(.top, topEdge + 56)
             }
             .background(Color.clear)
             .fullScreenCover(isPresented: $searchMode) {

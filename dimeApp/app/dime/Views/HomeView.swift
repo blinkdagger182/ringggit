@@ -200,10 +200,16 @@ struct HomeView: View {
                     }
                 )
                 .simultaneousGesture(homeAIPullGesture(openOffset: homeAIOpenOffset))
+                // Masked TabView + `.shadow` draws an omnidirectional blur around the
+                // mask silhouette — reads as a dark navy rounded band hugging the
+                // home peek during AI reveal. Skip shadow whenever the sheet is off
+                // its resting position; restore it when fully collapsed on Log.
                 .shadow(
-                    color: Color.black.opacity(currentTab == "Log" ? (0.08 + homeAIProgress * 0.08) : 0),
-                    radius: currentTab == "Log" ? (12 + homeAIProgress * 20) : 0,
-                    y: currentTab == "Log" ? (6 + homeAIProgress * 10) : 0
+                    color: Color.black.opacity(
+                        currentTab == "Log" && homeAISheetOffset == 0 ? (0.08 + homeAIProgress * 0.08) : 0
+                    ),
+                    radius: currentTab == "Log" && homeAISheetOffset == 0 ? (12 + homeAIProgress * 20) : 0,
+                    y: currentTab == "Log" && homeAISheetOffset == 0 ? (6 + homeAIProgress * 10) : 0
                 )
                 .zIndex(1)
 
