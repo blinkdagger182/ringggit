@@ -48,11 +48,11 @@ struct HomeView: View {
 
     // Top of the LogView's white surface card in LogView-local coordinates.
     // Deterministic from layout: search/bell row top padding (6) + row height (40)
-    // + white card top padding (10) = topEdge + 56. Used only for sizing the
+    // + white card top padding (4) = topEdge + 50. Used only for sizing the
     // peek/open offset of the AI sheet; layout/clip is owned by LogView itself.
     private static let logHeaderRowHeight: CGFloat = 40
     private static let logHeaderTopPadding: CGFloat = 6
-    private static let logSurfaceTopPadding: CGFloat = 10
+    private static let logSurfaceTopPadding: CGFloat = 4
     private var logSurfaceTopY: CGFloat {
         topEdge + Self.logHeaderTopPadding + Self.logHeaderRowHeight + Self.logSurfaceTopPadding
     }

@@ -137,6 +137,7 @@ private class LogScrollViewDelegate: NSObject, UIScrollViewDelegate, UIGestureRe
         // the scroll view's frame during layer transforms — visible as a rounded
         // dark band above the home peek when AI reveal offsets LogView.
         scrollView.clipsToBounds = true
+        scrollView.backgroundColor = .clear
         scrollView.isScrollEnabled = !isLocked
         normalizeScrollViewInsets(scrollView)
         syncPanGestureEnabled()
@@ -229,6 +230,9 @@ private class LogScrollViewDelegate: NSObject, UIScrollViewDelegate, UIGestureRe
 
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
         original?.scrollViewDidScroll?(scrollView)
+        if scrollView.contentOffset.y < 0 {
+            scrollView.contentOffset = CGPoint(x: scrollView.contentOffset.x, y: 0)
+        }
         if !scrollView.isScrollEnabled,
            scrollView.contentInset != .zero || scrollView.verticalScrollIndicatorInsets != .zero {
             normalizeScrollViewInsets(scrollView)
@@ -393,7 +397,7 @@ struct LogView: View {
                     // letting the TabView backdrop / shadows read as a separate
                     // navy “container” above the peek during AI reveal).
                     Color.clear
-                        .frame(height: topEdge + 56)
+                        .frame(height: topEdge + 50)
                         .frame(maxWidth: .infinity)
 
                     // Filter label row
@@ -434,7 +438,7 @@ struct LogView: View {
                         Spacer()
                     }
                     .padding(.horizontal, 20)
-                    .padding(.top, 16)
+                    .padding(.top, 10)
                     .padding(.bottom, 2)
 
                     if filter != .all && filter != .recurring && filter != .upcoming {
