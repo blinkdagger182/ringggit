@@ -42,7 +42,6 @@ struct HomeView: View {
     @State private var homeAISheetOffset: CGFloat = 0
     @State private var isBarGestureActive: Bool = false
     @State private var isLogAtTop: Bool = true
-    @State private var isLogIdle: Bool = true
 
     var topEdge: CGFloat
     var bottomEdge: CGFloat
@@ -144,9 +143,8 @@ struct HomeView: View {
                             bottomEdge: bottomEdge,
                             launchSearch: launchSearch,
                             isScrollLocked: homeAISheetOffset > 0 || homeAIAssistantViewModel.isPresented,
-                            onScrollStateChanged: { isAtTop, isIdle in
+                            onScrollStateChanged: { isAtTop, _ in
                                 isLogAtTop = isAtTop
-                                isLogIdle = isIdle
                             },
                             onScrollRevealGesture: { state, t, v in
                                 handleScrollRevealGesture(state: state, translationY: t, velocityY: v)
@@ -199,7 +197,10 @@ struct HomeView: View {
                         }
                     }
                 )
-                .simultaneousGesture(homeAIPullGesture(openOffset: homeAIOpenOffset))
+                .modifier(HomeAIConditionalPullGestureModifier(
+                    active: homeAIAssistantViewModel.isPresented,
+                    gesture: homeAIPullGesture(openOffset: homeAIOpenOffset)
+                ))
                 // Masked TabView + `.shadow` draws an omnidirectional blur around the
                 // mask silhouette — reads as a dark navy rounded band hugging the
                 // home peek during AI reveal. Skip shadow whenever the sheet is off
@@ -377,13 +378,21 @@ struct HomeView: View {
 
         switch state {
         case .changed:
-            if translationY > 0 {
-                guard (isLogAtTop && isLogIdle) || homeAISheetOffset > 0 else { return }
+            let eps: CGFloat = 2.5
+            if translationY > eps {
+                // Do not require `isLogIdle`: UIScrollView sets idle false as soon as its pan
+                // recognizes, even at rest with `bounces = false`, which fights the reveal drag
+                // and produces one-frame “stutter”/jitter.
+                guard isLogAtTop || homeAISheetOffset > 0 else { return }
                 isBarGestureActive = true
-                homeAISheetOffset = min(rubberBandPullDistance(for: translationY), openOffset)
-            } else if translationY < 0, homeAISheetOffset > 0 {
+                withAnimation(nil) {
+                    homeAISheetOffset = min(rubberBandPullDistance(for: translationY), openOffset)
+                }
+            } else if translationY < -eps, homeAISheetOffset > 0 {
                 isBarGestureActive = true
-                homeAISheetOffset = max(0, homeAISheetOffset + translationY * 0.2)
+                withAnimation(nil) {
+                    homeAISheetOffset = max(0, homeAISheetOffset + translationY * 0.2)
+                }
             }
         case .ended, .cancelled:
             isBarGestureActive = false
@@ -523,6 +532,20 @@ struct HomeView: View {
         return min(resistance * homeAIMaxPullDistance * 1.55, homeAIMaxPullDistance)
     }
 
+}
+
+private struct HomeAIConditionalPullGestureModifier<G: Gesture>: ViewModifier {
+    let active: Bool
+    let gesture: G
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if active {
+            content.simultaneousGesture(gesture)
+        } else {
+            content
+        }
+    }
 }
 
 private struct HomeAISurfaceMaskShape: Shape {
