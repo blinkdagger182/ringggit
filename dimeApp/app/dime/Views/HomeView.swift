@@ -32,30 +32,23 @@ struct HomeView: View {
     @StateObject var toastPresenter = OverallToastPresenter()
     @StateObject var transactionManager = OverallTransactionManager()
     @StateObject private var homeAIAssistantViewModel = HomeAIAssistantViewModel()
-    @StateObject private var keyboardHeightHelper = KeyboardHeightHelper()
     @Environment(\.managedObjectContext) var moc
     @EnvironmentObject var dataController: DataController
 
     @Namespace private var homeAINamespace
 
     @State var currentTab = "Log"
-    @State private var homeAISheetOffset: CGFloat = 0
-    @State private var isBarGestureActive: Bool = false
+
+    // ryt-clone drag model
+    @State private var settledProgress: CGFloat = 0
+    @GestureState private var dragY: CGFloat = 0
+    @GestureState private var collapseGestureDragY: CGFloat = 0
+    @State private var containerHeight: CGFloat = 852
     @State private var isLogAtTop: Bool = true
+    @State private var openAttachmentOnAIExpand: Bool = false
 
     var topEdge: CGFloat
     var bottomEdge: CGFloat
-
-    // Top of the LogView's white surface card in LogView-local coordinates.
-    // Deterministic from layout: search/bell row top padding (6) + row height (40)
-    // + white card top padding (4) = topEdge + 50. Used only for sizing the
-    // peek/open offset of the AI sheet; layout/clip is owned by LogView itself.
-    private static let logHeaderRowHeight: CGFloat = 40
-    private static let logHeaderTopPadding: CGFloat = 6
-    private static let logSurfaceTopPadding: CGFloat = 4
-    private var logSurfaceTopY: CGFloat {
-        topEdge + Self.logHeaderTopPadding + Self.logHeaderRowHeight + Self.logSurfaceTopPadding
-    }
 
     @State var fromURL1: Bool = false
     @State var fromURL2: Bool = false
@@ -71,162 +64,90 @@ struct HomeView: View {
 
     @State var showPopup = false
 
-    private let homeAIPullThreshold: CGFloat = 132
-    private let homeAIMaxPullDistance: CGFloat = 360
-
     init(topEdge: CGFloat, bottomEdge: CGFloat) {
         UITabBar.appearance().isHidden = true
         self.topEdge = topEdge
         self.bottomEdge = bottomEdge
     }
 
+    // MARK: - Layout
+
+    private var collapsedTopInset: CGFloat { topEdge + 68 }
+
+    private func peekHeight(for h: CGFloat) -> CGFloat {
+        max(156, min(184, h * 0.19))
+    }
+
+    private var revealDistance: CGFloat {
+        max(containerHeight - collapsedTopInset - peekHeight(for: containerHeight), 1)
+    }
+
+    private var liveProgress: CGFloat {
+        min(max(settledProgress + (dragY + collapseGestureDragY) / revealDistance, 0), 1)
+    }
+
+    private var settleAnimation: Animation {
+        .interactiveSpring(response: 0.42, dampingFraction: 0.9, blendDuration: 0.12)
+    }
+
+    // MARK: - Body
+
     var body: some View {
         GeometryReader { proxy in
-            let homeAIPeekHeight = targetHomeAIPeekHeight(for: proxy.size.height)
-            let homeAIOpenOffset = targetHomeAIOpenOffset(for: proxy.size.height)
-            let homeAIProgress = homeAIRevealProgress(openOffset: homeAIOpenOffset)
+            let h = proxy.size.height
+            let peek = peekHeight(for: h)
+            let rd = max(h - collapsedTopInset - peek, 1)
+            let sheetY = collapsedTopInset + liveProgress * rd
 
-            ZStack(alignment: .bottom) {
+            ZStack(alignment: .top) {
+                Color.black.ignoresSafeArea()
+
                 if currentTab == "Log" {
-                    homeAISurfaceBackdrop
+                    aiBackdrop
                         .ignoresSafeArea()
-                        .zIndex(-1)
-                }
 
-                if currentTab == "Log" {
                     HomeAIAssistantOverlay(
                         viewModel: homeAIAssistantViewModel,
                         namespace: homeAINamespace,
                         topInset: topEdge,
                         bottomInset: bottomEdge,
-                        revealProgress: homeAIProgress,
+                        revealProgress: liveProgress,
                         isExpanded: homeAIAssistantViewModel.isPresented,
-                        homePeekHeight: homeAIPeekHeight,
+                        homePeekHeight: peek,
+                        openAttachmentOnExpand: $openAttachmentOnAIExpand,
                         onCollapse: { collapseAI() },
-                        collapseGesture: homeAIPullGesture(openOffset: homeAIOpenOffset)
+                        collapseGesture: makeCollapseGesture(rd: rd)
                     )
                     .ignoresSafeArea()
                     .allowsHitTesting(homeAIAssistantViewModel.isPresented)
-                    .zIndex(0)
                 }
 
-                if currentTab == "Log", !homeAIAssistantViewModel.isPresented {
-                    homeAIHomeHeader
-                        .padding(.horizontal, 20)
-                        .padding(.top, max(topEdge, proxy.safeAreaInsets.top) + 10)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                        .opacity(max(CGFloat(0), CGFloat(1) - (homeAIProgress * CGFloat(1.35))))
-                        .allowsHitTesting(false)
-                        .zIndex(0.4)
+                // Home sheet — slides down to reveal AI behind it
+                homeSheet(peekHeight: peek)
+                    .clipShape(RoundedRectangle(cornerRadius: 38, style: .continuous))
+                    .shadow(color: .black.opacity(0.12), radius: 18, x: 0, y: -5)
+                    .ignoresSafeArea(edges: .bottom)
+                    .offset(y: sheetY)
+                    .animation(settleAnimation, value: settledProgress)
+                    .simultaneousGesture(makeDragGesture(rd: rd))
+
+                // Floating collapsed header — fades out as AI reveals
+                if currentTab == "Log" {
+                    collapsedHeader(onReveal: {
+                        settledProgress = 1
+                        homeAIAssistantViewModel.expand()
+                    })
+                    .padding(.top, max(topEdge, proxy.safeAreaInsets.top) + 10)
+                    .opacity(max(0, 1.0 - liveProgress * 1.35))
+                    .allowsHitTesting(liveProgress < 0.05)
                 }
 
-                TabView(selection: $currentTab) {
-                    ZStack {
-                        // A second copy of the AI backdrop, placed *inside* the Log
-                        // tab and *outside* LogView's `.offset(...)`. This is the
-                        // load-bearing piece of the fix: any transparent area
-                        // inside LogView (i.e. the empty space above the rounded
-                        // card while the user is mid-swipe) now reveals this
-                        // backdrop instead of the UIHostingController's opaque
-                        // `systemBackground` (white). Even if the TabView's mask
-                        // path takes a frame longer to commit than the SwiftUI
-                        // transform on LogView, the user never sees white peek
-                        // through — they see the same gradient as the outer
-                        // backdrop, so the surface looks continuous from the very
-                        // first frame of the gesture.
-                        homeAISurfaceBackdrop
-                            .ignoresSafeArea()
-                            .allowsHitTesting(false)
-
-                        LogView(
-                            topEdge: topEdge,
-                            bottomEdge: bottomEdge,
-                            launchSearch: launchSearch,
-                            isScrollLocked: homeAISheetOffset > 0 || homeAIAssistantViewModel.isPresented,
-                            onScrollStateChanged: { isAtTop, _ in
-                                isLogAtTop = isAtTop
-                            },
-                            onScrollRevealGesture: { state, t, v in
-                                handleScrollRevealGesture(state: state, translationY: t, velocityY: v)
-                            }
-                        )
-                            .ignoresSafeArea(.all)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            // The translation is applied on LogView (a SwiftUI host) instead of
-                            // the TabView (UITabBarController-backed) so the rounded card, its
-                            // background and the inner UIScrollView translate as a single atomic
-                            // CALayer transform. Combining `.mask` + `.offset` on the TabView
-                            // caused a one-frame race where the chrome moved before the live
-                            // scroll content — the "card moves but content lags" jitter.
-                            .offset(y: currentTab == "Log" ? homeAISheetOffset : 0)
-                    }
-                    .tag("Log")
-
-                    InsightsView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .tag("Insights")
-
-                    BudgetView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .tag("Budget")
-
-                    SettingsView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .tag("Settings")
-                }
-                .allowsHitTesting(showPopup ? false : !homeAIAssistantViewModel.isPresented)
-                .environmentObject(toastPresenter)
-                .environmentObject(transactionManager)
-                // The mask gives the rounded clip + drop shadow their crisp edge,
-                // and clips the UITabBarController hosting layer above the card so
-                // the AI backdrop / home header shine through. `topInset` is driven
-                // by `homeAISheetOffset` so the mask edge slides down with LogView's
-                // offset translation. This is no longer load-bearing for transparency
-                // — even if the mask path commits a frame later than the SwiftUI
-                // transform, the in-tab backdrop above keeps the surface looking
-                // continuous instead of flashing the hosting controller's white.
-                .mask(
-                    Group {
-                        if currentTab == "Log" {
-                            HomeAISurfaceMaskShape(
-                                topInset: max(0, logSurfaceTopY + homeAISheetOffset),
-                                cornerRadius: 38
-                            )
-                        } else {
-                            Rectangle()
-                        }
-                    }
-                )
-                .modifier(HomeAIConditionalPullGestureModifier(
-                    active: homeAIAssistantViewModel.isPresented,
-                    gesture: homeAIPullGesture(openOffset: homeAIOpenOffset)
-                ))
-                // Masked TabView + `.shadow` draws an omnidirectional blur around the
-                // mask silhouette — reads as a dark navy rounded band hugging the
-                // home peek during AI reveal. Skip shadow whenever the sheet is off
-                // its resting position; restore it when fully collapsed on Log.
-                .shadow(
-                    color: Color.black.opacity(
-                        currentTab == "Log" && homeAISheetOffset == 0 ? (0.08 + homeAIProgress * 0.08) : 0
-                    ),
-                    radius: currentTab == "Log" && homeAISheetOffset == 0 ? (12 + homeAIProgress * 20) : 0,
-                    y: currentTab == "Log" && homeAISheetOffset == 0 ? (6 + homeAIProgress * 10) : 0
-                )
-                .zIndex(1)
-
-                CustomTabBar(currentTab: $currentTab, topEdge: topEdge, bottomEdge: bottomEdge, counter: $counter, launchAdd: launchAdd)
-                    .offset(y: (currentTab == "Log" ? homeAISheetOffset : 0) + (tabBarManager.hideTab ? (70 + bottomEdge) : 0))
-                    .allowsHitTesting(!homeAIAssistantViewModel.isPresented)
-                    .zIndex(1.05)
-
+                // Popups above everything
                 if showPopup {
-                    Rectangle()
-                        .fill(Color.clear)
+                    Color.clear
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .contentShape(Rectangle())
-                        .onTapGesture {
-                            transactionManager.showPopup = false
-                        }
+                        .onTapGesture { transactionManager.showPopup = false }
                 }
 
                 DeleteTransactionAlert()
@@ -237,18 +158,15 @@ struct HomeView: View {
                     AppLockView()
                         .ignoresSafeArea(.all)
                         .onOpenURL { url in
-                            if url.host == "newExpense" {
-                                fromURL1 = true
-                            } else if url.host == "search" {
-                                fromURL2 = true
-                            } else if url.host == "insights" {
-                                fromURL3 = true
-                            } else if url.host == "budget" {
-                                fromURL4 = true
-                            }
+                            if url.host == "newExpense" { fromURL1 = true }
+                            else if url.host == "search" { fromURL2 = true }
+                            else if url.host == "insights" { fromURL3 = true }
+                            else if url.host == "budget" { fromURL4 = true }
                         }
                 }
             }
+            .onAppear { containerHeight = h }
+            .onChange(of: h) { containerHeight = $0 }
         }
         .toast(isPresenting: $toastPresenter.showToast, duration: 4, tapToDismiss: true, offsetY: 12, alert: {
             AlertToast(displayMode: .hud, type: .systemImage("checkmark.circle.fill", Color.IncomeGreen), title: "Image Saved", subTitle: "Check it out in Photos")
@@ -256,29 +174,18 @@ struct HomeView: View {
         .toast(isPresenting: $transactionManager.showToast, duration: 4, tapToDismiss: true, offsetY: 12, alert: {
             AlertToast(displayMode: .hud, type: .systemImage("arrow.uturn.backward.circle.fill", Color.AlertRed), title: "Log Deleted", subTitle: "Tap to Undo")
         }, onTap: {
-            withAnimation(.easeInOut(duration: 0.5)) {
-                moc.rollback()
-            }
+            withAnimation(.easeInOut(duration: 0.5)) { moc.rollback() }
             transactionManager.toDelete = nil
         }, completion: {
             dataController.save()
             transactionManager.toDelete = nil
         })
         .onChange(of: transactionManager.showPopup) { newValue in
-            withAnimation {
-                showPopup = newValue
-            }
+            withAnimation { showPopup = newValue }
         }
-        .onChange(of: currentTab) { newValue in
-            withAnimation(homeAISettleAnimation) {
-                homeAISheetOffset = 0
-            }
-
-            if newValue != "Log" {
-                withAnimation(homeAISettleAnimation) {
-                    homeAIAssistantViewModel.collapse()
-                }
-            }
+        .onChange(of: currentTab) { _ in
+            settledProgress = 0
+            homeAIAssistantViewModel.collapse()
         }
         .fullScreenCover(item: $transactionManager.toEdit, onDismiss: {
             transactionManager.toEdit = nil
@@ -291,285 +198,226 @@ struct HomeView: View {
             homeAIAssistantViewModel.reloadWorkspaces()
 
             if appLockVM.isAppLockEnabled && fromURL1 {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    launchAdd.toggle()
-                }
-
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { launchAdd.toggle() }
                 fromURL1 = false
             }
-
             if appLockVM.isAppLockEnabled && fromURL2 {
                 currentTab = "Log"
-
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    launchSearch.toggle()
-                }
-
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { launchSearch.toggle() }
                 fromURL2 = false
             }
-
-            if appLockVM.isAppLockEnabled && fromURL3 {
-                currentTab = "Insights"
-            }
-
-            if appLockVM.isAppLockEnabled && fromURL4 {
-                currentTab = "Budget"
-            }
+            if appLockVM.isAppLockEnabled && fromURL3 { currentTab = "Insights" }
+            if appLockVM.isAppLockEnabled && fromURL4 { currentTab = "Budget" }
         }
         .onOpenURL { url in
-            if url.host == "search" {
-                currentTab = "Log"
-            } else if url.host == "insights" {
-                currentTab = "Insights"
-            } else if url.host == "budget" {
-                currentTab = "Budget"
-            } else if url.host == "aioverlay" {
+            if url.host == "search" { currentTab = "Log" }
+            else if url.host == "insights" { currentTab = "Insights" }
+            else if url.host == "budget" { currentTab = "Budget" }
+            else if url.host == "aioverlay" {
                 currentTab = "Log"
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    withAnimation(homeAISettleAnimation) {
-                        homeAIAssistantViewModel.expand()
-                        homeAISheetOffset = targetHomeAIOpenOffset(for: UIScreen.main.bounds.height)
-                    }
+                    settledProgress = 1
+                    homeAIAssistantViewModel.expand()
                 }
             }
         }
     }
 
-    private func homeAIPullGesture(openOffset: CGFloat) -> AnyGesture<DragGesture.Value> {
-        AnyGesture(
-            DragGesture(minimumDistance: 4, coordinateSpace: .global)
-                .onChanged { value in
-                    guard currentTab == "Log", homeAIAssistantViewModel.isPresented else { return }
-                    isBarGestureActive = true
-                    let isKeyboardPresented = keyboardHeightHelper.keyboardHeight > 0
-                    if isKeyboardPresented {
-                        if value.translation.height > 8 { UIApplication.shared.endEditing() }
-                        return
+    // MARK: - Home sheet
+
+    private func homeSheet(peekHeight: CGFloat) -> some View {
+        ZStack(alignment: .bottom) {
+            TabView(selection: $currentTab) {
+                LogView(
+                    topEdge: 0,
+                    bottomEdge: bottomEdge,
+                    launchSearch: launchSearch,
+                    isScrollLocked: liveProgress > 0.01,
+                    onScrollStateChanged: { isAtTop, _ in isLogAtTop = isAtTop },
+                    onAddTransaction: { launchAdd.toggle() },
+                    onScanReceipt: {
+                        openAttachmentOnAIExpand = true
+                        settledProgress = 1
+                        homeAIAssistantViewModel.expand()
                     }
-                    if value.translation.height < 0 {
-                        UIApplication.shared.endEditing()
-                        homeAISheetOffset = max(0, openOffset + value.translation.height)
-                    } else if value.translation.height > 0 {
-                        if value.translation.height > 8 { UIApplication.shared.endEditing() }
-                        homeAISheetOffset = min(openOffset + (rubberBandPullDistance(for: value.translation.height) * 0.08), openOffset + 18)
+                )
+                .ignoresSafeArea(.all)
+                .tag("Log")
+
+                InsightsView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .tag("Insights")
+
+                BudgetView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .tag("Budget")
+
+                SettingsView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .tag("Settings")
+            }
+            .allowsHitTesting(showPopup ? false : !homeAIAssistantViewModel.isPresented)
+            .environmentObject(toastPresenter)
+            .environmentObject(transactionManager)
+
+            CustomTabBar(
+                currentTab: $currentTab,
+                topEdge: topEdge,
+                bottomEdge: bottomEdge,
+                counter: $counter,
+                launchAdd: launchAdd
+            )
+            .opacity(homeAIAssistantViewModel.isPresented ? 0 : 1)
+            .allowsHitTesting(!homeAIAssistantViewModel.isPresented)
+        }
+        .background(Color.PrimaryBackground)
+    }
+
+    // MARK: - Gestures
+
+    private func makeDragGesture(rd: CGFloat) -> some Gesture {
+        DragGesture(minimumDistance: 4, coordinateSpace: .global)
+            .updating($dragY) { value, state, _ in
+                guard currentTab == "Log" else { return }
+                let t = value.translation.height
+                if settledProgress > 0 {
+                    state = t
+                } else {
+                    guard isLogAtTop && t > 4 else { return }
+                    state = t
+                }
+            }
+            .onEnded { value in
+                guard currentTab == "Log" else { return }
+                let finalT = value.translation.height
+                let predictedT = value.predictedEndTranslation.height
+                let currentP = min(max(settledProgress + finalT / rd, 0), 1)
+                let predictedP = min(max(settledProgress + predictedT / rd, 0), 1)
+                let vel = predictedT - finalT
+                let shouldReveal = predictedP > 0.34 || currentP > 0.5 || vel > 700
+                if shouldReveal {
+                    settledProgress = 1
+                    homeAIAssistantViewModel.expand()
+                } else {
+                    settledProgress = 0
+                    if homeAIAssistantViewModel.isPresented {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.27) {
+                            homeAIAssistantViewModel.collapse()
+                        }
                     }
                 }
+            }
+    }
+
+    private func makeCollapseGesture(rd: CGFloat) -> AnyGesture<DragGesture.Value> {
+        AnyGesture(
+            DragGesture(minimumDistance: 4, coordinateSpace: .global)
+                .updating($collapseGestureDragY) { value, state, _ in
+                    state = value.translation.height
+                }
                 .onEnded { value in
-                    isBarGestureActive = false
-                    guard homeAIAssistantViewModel.isPresented else { return }
-                    guard keyboardHeightHelper.keyboardHeight == 0 else {
-                        withAnimation(homeAISettleAnimation) { homeAISheetOffset = openOffset }
-                        return
-                    }
-                    let collapseDistance = max(0, openOffset - homeAISheetOffset)
-                    let shouldCollapse = value.predictedEndTranslation.height < -180 || collapseDistance > (openOffset * 0.22)
-                    if shouldCollapse {
-                        collapseAI()
+                    let finalT = value.translation.height
+                    let predictedT = value.predictedEndTranslation.height
+                    let currentP = min(max(settledProgress + finalT / rd, 0), 1)
+                    let predictedP = min(max(settledProgress + predictedT / rd, 0), 1)
+                    let vel = predictedT - finalT
+                    let shouldReveal = predictedP > 0.34 || currentP > 0.5 || vel > 700
+                    if shouldReveal {
+                        settledProgress = 1
                     } else {
-                        withAnimation(homeAISettleAnimation) { homeAISheetOffset = openOffset }
+                        settledProgress = 0
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.27) {
+                            homeAIAssistantViewModel.collapse()
+                        }
                     }
                 }
         )
     }
 
-    private func handleScrollRevealGesture(state: UIGestureRecognizer.State, translationY: CGFloat, velocityY: CGFloat) {
-        guard currentTab == "Log", !homeAIAssistantViewModel.isPresented else { return }
-        let openOffset = targetHomeAIOpenOffset(for: UIScreen.main.bounds.height)
-
-        switch state {
-        case .changed:
-            let eps: CGFloat = 2.5
-            if translationY > eps {
-                // Do not require `isLogIdle`: UIScrollView sets idle false as soon as its pan
-                // recognizes, even at rest with `bounces = false`, which fights the reveal drag
-                // and produces one-frame “stutter”/jitter.
-                guard isLogAtTop || homeAISheetOffset > 0 else { return }
-                isBarGestureActive = true
-                withAnimation(nil) {
-                    homeAISheetOffset = min(rubberBandPullDistance(for: translationY), openOffset)
-                }
-            } else if translationY < -eps, homeAISheetOffset > 0 {
-                isBarGestureActive = true
-                withAnimation(nil) {
-                    homeAISheetOffset = max(0, homeAISheetOffset + translationY * 0.2)
-                }
-            }
-        case .ended, .cancelled:
-            isBarGestureActive = false
-            guard homeAISheetOffset > 0 else { return }
-            let predicted = max(max(translationY + velocityY * 0.2, translationY), 0)
-            let predictedOffset = min(rubberBandPullDistance(for: predicted), openOffset)
-            withAnimation(homeAISettleAnimation) {
-                if predictedOffset > homeAIPullThreshold {
-                    homeAISheetOffset = openOffset
-                    homeAIAssistantViewModel.expand()
-                } else {
-                    homeAISheetOffset = 0
-                }
-            }
-        default:
-            break
-        }
-    }
-
-    private func homeAIRevealProgress(openOffset: CGFloat) -> CGFloat {
-        guard openOffset > 0 else { return 0 }
-        return min(max(homeAISheetOffset / openOffset, 0), 1)
-    }
-
-    private var homeAISettleAnimation: Animation {
-        .easeOut(duration: 0.24)
-    }
-
-    private var homeAISurfaceBackdrop: some View {
-        ZStack {
-            LinearGradient(
-                colors: [
-                    Color(hex: "0B1023"),
-                    Color(hex: "11234D"),
-                    Color(hex: "3F2368")
-                ],
-                startPoint: .bottom,
-                endPoint: .topTrailing
-            )
-
-            RadialGradient(
-                colors: [
-                    Color(hex: "18B7C7").opacity(0.56),
-                    Color.clear
-                ],
-                center: .topLeading,
-                startRadius: 20,
-                endRadius: 360
-            )
-
-            RadialGradient(
-                colors: [
-                    Color(hex: "B24CFF").opacity(0.34),
-                    Color.clear
-                ],
-                center: .topTrailing,
-                startRadius: 20,
-                endRadius: 340
-            )
-        }
-    }
-
-    private var homeAIHomeHeader: some View {
-        HStack(alignment: .center) {
-            ZStack {
-                Circle()
-                    .fill(Color.white.opacity(0.18))
-                    .frame(width: 46, height: 46)
-
-                Text("ME")
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
-            }
-
-            Spacer()
-
-            HStack(spacing: 8) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 16, weight: .semibold))
-
-                Text("Saku AI")
-                    .font(.system(size: 18, weight: .semibold, design: .rounded))
-
-                Text("beta")
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .overlay(
-                        Capsule(style: .continuous)
-                            .stroke(Color.white.opacity(0.45), lineWidth: 1)
-                    )
-            }
-            .foregroundColor(.white.opacity(0.94))
-
-            Spacer()
-
-            ZStack(alignment: .topTrailing) {
-                Circle()
-                    .fill(Color.white.opacity(0.16))
-                    .frame(width: 46, height: 46)
-
-                Image(systemName: "bell")
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundColor(.white)
-                    .frame(width: 46, height: 46)
-
-                Circle()
-                    .fill(Color.AlertRed)
-                    .frame(width: 10, height: 10)
-                    .offset(x: -4, y: 3)
-            }
-        }
-    }
-
-    private func targetHomeAIOpenOffset(for height: CGFloat) -> CGFloat {
-        max(0, height - targetHomeAIPeekHeight(for: height) - logSurfaceTopY)
-    }
-
-    private func targetHomeAIPeekHeight(for height: CGFloat) -> CGFloat {
-        max(156, min(184, height * 0.19))
-    }
+    // MARK: - Actions
 
     private func collapseAI() {
-        withAnimation(homeAISettleAnimation) {
-            homeAISheetOffset = 0
-        }
+        settledProgress = 0
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.27) {
             homeAIAssistantViewModel.collapse()
         }
     }
 
-    private func rubberBandPullDistance(for translation: CGFloat) -> CGFloat {
-        guard translation > 0 else { return 0 }
+    // MARK: - UI
 
-        let normalized = translation / homeAIMaxPullDistance
-        let resistance = 1 - (1 / ((normalized * 0.85) + 1))
-        return min(resistance * homeAIMaxPullDistance * 1.55, homeAIMaxPullDistance)
-    }
-
-}
-
-private struct HomeAIConditionalPullGestureModifier<G: Gesture>: ViewModifier {
-    let active: Bool
-    let gesture: G
-
-    @ViewBuilder
-    func body(content: Content) -> some View {
-        if active {
-            content.simultaneousGesture(gesture)
-        } else {
-            content
+    private var aiBackdrop: some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    Color(red: 0.94, green: 1.00, blue: 1.00),
+                    Color.white,
+                    Color(red: 0.985, green: 0.965, blue: 1.00),
+                    Color(red: 0.93, green: 0.98, blue: 1.00)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            RadialGradient(colors: [Color.cyan.opacity(0.30), Color.cyan.opacity(0.10), .clear], center: .bottomLeading, startRadius: 20, endRadius: 380)
+            RadialGradient(colors: [Color.purple.opacity(0.22), Color.purple.opacity(0.08), .clear], center: .bottomTrailing, startRadius: 20, endRadius: 420)
+            RadialGradient(colors: [Color.cyan.opacity(0.16), .clear], center: .topLeading, startRadius: 20, endRadius: 300)
         }
     }
-}
 
-private struct HomeAISurfaceMaskShape: Shape {
-    let topInset: CGFloat
-    let cornerRadius: CGFloat
+    private func collapsedHeader(onReveal: @escaping () -> Void) -> some View {
+        HStack(alignment: .center) {
+            Button { } label: {
+                Circle()
+                    .fill(LinearGradient(
+                        colors: [Color(red: 0.36, green: 0.83, blue: 0.91), Color(red: 0.49, green: 0.79, blue: 0.96)],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    ))
+                    .frame(width: 48, height: 48)
+                    .overlay(Text("ME").font(.system(size: 17, weight: .bold, design: .rounded)).foregroundStyle(.white))
+            }
+            .buttonStyle(.plain)
+            .frame(width: 58, alignment: .leading)
 
-    func path(in rect: CGRect) -> Path {
-        let visibleTop = min(max(0, topInset), rect.maxY)
-        let visibleRect = CGRect(
-            x: rect.minX,
-            y: visibleTop,
-            width: rect.width,
-            height: max(0, rect.maxY - visibleTop)
-        )
+            Spacer(minLength: 0)
 
-        guard cornerRadius > 0 else { return Path(visibleRect) }
-        guard !visibleRect.isEmpty else { return Path() }
+            Button { onReveal() } label: {
+                HStack(spacing: 8) {
+                    Text("✦").font(.system(size: 22, weight: .semibold)).foregroundStyle(.white)
+                    Text("Ask Saku AI").font(.system(size: 18, weight: .bold, design: .rounded)).foregroundStyle(.white)
+                }
+                .padding(.horizontal, 19)
+                .frame(height: 48)
+                .background(Capsule().fill(.white.opacity(0.11)))
+                .background(Capsule().fill(LinearGradient(
+                    colors: [.white.opacity(0.22), .white.opacity(0.07), .cyan.opacity(0.08)],
+                    startPoint: .topLeading, endPoint: .bottomTrailing
+                )))
+                .overlay {
+                    Capsule().stroke(LinearGradient(
+                        colors: [Color.cyan.opacity(0.95), Color.white.opacity(0.62), Color.purple.opacity(0.65)],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    ), lineWidth: 1.5)
+                }
+                .shadow(color: Color.cyan.opacity(0.24), radius: 10, x: 0, y: 0)
+                .shadow(color: Color.purple.opacity(0.18), radius: 13, x: 0, y: 7)
+                .contentShape(Capsule())
+            }
+            .buttonStyle(.plain)
 
-        let path = UIBezierPath(
-            roundedRect: visibleRect,
-            byRoundingCorners: [.topLeft, .topRight],
-            cornerRadii: CGSize(width: cornerRadius, height: cornerRadius)
-        )
-        return Path(path.cgPath)
+            Spacer(minLength: 0)
+
+            Button { } label: {
+                Image(systemName: "bell")
+                    .font(.system(size: 22, weight: .medium))
+                    .foregroundStyle(Color(red: 0.43, green: 0.36, blue: 0.90))
+                    .frame(width: 48, height: 48)
+                    .overlay(alignment: .topTrailing) {
+                        Circle().fill(Color.AlertRed).frame(width: 9, height: 9).offset(x: 1, y: 4)
+                    }
+            }
+            .buttonStyle(.plain)
+            .frame(width: 58, alignment: .trailing)
+        }
+        .padding(.horizontal, 30)
     }
 }
 
@@ -592,7 +440,6 @@ struct AppLockView: View {
             } label: {
                 HStack {
                     Image(systemName: "faceid")
-
                     Text("Unlock App")
                 }
                 .font(.system(size: 20, weight: .medium, design: .rounded))

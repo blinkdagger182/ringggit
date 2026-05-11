@@ -50,9 +50,8 @@ private struct LogScrollViewResolver: UIViewRepresentable {
     }
 }
 
-private struct ScrollRevealPanBinder: UIViewRepresentable {
+private struct ScrollStateBinder: UIViewRepresentable {
     let scrollDelegate: LogScrollViewDelegate
-    let onScrollRevealGesture: (UIGestureRecognizer.State, CGFloat, CGFloat) -> Void
     let onScrollStateChanged: (Bool, Bool) -> Void
 
     func makeUIView(context: Context) -> UIView {
@@ -63,58 +62,29 @@ private struct ScrollRevealPanBinder: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: UIView, context: Context) {
-        scrollDelegate.onRevealPan = onScrollRevealGesture
         scrollDelegate.onScrollStateChanged = onScrollStateChanged
     }
 }
 
-private class LogScrollViewDelegate: NSObject, UIScrollViewDelegate, UIGestureRecognizerDelegate, ObservableObject {
+private class LogScrollViewDelegate: NSObject, UIScrollViewDelegate, ObservableObject {
     weak var original: UIScrollViewDelegate?
     var onScrollStateChanged: ((Bool, Bool) -> Void)?
-    /// Single UIKit pan for Saku reveal — avoids SwiftUI `DragGesture` + `UIScrollView` fighting (device jitter).
-    var onRevealPan: ((UIGestureRecognizer.State, CGFloat, CGFloat) -> Void)?
     private var isAtTop = true
     private var isIdle = true
     private weak var attachedScrollView: UIScrollView?
-    private weak var revealPanRecognizer: UIPanGestureRecognizer?
-    private weak var revealPanLinkedScrollView: UIScrollView?
-    /// While pulling down for Saku, temporarily disable the scroll pan so it doesn’t race the reveal pan.
-    private var pullRevealSuppressesScrollPan = false
 
     var isLocked: Bool = false {
         didSet {
             guard let sv = attachedScrollView else { return }
             sv.isScrollEnabled = !isLocked
             normalizeScrollViewInsets(sv)
-            syncPanGestureEnabled()
             DispatchQueue.main.async { [weak self] in
                 guard let self = self, let sv = self.attachedScrollView else { return }
                 self.normalizeScrollViewInsets(sv)
-                self.syncPanGestureEnabled()
             }
         }
     }
 
-    func setPullRevealSuppressesScrollPan(_ suppress: Bool) {
-        pullRevealSuppressesScrollPan = suppress
-        syncPanGestureEnabled()
-    }
-
-    private func syncPanGestureEnabled() {
-        guard let sv = attachedScrollView else { return }
-        let enablePan = sv.isScrollEnabled && !pullRevealSuppressesScrollPan
-        sv.panGestureRecognizer.isEnabled = enablePan
-    }
-
-    /// SwiftUI drives sheet offset while UIKit may still nudge `contentOffset` by sub‑points; that reads as jitter.
-    func pinScrollOriginYForRevealPullIfNeeded() {
-        guard let sv = attachedScrollView else { return }
-        let y = sv.contentOffset.y
-        guard abs(y) > 0.05 else { return }
-        sv.setContentOffset(CGPoint(x: sv.contentOffset.x, y: 0), animated: false)
-    }
-
-    /// Devices often grow `contentInset` / adjusted inset with safe areas; simulator may not — breaks “at top” + reveal.
     private func normalizeScrollViewInsets(_ scrollView: UIScrollView) {
         scrollView.contentInset = .zero
         scrollView.verticalScrollIndicatorInsets = .zero
@@ -132,94 +102,11 @@ private class LogScrollViewDelegate: NSObject, UIScrollViewDelegate, UIGestureRe
         scrollView.isDirectionalLockEnabled = true
         scrollView.contentInsetAdjustmentBehavior = .never
         scrollView.automaticallyAdjustsScrollIndicatorInsets = false
-        // UIScrollView defaults to `clipsToBounds == false`. Without this, nested
-        // views (e.g. the navy Income card in LogInsightsView) can paint outside
-        // the scroll view's frame during layer transforms — visible as a rounded
-        // dark band above the home peek when AI reveal offsets LogView.
         scrollView.clipsToBounds = true
         scrollView.backgroundColor = .clear
         scrollView.isScrollEnabled = !isLocked
         normalizeScrollViewInsets(scrollView)
-        syncPanGestureEnabled()
-        installRevealPanIfNeeded(on: scrollView)
         updateTopState(for: scrollView)
-    }
-
-    private func installRevealPanIfNeeded(on scrollView: UIScrollView) {
-        if revealPanLinkedScrollView === scrollView, revealPanRecognizer != nil {
-            return
-        }
-        if let old = revealPanRecognizer {
-            old.view?.removeGestureRecognizer(old)
-            revealPanRecognizer = nil
-            revealPanLinkedScrollView = nil
-        }
-
-        let hostView = scrollView.superview ?? scrollView
-        let pan = UIPanGestureRecognizer(target: self, action: #selector(handleRevealPan(_:)))
-        pan.delegate = self
-        pan.maximumNumberOfTouches = 1
-        pan.cancelsTouchesInView = false
-        hostView.addGestureRecognizer(pan)
-        revealPanRecognizer = pan
-        revealPanLinkedScrollView = scrollView
-    }
-
-    @objc private func handleRevealPan(_ pan: UIPanGestureRecognizer) {
-        guard let sv = attachedScrollView else { return }
-        let ty = pan.translation(in: sv).y
-        let tx = pan.translation(in: sv).x
-        let vy = pan.velocity(in: sv).y
-        let verticalish = abs(ty) >= abs(tx)
-
-        switch pan.state {
-        case .changed:
-            guard verticalish else { return }
-            if ty > 1 {
-                setPullRevealSuppressesScrollPan(true)
-            }
-            if ty > 0 {
-                pinScrollOriginYForRevealPullIfNeeded()
-            }
-            onRevealPan?(.changed, ty, 0)
-        case .ended:
-            setPullRevealSuppressesScrollPan(false)
-            if verticalish {
-                onRevealPan?(.ended, ty, vy)
-            } else {
-                onRevealPan?(.ended, 0, 0)
-            }
-        case .cancelled, .failed:
-            setPullRevealSuppressesScrollPan(false)
-            if verticalish {
-                onRevealPan?(.cancelled, ty, vy)
-            } else {
-                onRevealPan?(.cancelled, 0, 0)
-            }
-        default:
-            break
-        }
-    }
-
-    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
-                           shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
-        guard let reveal = revealPanRecognizer, let sv = attachedScrollView else { return false }
-        let scrollPan = sv.panGestureRecognizer
-        let touchesReveal = gestureRecognizer === reveal || other === reveal
-        let touchesScrollPan = gestureRecognizer === scrollPan || other === scrollPan
-        return touchesReveal && touchesScrollPan
-    }
-
-    func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-        guard gestureRecognizer === revealPanRecognizer else { return true }
-        guard let sv = attachedScrollView else { return false }
-        guard !isLocked else { return false }
-        guard sv.contentOffset.y <= 1.5 else { return false }
-        guard let pan = gestureRecognizer as? UIPanGestureRecognizer else { return true }
-        let v = pan.velocity(in: pan.view)
-        let speed = hypot(v.x, v.y)
-        if speed < 200 { return true }
-        return abs(v.y) >= abs(v.x)
     }
 
     func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
@@ -277,19 +164,6 @@ private class LogScrollViewDelegate: NSObject, UIScrollViewDelegate, UIGestureRe
     }
 }
 
-private struct LogHomeTopSurfaceShape: Shape {
-    let cornerRadius: CGFloat
-
-    func path(in rect: CGRect) -> Path {
-        let path = UIBezierPath(
-            roundedRect: rect,
-            byRoundingCorners: [.topLeft, .topRight],
-            cornerRadii: CGSize(width: cornerRadius, height: cornerRadius)
-        )
-        return Path(path.cgPath)
-    }
-}
-
 struct LogView: View {
     @ObservedObject var syncMonitor = SyncMonitor.shared
 
@@ -336,7 +210,8 @@ struct LogView: View {
     var launchSearch: Bool
     var isScrollLocked: Bool = false
     var onScrollStateChanged: (Bool, Bool) -> Void = { _, _ in }
-    var onScrollRevealGesture: (UIGestureRecognizer.State, CGFloat, CGFloat) -> Void = { _, _, _ in }
+    var onAddTransaction: (() -> Void)? = nil
+    var onScanReceipt: (() -> Void)? = nil
 
     // drag to open
 //    enum PullToReach {
@@ -349,6 +224,54 @@ struct LogView: View {
     @StateObject private var scrollDelegate = LogScrollViewDelegate()
 
     @State var progress = 0.0
+
+    private var quickActionsCard: some View {
+        HStack(spacing: 12) {
+            Button {
+                onAddTransaction?()
+            } label: {
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(Color(red: 0.42, green: 0.41, blue: 0.92).opacity(0.12))
+                        .frame(width: 36, height: 36)
+                        .overlay(
+                            Image(systemName: "plus")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(Color(red: 0.42, green: 0.41, blue: 0.92))
+                        )
+                    Text("Add")
+                        .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                        .foregroundStyle(Color.PrimaryText)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                onScanReceipt?()
+            } label: {
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(Color.cyan.opacity(0.12))
+                        .frame(width: 36, height: 36)
+                        .overlay(
+                            Image(systemName: "viewfinder")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(Color.cyan)
+                        )
+                    Text("Scan")
+                        .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                        .foregroundStyle(Color.PrimaryText)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+            .buttonStyle(.plain)
+        }
+    }
 
     private var homeSurfaceBackground: some View {
         ZStack(alignment: .top) {
@@ -393,11 +316,8 @@ struct LogView: View {
                 VStack(spacing: 0) {
                     // Reserve the same top inset as `logSurfaceTopY` in HomeView, but
                     // keep it *inside* `.clipShape` so nothing draws in an unclipped
-                    // transparent band above the rounded surface (that band was
-                    // letting the TabView backdrop / shadows read as a separate
-                    // navy “container” above the peek during AI reveal).
                     Color.clear
-                        .frame(height: topEdge + 50)
+                        .frame(height: 8)
                         .frame(maxWidth: .infinity)
 
                     // Filter label row
@@ -466,6 +386,9 @@ struct LogView: View {
                         VStack(spacing: 0) {
                             if filter == .all {
                                 LogInsightsView(navBarText: $navBarText, showCents: showCents, currencySymbol: currencySymbol)
+                                quickActionsCard
+                                    .padding(.horizontal, 20)
+                                    .padding(.bottom, 12)
                             }
 
                             VStack(spacing: 0) {
@@ -508,23 +431,15 @@ struct LogView: View {
                         )
                     }
                     .background(
-                        ScrollRevealPanBinder(
+                        ScrollStateBinder(
                             scrollDelegate: scrollDelegate,
-                            onScrollRevealGesture: onScrollRevealGesture,
                             onScrollStateChanged: onScrollStateChanged
                         )
                     )
-                    .onDisappear {
-                        scrollDelegate.setPullRevealSuppressesScrollPan(false)
-                    }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    // Extra guard: UIKit scroll layers can escape SwiftUI clipping during
-                    // combined transforms (AI sheet offset + rounded clip).
                     .clipped()
                 }
                 .background(homeSurfaceBackground)
-                .compositingGroup()
-                .clipShape(LogHomeTopSurfaceShape(cornerRadius: 38))
             }
             .background(Color.clear)
             .fullScreenCover(isPresented: $searchMode) {
@@ -562,9 +477,6 @@ struct LogView: View {
             }
             .onChange(of: isScrollLocked) { newValue in
                 scrollDelegate.isLocked = newValue
-                if !newValue {
-                    scrollDelegate.setPullRevealSuppressesScrollPan(false)
-                }
             }
 //            .animation(.spring(duration: 0.5), value: released)
 //            .animation(.spring(response: 0.4, dampingFraction: 0.6), value: pullStatus)

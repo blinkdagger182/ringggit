@@ -20,23 +20,17 @@ struct HomeAIAssistantOverlay: View {
     let revealProgress: CGFloat
     let isExpanded: Bool
     let homePeekHeight: CGFloat
+    @Binding var openAttachmentOnExpand: Bool
     let onCollapse: () -> Void
     let collapseGesture: AnyGesture<DragGesture.Value>?
 
+    @State private var isOrbBreathing = false
     @State private var composerFocused = false
     @State private var composerFocusRequestID = 0
     @State private var chatScrollRequestID = 0
     @State private var showAttachmentSheet = false
     @State private var showWorkspaceMenu = false
     @State private var previewAttachment: AttachmentItem?
-    private let landingActions: [SakuAILandingAction] = [
-        .init(title: "What can Saku AI do?", systemImage: "sparkles", prompt: "What can Saku AI do?"),
-        .init(title: "Scan receipt", systemImage: "doc.text.viewfinder", prompt: nil),
-        .init(title: "Add transaction", systemImage: "plus.circle", prompt: "Add transaction"),
-        .init(title: "Where did my money go?", systemImage: "chart.pie", prompt: "Where did my money go?"),
-        .init(title: "Upload file", systemImage: "folder", prompt: nil),
-        .init(title: "Show latest transfers", systemImage: "arrow.left.arrow.right", prompt: "Show latest transfers")
-    ]
 
     var body: some View {
         GeometryReader { proxy in
@@ -48,9 +42,17 @@ struct HomeAIAssistantOverlay: View {
             let activeComposerBottomPadding: CGFloat = keyboardOverlap > 0 ? 12 : baseComposerBottomPadding
 
             ZStack(alignment: .bottom) {
-                SakuAIDarkBackgroundView()
-                    .ignoresSafeArea()
-                    .opacity(revealProgress)
+                ZStack {
+                    LinearGradient(
+                        colors: [Color(red: 0.94, green: 1.00, blue: 1.00), Color.white, Color(red: 0.985, green: 0.965, blue: 1.00), Color(red: 0.93, green: 0.98, blue: 1.00)],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    )
+                    RadialGradient(colors: [Color.cyan.opacity(0.30), Color.cyan.opacity(0.10), .clear], center: .bottomLeading, startRadius: 20, endRadius: 380)
+                    RadialGradient(colors: [Color.purple.opacity(0.22), Color.purple.opacity(0.08), .clear], center: .bottomTrailing, startRadius: 20, endRadius: 420)
+                    RadialGradient(colors: [Color.cyan.opacity(0.16), .clear], center: .topLeading, startRadius: 20, endRadius: 300)
+                }
+                .ignoresSafeArea()
+                .opacity(revealProgress)
 
                 VStack(spacing: 0) {
                     previewHeader
@@ -75,9 +77,9 @@ struct HomeAIAssistantOverlay: View {
                     .background(
                         LinearGradient(
                             colors: [
-                                Color(hex: "0B1023").opacity(0),
-                                Color(hex: "0B1023").opacity(0.86),
-                                Color(hex: "0B1023")
+                                Color.white.opacity(0),
+                                Color.white.opacity(0.82),
+                                Color.white.opacity(0.96)
                             ],
                             startPoint: .top,
                             endPoint: .bottom
@@ -91,6 +93,9 @@ struct HomeAIAssistantOverlay: View {
                 }
             }
             .ignoresSafeArea(.keyboard, edges: .bottom)
+            .onAppear {
+                isOrbBreathing = true
+            }
             .onChange(of: isExpanded) { expanded in
                 guard expanded else { return }
                 guard viewModel.messages.isEmpty else { return }
@@ -98,6 +103,12 @@ struct HomeAIAssistantOverlay: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.38) {
                     guard isExpanded else { return }
                     focusComposer()
+                }
+            }
+            .onChange(of: openAttachmentOnExpand) { shouldOpen in
+                if shouldOpen {
+                    openAttachmentOnExpand = false
+                    showAttachmentSheet = true
                 }
             }
         }
@@ -125,19 +136,24 @@ struct HomeAIAssistantOverlay: View {
     private var previewHeader: some View {
         VStack(spacing: 10) {
             ZStack {
-                HStack(spacing: 8) {
-                    Text("✨ \(assistantTitle)")
-                        .font(.system(size: 22, weight: .semibold))
-                        .foregroundColor(.white)
+                HStack(spacing: 9) {
+                    Text("✦")
+                        .font(.system(size: 29, weight: .semibold))
+                        .foregroundStyle(Color.cyan.opacity(0.75))
+
+                    Text(assistantTitle)
+                        .font(.system(size: 25, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color(red: 0.03, green: 0.10, blue: 0.25))
 
                     Text("beta")
-                        .font(.system(size: 12, design: .rounded).weight(.medium))
-                        .foregroundColor(Color.white.opacity(0.78))
-                        .padding(.horizontal, 9)
-                        .padding(.vertical, 4)
+                        .font(.system(size: 16, weight: .medium, design: .rounded))
+                        .foregroundStyle(Color(red: 0.44, green: 0.34, blue: 0.92))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 5)
+                        .background(.white.opacity(0.38), in: Capsule())
                         .overlay(
-                            Capsule(style: .continuous)
-                                .stroke(Color.white.opacity(0.24), lineWidth: 1)
+                            Capsule()
+                                .stroke(Color.purple.opacity(0.22), lineWidth: 1.1)
                         )
                 }
             }
@@ -195,7 +211,7 @@ struct HomeAIAssistantOverlay: View {
 
     private var activeWorkspaceBackground: Color {
         if viewModel.activeWorkspace.bucketID == nil {
-            return Color.white.opacity(0.10)
+            return Color.white.opacity(0.68)
         }
         return activeWorkspaceTint.opacity(0.20)
     }
@@ -276,131 +292,131 @@ struct HomeAIAssistantOverlay: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 28) {
-            VStack(spacing: 14) {
-                Text("How can I help you?")
-                    .font(.system(size: 31, weight: .semibold, design: .rounded))
-                    .foregroundColor(.white)
-                    .multilineTextAlignment(.center)
+        VStack(spacing: 0) {
+            heroCopy
+                .padding(.top, 44)
 
-                landingActionsGrid
-            }
+            glowOrb
+                .padding(.top, 34)
 
-            Text("Built for your money, privately.")
-                .font(.system(.footnote, design: .rounded).weight(.medium))
-                .foregroundColor(Color.white.opacity(0.56))
+            suggestionsList
+                .padding(.top, 40)
+                .padding(.horizontal, 4)
         }
-        .padding(.top, 44)
     }
 
-    private var landingActionsGrid: some View {
-        LazyVGrid(
-            columns: [
-                GridItem(.flexible(), spacing: 14),
-                GridItem(.flexible(), spacing: 14)
-            ],
-            spacing: 14
-        ) {
-            ForEach(landingActions) { action in
-                Button {
-                    handleLandingAction(action)
-                } label: {
-                    HStack(spacing: 10) {
-                        Image(systemName: action.systemImage)
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(width: 22)
-
-                        Text(action.title)
-                            .font(.system(.body, design: .rounded).weight(.medium))
-                            .foregroundColor(.white)
-                            .multilineTextAlignment(.leading)
-
-                        Spacer(minLength: 0)
-                    }
-                    .padding(.horizontal, 16)
-                    .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
-                    .background(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .fill(Color.white.opacity(0.09))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                    .stroke(Color.white.opacity(0.10), lineWidth: 1)
-                            )
+    private var heroCopy: some View {
+        VStack(spacing: 18) {
+            Text("What can I\nhelp you with today?")
+                .font(.system(size: 32, weight: .bold, design: .rounded))
+                .multilineTextAlignment(.center)
+                .lineSpacing(5)
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [Color(red: 0.07, green: 0.60, blue: 0.92), Color(red: 0.46, green: 0.28, blue: 0.88)],
+                        startPoint: .leading, endPoint: .trailing
                     )
-                }
-                .buttonStyle(.plain)
-            }
+                )
+
+            Text("Ask anything about your money.\nI'm here to help.")
+                .font(.system(size: 16, weight: .medium, design: .rounded))
+                .multilineTextAlignment(.center)
+                .lineSpacing(4)
+                .foregroundStyle(Color(red: 0.43, green: 0.46, blue: 0.58))
         }
     }
 
-    private func quickActionsSection(title: String) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            if !title.isEmpty {
-                Text(title)
-                    .font(.system(.subheadline).weight(.medium))
-                    .foregroundColor(Color.white.opacity(0.62))
-                    .padding(.horizontal, 2)
-            }
+    private var glowOrb: some View {
+        ZStack {
+            Ellipse()
+                .fill(Color.purple.opacity(isOrbBreathing ? 0.12 : 0.06))
+                .frame(
+                    width: isOrbBreathing ? 170 : 140,
+                    height: isOrbBreathing ? 28 : 20
+                )
+                .blur(radius: isOrbBreathing ? 13 : 8)
+                .offset(y: 34)
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(viewModel.quickActions) { quickAction in
-                        Button {
-                            viewModel.triggerQuickAction(quickAction)
-                        } label: {
-                            VStack(alignment: .leading, spacing: 10) {
-                                ZStack {
-                                    Circle()
-                                        .fill(
-                                            LinearGradient(
-                                                colors: [Color(hex: "4ECDC4").opacity(0.18), Color(hex: "9BAAF8").opacity(0.22)],
-                                                startPoint: .topLeading, endPoint: .bottomTrailing
-                                            )
-                                        )
-                                        .frame(width: 34, height: 34)
-                                    Image(systemName: quickAction.systemImage)
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundStyle(
-                                            LinearGradient(
-                                                colors: [Color(hex: "4ECDC4"), Color(hex: "7B8FF8")],
-                                                startPoint: .topLeading, endPoint: .bottomTrailing
-                                            )
-                                        )
-                                }
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            Color.white.opacity(0.90),
+                            Color.cyan.opacity(isOrbBreathing ? 0.64 : 0.48),
+                            Color.purple.opacity(isOrbBreathing ? 0.78 : 0.58),
+                            Color.clear
+                        ],
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: isOrbBreathing ? 56 : 46
+                    )
+                )
+                .frame(
+                    width: isOrbBreathing ? 86 : 74,
+                    height: isOrbBreathing ? 86 : 74
+                )
+                .blur(radius: isOrbBreathing ? 5 : 3)
+                .scaleEffect(isOrbBreathing ? 1.06 : 0.96)
+                .shadow(color: Color.cyan.opacity(isOrbBreathing ? 0.28 : 0.14), radius: isOrbBreathing ? 24 : 12, x: 0, y: 0)
+                .shadow(color: Color.purple.opacity(isOrbBreathing ? 0.32 : 0.16), radius: isOrbBreathing ? 30 : 14, x: 0, y: 8)
 
-                                Spacer(minLength: 0)
-
-                                Text(quickAction.title)
-                                    .font(.system(.subheadline).weight(.semibold))
-                                    .foregroundColor(.white)
-                                    .lineLimit(2)
-                                    .multilineTextAlignment(.leading)
-
-                                Text(quickActionSubtitle(for: quickAction.title))
-                                    .font(.system(.caption, design: .rounded))
-                                    .foregroundColor(Color.white.opacity(0.56))
-                                    .lineLimit(2)
-                            }
-                            .padding(14)
-                            .frame(width: 148, height: 148, alignment: .leading)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .fill(Color.white.opacity(0.08))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                                    )
-                            )
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.trailing, 24)
-                .padding(.bottom, 4)
-            }
-            .scrollClipDisabledIfAvailable()
+            Text("✦")
+                .font(.system(size: isOrbBreathing ? 32 : 28, weight: .semibold))
+                .foregroundStyle(.white.opacity(isOrbBreathing ? 0.86 : 0.68))
+                .scaleEffect(isOrbBreathing ? 1.08 : 0.92)
         }
+        .frame(height: 90)
+        .animation(.easeInOut(duration: 1.75).repeatForever(autoreverses: true), value: isOrbBreathing)
+    }
+
+    private var suggestionsList: some View {
+        VStack(alignment: .leading, spacing: 11) {
+            Text("Suggested for you")
+                .font(.system(size: 16, weight: .medium, design: .rounded))
+                .foregroundStyle(Color(red: 0.45, green: 0.48, blue: 0.60))
+                .padding(.leading, 4)
+                .padding(.bottom, 4)
+
+            suggestionRow(icon: "chart.line.uptrend.xyaxis", title: "Why did I overspend this week?", tint: .purple)
+            suggestionRow(icon: "viewfinder", title: "Scan a receipt", tint: .cyan)
+            suggestionRow(icon: "folder", title: "Create a food budget", tint: .indigo)
+            suggestionRow(icon: "arrow.triangle.2.circlepath", title: "Show my subscriptions", tint: .purple)
+        }
+    }
+
+    private func suggestionRow(icon: String, title: String, tint: Color) -> some View {
+        Button {
+            viewModel.draftMessage = title
+            viewModel.sendDraftMessage()
+        } label: {
+            HStack(spacing: 17) {
+                Circle()
+                    .fill(tint.opacity(0.16))
+                    .frame(width: 45, height: 45)
+                    .overlay(
+                        Image(systemName: icon)
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(tint.opacity(0.78))
+                    )
+
+                Text(title)
+                    .font(.system(size: 16, weight: .medium, design: .rounded))
+                    .foregroundStyle(Color(red: 0.18, green: 0.20, blue: 0.28))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.86)
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.purple.opacity(0.60))
+            }
+            .padding(.horizontal, 17)
+            .frame(height: 58)
+            .background(.white.opacity(0.82), in: Capsule())
+            .shadow(color: Color.purple.opacity(0.035), radius: 13, x: 0, y: 7)
+        }
+        .buttonStyle(.plain)
     }
 
     private func messageBubble(_ message: HomeAIMessage) -> some View {
@@ -449,7 +465,7 @@ struct HomeAIAssistantOverlay: View {
                                 HStack(spacing: 8) {
                                     Text(viewModel.statusText.isEmpty ? "Thinking" : viewModel.statusText)
                                         .font(.system(.body))
-                                        .foregroundColor(Color.white.opacity(0.82))
+                                        .foregroundColor(Color(.secondaryLabel))
                                         .lineSpacing(5)
                                     AIThinkingDots()
                                 }
@@ -572,13 +588,13 @@ struct HomeAIAssistantOverlay: View {
                                 .font(.system(.footnote, design: .rounded).weight(.medium))
                                 .lineLimit(1)
                         }
-                        .foregroundColor(Color.white.opacity(0.92))
+                        .foregroundColor(Color(red: 0.18, green: 0.20, blue: 0.28))
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
-                        .background(Color.white.opacity(0.10), in: Capsule(style: .continuous))
+                        .background(Color.white.opacity(0.78), in: Capsule(style: .continuous))
                         .overlay(
                             Capsule(style: .continuous)
-                                .stroke(Color.white.opacity(0.10), lineWidth: 1)
+                                .stroke(Color.cyan.opacity(0.22), lineWidth: 1)
                         )
                     }
                     .buttonStyle(.plain)
@@ -618,8 +634,8 @@ struct HomeAIAssistantOverlay: View {
                         focusRequestID: composerFocusRequestID,
                         placeholder: "Ask Saku AI",
                         onSubmit: sendComposerMessage,
-                        textColor: .white,
-                        placeholderColor: UIColor.white.withAlphaComponent(0.48)
+                        textColor: .label,
+                        placeholderColor: .secondaryLabel
                     )
                     .frame(maxWidth: .infinity, minHeight: 24, maxHeight: 24, alignment: .leading)
 
@@ -642,16 +658,16 @@ struct HomeAIAssistantOverlay: View {
 
                 HStack(spacing: 20) {
                     Button { showAttachmentSheet = true } label: {
-                        Image(systemName: "plus")
+                        Image(systemName: "paperclip")
                             .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.white.opacity(0.92))
+                            .foregroundColor(Color(red: 0.42, green: 0.41, blue: 0.92).opacity(0.78))
                     }
                     .buttonStyle(.plain)
 
                     Button { showAttachmentSheet = true } label: {
-                        Image(systemName: "photo")
+                        Image(systemName: "camera")
                             .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.white.opacity(0.92))
+                            .foregroundColor(Color(red: 0.42, green: 0.41, blue: 0.92).opacity(0.78))
                     }
                     .buttonStyle(.plain)
 
@@ -661,7 +677,7 @@ struct HomeAIAssistantOverlay: View {
                     } label: {
                         Image(systemName: "at")
                             .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.white.opacity(0.92))
+                            .foregroundColor(Color(red: 0.42, green: 0.41, blue: 0.92).opacity(0.78))
                     }
                     .buttonStyle(.plain)
 
@@ -673,7 +689,7 @@ struct HomeAIAssistantOverlay: View {
                     } label: {
                         Image(systemName: "sparkles")
                             .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.white.opacity(0.92))
+                            .foregroundColor(Color(red: 0.42, green: 0.41, blue: 0.92).opacity(0.78))
                     }
                     .buttonStyle(.plain)
 
@@ -688,12 +704,12 @@ struct HomeAIAssistantOverlay: View {
         .onTapGesture { focusComposer() }
         .background(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Color.white.opacity(0.10))
+                .fill(Color.white.opacity(0.82))
                 .overlay(
                     RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(composerFocused ? Color.white.opacity(0.24) : Color.white.opacity(0.10), lineWidth: 1)
+                        .stroke(composerFocused ? Color.cyan.opacity(0.45) : Color.cyan.opacity(0.22), lineWidth: 1)
                 )
-                .shadow(color: Color.black.opacity(composerFocused ? 0.22 : 0.14), radius: composerFocused ? 24 : 14, y: 8)
+                .shadow(color: Color.cyan.opacity(composerFocused ? 0.14 : 0.07), radius: composerFocused ? 22 : 12, y: 8)
         )
         .simultaneousGesture(
             DragGesture(minimumDistance: 4)
@@ -803,40 +819,11 @@ struct HomeAIAssistantOverlay: View {
         composerFocusRequestID += 1
     }
 
-    private func quickActionSubtitle(for title: String) -> String {
-        switch title {
-        case "Add transaction":
-            return "Quickly log an expense"
-        case "Where did my money go?":
-            return "Breakdown by category"
-        case "Show this month's spending":
-            return "Review this month's flow"
-        case "Can I afford this?":
-            return "Check against current budget"
-        default:
-            return "Start with a suggested prompt"
-        }
-    }
-
     private var composerFocusBinding: Binding<Bool> {
         Binding(
             get: { composerFocused },
             set: { composerFocused = $0 }
         )
-    }
-
-    private func handleLandingAction(_ action: SakuAILandingAction) {
-        switch action.title {
-        case "Scan receipt", "Upload file":
-            showAttachmentSheet = true
-        default:
-            if let quickAction = viewModel.quickActions.first(where: { $0.title == action.title }) {
-                viewModel.triggerQuickAction(quickAction)
-            } else if let prompt = action.prompt {
-                viewModel.draftMessage = prompt
-                viewModel.sendDraftMessage()
-            }
-        }
     }
 }
 
@@ -1028,7 +1015,7 @@ private struct AIThinkingDots: View {
         HStack(spacing: 4) {
             ForEach(0..<3, id: \.self) { i in
                 Circle()
-                    .fill(Color.white.opacity(0.48))
+                    .fill(Color(.secondaryLabel))
                     .frame(width: 5, height: 5)
                     .scaleEffect(phase == i ? 1.4 : 1.0)
                     .animation(.easeInOut(duration: 0.4).repeatForever(autoreverses: true).delay(Double(i) * 0.15), value: phase)
@@ -1049,7 +1036,7 @@ private struct HomeAIMarkdownText: View {
         .markdownTheme(.gitHub)
         .markdownTextStyle(\.text) {
             FontSize(.em(1.0))
-            ForegroundColor(.white.opacity(0.86))
+            ForegroundColor(Color(.label))
             BackgroundColor(nil)
         }
         .markdownTextStyle(\.strong) {
@@ -1083,7 +1070,7 @@ private struct HomeAIMarkdownText: View {
                 .padding(.leading, 14)
                 .padding(.vertical, 2)
                 .markdownTextStyle {
-                    ForegroundColor(.white.opacity(0.62))
+                    ForegroundColor(Color(.secondaryLabel))
                 }
                 .overlay(alignment: .leading) {
                     RoundedRectangle(cornerRadius: 999, style: .continuous)
@@ -1259,46 +1246,6 @@ struct HomeAIAnimatedGradientBackground: View {
                 startRadius: 0,
                 endRadius: 320
             )
-        }
-    }
-}
-
-private struct SakuAIDarkBackgroundView: View {
-    var body: some View {
-        ZStack {
-            LinearGradient(
-                colors: [
-                    Color(hex: "07101F"),
-                    Color(hex: "0A1530"),
-                    Color(hex: "090D1B")
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-
-            RadialGradient(
-                colors: [Color(hex: "0DA8C6").opacity(0.55), Color.clear],
-                center: .topLeading,
-                startRadius: 0,
-                endRadius: 420
-            )
-            .blur(radius: 14)
-
-            RadialGradient(
-                colors: [Color(hex: "6544F6").opacity(0.48), Color.clear],
-                center: .topTrailing,
-                startRadius: 0,
-                endRadius: 420
-            )
-            .blur(radius: 14)
-
-            RadialGradient(
-                colors: [Color(hex: "D548B8").opacity(0.34), Color.clear],
-                center: UnitPoint(x: 0.82, y: 0.34),
-                startRadius: 0,
-                endRadius: 320
-            )
-            .blur(radius: 18)
         }
     }
 }

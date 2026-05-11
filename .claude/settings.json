@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(gem list *)",
-      "Bash(gem install *)"
+      "Bash(gem install *)",
+      "Bash(xcodebuild -project /Users/rizhanruslan/Developer/ringggit/dimeApp/app/dime.xcodeproj -scheme dime -destination 'platform=iOS Simulator,name=iPhone 16' build)"
     ]
   }
 }
