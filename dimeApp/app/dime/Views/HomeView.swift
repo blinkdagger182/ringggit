@@ -41,11 +41,13 @@ struct HomeView: View {
 
     // ryt-clone drag model
     @State private var settledProgress: CGFloat = 0
-    @GestureState private var dragY: CGFloat = 0
-    @GestureState private var collapseGestureDragY: CGFloat = 0
+    @State private var dragY: CGFloat = 0
+    @State private var collapseGestureDragY: CGFloat = 0
     @State private var containerHeight: CGFloat = 852
     @State private var isLogAtTop: Bool = true
     @State private var openAttachmentOnAIExpand: Bool = false
+    @State private var dragSessionStarted: Bool = false
+    @State private var lockedCanRevealForThisDrag: Bool = false
 
     var topEdge: CGFloat
     var bottomEdge: CGFloat
@@ -97,7 +99,9 @@ struct HomeView: View {
             let h = proxy.size.height
             let peek = peekHeight(for: h)
             let rd = max(h - collapsedTopInset - peek, 1)
-            let sheetY = collapsedTopInset + liveProgress * rd
+            let isLogTab = currentTab == "Log"
+            let sheetY: CGFloat = isLogTab ? (collapsedTopInset + liveProgress * rd) : 0
+            let sheetCornerRadius: CGFloat = isLogTab ? 38 : 0
 
             ZStack(alignment: .top) {
                 Color.black.ignoresSafeArea()
@@ -124,12 +128,32 @@ struct HomeView: View {
 
                 // Home sheet — slides down to reveal AI behind it
                 homeSheet(peekHeight: peek)
-                    .clipShape(RoundedRectangle(cornerRadius: 38, style: .continuous))
-                    .shadow(color: .black.opacity(0.12), radius: 18, x: 0, y: -5)
+                    .clipShape(RoundedRectangle(cornerRadius: sheetCornerRadius, style: .continuous))
+                    .shadow(color: .black.opacity(isLogTab ? 0.12 : 0), radius: 18, x: 0, y: -5)
                     .ignoresSafeArea(edges: .bottom)
                     .offset(y: sheetY)
-                    .animation(settleAnimation, value: settledProgress)
+                    .animation(.easeOut(duration: 0.22), value: isLogTab)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        guard liveProgress > 0.85 else { return }
+                        withAnimation(settleAnimation) { settledProgress = 0 }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.27) {
+                            homeAIAssistantViewModel.collapse()
+                        }
+                    }
                     .simultaneousGesture(makeDragGesture(rd: rd))
+
+                // Tab bar pinned to screen bottom, outside offset sheet
+                CustomTabBar(
+                    currentTab: $currentTab,
+                    topEdge: topEdge,
+                    bottomEdge: bottomEdge,
+                    counter: $counter,
+                    launchAdd: launchAdd
+                )
+                .frame(maxHeight: .infinity, alignment: .bottom)
+                .opacity(homeAIAssistantViewModel.isPresented ? 0 : 1)
+                .allowsHitTesting(!homeAIAssistantViewModel.isPresented)
 
                 // Floating collapsed header — fades out as AI reveals
                 if currentTab == "Log" {
@@ -260,15 +284,6 @@ struct HomeView: View {
             .environmentObject(toastPresenter)
             .environmentObject(transactionManager)
 
-            CustomTabBar(
-                currentTab: $currentTab,
-                topEdge: topEdge,
-                bottomEdge: bottomEdge,
-                counter: $counter,
-                launchAdd: launchAdd
-            )
-            .opacity(homeAIAssistantViewModel.isPresented ? 0 : 1)
-            .allowsHitTesting(!homeAIAssistantViewModel.isPresented)
         }
         .background(Color.PrimaryBackground)
     }
@@ -277,33 +292,50 @@ struct HomeView: View {
 
     private func makeDragGesture(rd: CGFloat) -> some Gesture {
         DragGesture(minimumDistance: 4, coordinateSpace: .global)
-            .updating($dragY) { value, state, _ in
+            .onChanged { value in
                 guard currentTab == "Log" else { return }
+
+                if !dragSessionStarted {
+                    dragSessionStarted = true
+                    lockedCanRevealForThisDrag = isLogAtTop || settledProgress > 0
+                }
+
                 let t = value.translation.height
-                if settledProgress > 0 {
-                    state = t
-                } else {
-                    guard isLogAtTop && t > 4 else { return }
-                    state = t
+                if t > 0 {
+                    if settledProgress > 0 || (lockedCanRevealForThisDrag && isLogAtTop) {
+                        dragY = t * 0.94
+                    }
+                } else if t < 0, settledProgress > 0 {
+                    dragY = t
                 }
             }
             .onEnded { value in
                 guard currentTab == "Log" else { return }
-                let finalT = value.translation.height
+                defer {
+                    dragSessionStarted = false
+                    lockedCanRevealForThisDrag = false
+                }
+
+                guard settledProgress > 0 || (lockedCanRevealForThisDrag && isLogAtTop) else {
+                    withAnimation(settleAnimation) { dragY = 0 }
+                    return
+                }
+
+                let finalT = dragY
                 let predictedT = value.predictedEndTranslation.height
                 let currentP = min(max(settledProgress + finalT / rd, 0), 1)
                 let predictedP = min(max(settledProgress + predictedT / rd, 0), 1)
                 let vel = predictedT - finalT
                 let shouldReveal = predictedP > 0.34 || currentP > 0.5 || vel > 700
+                withAnimation(settleAnimation) {
+                    settledProgress = shouldReveal ? 1 : 0
+                    dragY = 0
+                }
                 if shouldReveal {
-                    settledProgress = 1
                     homeAIAssistantViewModel.expand()
-                } else {
-                    settledProgress = 0
-                    if homeAIAssistantViewModel.isPresented {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.27) {
-                            homeAIAssistantViewModel.collapse()
-                        }
+                } else if homeAIAssistantViewModel.isPresented {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.27) {
+                        homeAIAssistantViewModel.collapse()
                     }
                 }
             }
@@ -312,20 +344,21 @@ struct HomeView: View {
     private func makeCollapseGesture(rd: CGFloat) -> AnyGesture<DragGesture.Value> {
         AnyGesture(
             DragGesture(minimumDistance: 4, coordinateSpace: .global)
-                .updating($collapseGestureDragY) { value, state, _ in
-                    state = value.translation.height
+                .onChanged { value in
+                    collapseGestureDragY = value.translation.height
                 }
                 .onEnded { value in
-                    let finalT = value.translation.height
+                    let finalT = collapseGestureDragY
                     let predictedT = value.predictedEndTranslation.height
                     let currentP = min(max(settledProgress + finalT / rd, 0), 1)
                     let predictedP = min(max(settledProgress + predictedT / rd, 0), 1)
                     let vel = predictedT - finalT
                     let shouldReveal = predictedP > 0.34 || currentP > 0.5 || vel > 700
-                    if shouldReveal {
-                        settledProgress = 1
-                    } else {
-                        settledProgress = 0
+                    withAnimation(settleAnimation) {
+                        settledProgress = shouldReveal ? 1 : 0
+                        collapseGestureDragY = 0
+                    }
+                    if !shouldReveal {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.27) {
                             homeAIAssistantViewModel.collapse()
                         }
@@ -337,7 +370,7 @@ struct HomeView: View {
     // MARK: - Actions
 
     private func collapseAI() {
-        settledProgress = 0
+        withAnimation(settleAnimation) { settledProgress = 0 }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.27) {
             homeAIAssistantViewModel.collapse()
         }

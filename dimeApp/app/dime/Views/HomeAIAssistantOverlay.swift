@@ -29,7 +29,6 @@ struct HomeAIAssistantOverlay: View {
     @State private var composerFocusRequestID = 0
     @State private var chatScrollRequestID = 0
     @State private var showAttachmentSheet = false
-    @State private var showWorkspaceMenu = false
     @State private var previewAttachment: AttachmentItem?
 
     var body: some View {
@@ -133,87 +132,33 @@ struct HomeAIAssistantOverlay: View {
         }
     }
 
+    private var headerTitle: String {
+        viewModel.activeWorkspace.bucketID == nil ? "Saku AI" : viewModel.activeWorkspace.title
+    }
+
     private var previewHeader: some View {
-        VStack(spacing: 10) {
-            ZStack {
-                HStack(spacing: 9) {
-                    Text("✦")
-                        .font(.system(size: 29, weight: .semibold))
-                        .foregroundStyle(Color.cyan.opacity(0.75))
+        HStack(spacing: 7) {
+            Text("✦")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(Color.cyan.opacity(0.75))
 
-                    Text(assistantTitle)
-                        .font(.system(size: 25, weight: .bold, design: .rounded))
-                        .foregroundStyle(Color(red: 0.03, green: 0.10, blue: 0.25))
+            Text(headerTitle)
+                .font(.system(size: 19, weight: .bold, design: .rounded))
+                .foregroundStyle(Color(red: 0.03, green: 0.10, blue: 0.25))
 
-                    Text("beta")
-                        .font(.system(size: 16, weight: .medium, design: .rounded))
-                        .foregroundStyle(Color(red: 0.44, green: 0.34, blue: 0.92))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 5)
-                        .background(.white.opacity(0.38), in: Capsule())
-                        .overlay(
-                            Capsule()
-                                .stroke(Color.purple.opacity(0.22), lineWidth: 1.1)
-                        )
-                }
-            }
-            .frame(height: 44)
-
-            Button {
-                showWorkspaceMenu = true
-            } label: {
-                HStack(spacing: 4) {
-                    Text(viewModel.activeWorkspace.title)
-                        .font(.system(.body, design: .rounded).weight(.medium))
-
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.system(.caption, design: .rounded).weight(.medium))
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .foregroundColor(activeWorkspaceTint)
-                .background(
-                    activeWorkspaceBackground,
-                    in: Capsule(style: .continuous)
+            Text("beta")
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundStyle(Color(red: 0.44, green: 0.34, blue: 0.92))
+                .padding(.horizontal, 9)
+                .padding(.vertical, 4)
+                .background(.white.opacity(0.38), in: Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(Color.purple.opacity(0.22), lineWidth: 1)
                 )
-            }
-            .buttonStyle(.plain)
-            .popover(present: $showWorkspaceMenu, attributes: {
-                $0.position = .absolute(
-                    originAnchor: .bottom,
-                    popoverAnchor: .top
-                )
-                $0.rubberBandingMode = .none
-                $0.sourceFrameInset = UIEdgeInsets(top: 0, left: 0, bottom: -10, right: 0)
-                $0.presentation.animation = .easeInOut(duration: 0.2)
-                $0.dismissal.animation = .easeInOut(duration: 0.3)
-            }) {
-                HomeAIWorkspacePickerView(
-                    workspaces: viewModel.workspaces,
-                    activeWorkspaceID: viewModel.activeWorkspaceID,
-                    activeBucketID: viewModel.activeWorkspace.bucketID,
-                    onSelect: { workspaceID in
-                        viewModel.selectWorkspace(workspaceID)
-                        showWorkspaceMenu = false
-                    }
-                )
-            }
         }
+        .frame(height: 36)
         .frame(maxWidth: .infinity)
-    }
-
-    private var activeWorkspaceTint: Color {
-        if let bucket = viewModel.activeBucket {
-            return Color(hex: bucket.colour ?? "7B8FF8")
-        }
-        return Color(hex: "4ECDC4")
-    }
-
-    private var activeWorkspaceBackground: Color {
-        if viewModel.activeWorkspace.bucketID == nil {
-            return Color.white.opacity(0.68)
-        }
-        return activeWorkspaceTint.opacity(0.20)
     }
 
     private func messageArea(keyboardOverlap: CGFloat, composerBottomPadding: CGFloat) -> some View {
@@ -294,23 +239,23 @@ struct HomeAIAssistantOverlay: View {
     private var emptyState: some View {
         VStack(spacing: 0) {
             heroCopy
-                .padding(.top, 44)
+                .padding(.top, 20)
 
             glowOrb
-                .padding(.top, 34)
+                .padding(.top, 16)
 
             suggestionsList
-                .padding(.top, 40)
+                .padding(.top, 20)
                 .padding(.horizontal, 4)
         }
     }
 
     private var heroCopy: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: 10) {
             Text("What can I\nhelp you with today?")
-                .font(.system(size: 32, weight: .bold, design: .rounded))
+                .font(.system(size: 26, weight: .bold, design: .rounded))
                 .multilineTextAlignment(.center)
-                .lineSpacing(5)
+                .lineSpacing(3)
                 .foregroundStyle(
                     LinearGradient(
                         colors: [Color(red: 0.07, green: 0.60, blue: 0.92), Color(red: 0.46, green: 0.28, blue: 0.88)],
@@ -319,9 +264,9 @@ struct HomeAIAssistantOverlay: View {
                 )
 
             Text("Ask anything about your money.\nI'm here to help.")
-                .font(.system(size: 16, weight: .medium, design: .rounded))
+                .font(.system(size: 14, weight: .medium, design: .rounded))
                 .multilineTextAlignment(.center)
-                .lineSpacing(4)
+                .lineSpacing(3)
                 .foregroundStyle(Color(red: 0.43, green: 0.46, blue: 0.58))
         }
     }
@@ -331,11 +276,11 @@ struct HomeAIAssistantOverlay: View {
             Ellipse()
                 .fill(Color.purple.opacity(isOrbBreathing ? 0.12 : 0.06))
                 .frame(
-                    width: isOrbBreathing ? 170 : 140,
-                    height: isOrbBreathing ? 28 : 20
+                    width: isOrbBreathing ? 130 : 108,
+                    height: isOrbBreathing ? 22 : 16
                 )
-                .blur(radius: isOrbBreathing ? 13 : 8)
-                .offset(y: 34)
+                .blur(radius: isOrbBreathing ? 10 : 6)
+                .offset(y: 26)
 
             Circle()
                 .fill(
@@ -348,34 +293,34 @@ struct HomeAIAssistantOverlay: View {
                         ],
                         center: .center,
                         startRadius: 0,
-                        endRadius: isOrbBreathing ? 56 : 46
+                        endRadius: isOrbBreathing ? 44 : 36
                     )
                 )
                 .frame(
-                    width: isOrbBreathing ? 86 : 74,
-                    height: isOrbBreathing ? 86 : 74
+                    width: isOrbBreathing ? 68 : 58,
+                    height: isOrbBreathing ? 68 : 58
                 )
-                .blur(radius: isOrbBreathing ? 5 : 3)
+                .blur(radius: isOrbBreathing ? 4 : 2.5)
                 .scaleEffect(isOrbBreathing ? 1.06 : 0.96)
-                .shadow(color: Color.cyan.opacity(isOrbBreathing ? 0.28 : 0.14), radius: isOrbBreathing ? 24 : 12, x: 0, y: 0)
-                .shadow(color: Color.purple.opacity(isOrbBreathing ? 0.32 : 0.16), radius: isOrbBreathing ? 30 : 14, x: 0, y: 8)
+                .shadow(color: Color.cyan.opacity(isOrbBreathing ? 0.28 : 0.14), radius: isOrbBreathing ? 20 : 10, x: 0, y: 0)
+                .shadow(color: Color.purple.opacity(isOrbBreathing ? 0.32 : 0.16), radius: isOrbBreathing ? 24 : 12, x: 0, y: 6)
 
             Text("✦")
-                .font(.system(size: isOrbBreathing ? 32 : 28, weight: .semibold))
+                .font(.system(size: isOrbBreathing ? 26 : 22, weight: .semibold))
                 .foregroundStyle(.white.opacity(isOrbBreathing ? 0.86 : 0.68))
                 .scaleEffect(isOrbBreathing ? 1.08 : 0.92)
         }
-        .frame(height: 90)
+        .frame(height: 72)
         .animation(.easeInOut(duration: 1.75).repeatForever(autoreverses: true), value: isOrbBreathing)
     }
 
     private var suggestionsList: some View {
-        VStack(alignment: .leading, spacing: 11) {
+        VStack(alignment: .leading, spacing: 8) {
             Text("Suggested for you")
-                .font(.system(size: 16, weight: .medium, design: .rounded))
+                .font(.system(size: 13, weight: .medium, design: .rounded))
                 .foregroundStyle(Color(red: 0.45, green: 0.48, blue: 0.60))
                 .padding(.leading, 4)
-                .padding(.bottom, 4)
+                .padding(.bottom, 2)
 
             suggestionRow(icon: "chart.line.uptrend.xyaxis", title: "Why did I overspend this week?", tint: .purple)
             suggestionRow(icon: "viewfinder", title: "Scan a receipt", tint: .cyan)
@@ -389,18 +334,18 @@ struct HomeAIAssistantOverlay: View {
             viewModel.draftMessage = title
             viewModel.sendDraftMessage()
         } label: {
-            HStack(spacing: 17) {
+            HStack(spacing: 13) {
                 Circle()
                     .fill(tint.opacity(0.16))
-                    .frame(width: 45, height: 45)
+                    .frame(width: 36, height: 36)
                     .overlay(
                         Image(systemName: icon)
-                            .font(.system(size: 20, weight: .semibold))
+                            .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(tint.opacity(0.78))
                     )
 
                 Text(title)
-                    .font(.system(size: 16, weight: .medium, design: .rounded))
+                    .font(.system(size: 14, weight: .medium, design: .rounded))
                     .foregroundStyle(Color(red: 0.18, green: 0.20, blue: 0.28))
                     .lineLimit(1)
                     .minimumScaleFactor(0.86)
@@ -408,13 +353,13 @@ struct HomeAIAssistantOverlay: View {
                 Spacer()
 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Color.purple.opacity(0.60))
             }
-            .padding(.horizontal, 17)
-            .frame(height: 58)
+            .padding(.horizontal, 14)
+            .frame(height: 48)
             .background(.white.opacity(0.82), in: Capsule())
-            .shadow(color: Color.purple.opacity(0.035), radius: 13, x: 0, y: 7)
+            .shadow(color: Color.purple.opacity(0.035), radius: 10, x: 0, y: 5)
         }
         .buttonStyle(.plain)
     }
