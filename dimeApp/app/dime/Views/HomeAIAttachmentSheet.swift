@@ -173,6 +173,7 @@ struct HomeAIAttachmentSheet: View {
                 guard !pages.isEmpty else { return }
                 scannedDocumentDraft = ScannedDocumentDraft(pages: pages)
             }
+            .ignoresSafeArea()
         }
         .fullScreenCover(item: $scannedDocumentDraft) { draft in
             ScannedDocumentPreviewView(pages: draft.pages) { pages, sourceText in

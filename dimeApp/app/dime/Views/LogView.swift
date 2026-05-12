@@ -587,232 +587,220 @@ struct NumberView: AnimatableModifier {
 
 struct LogInsightsView: View {
     @EnvironmentObject var dataController: DataController
-    @Environment(\.dynamicTypeSize) var dynamicTypeSize
 
     @Binding var navBarText: String
-
     let showCents: Bool
     let currencySymbol: String
 
-    @State var showMenu1 = false
-    let subtitleText = ["today", "this week", "this month", "this year", "all time"]
-
+    @State private var showMenu = false
     @AppStorage("logInsightsTimeFrame", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) var timeframe = 2
-    @AppStorage("logInsightsType", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) var insightsType = 1
 
-    @AppStorage("logViewLineGraph", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) var lineGraph: Bool = false
+    private let periodLabels = ["today", "this week", "this month", "this year", "all time"]
 
-    var netTotal: (value: Double, positive: Bool) {
-        dataController.getLogViewTotalNet(type: timeframe)
+    private var netTotal: (value: Double, positive: Bool) { dataController.getLogViewTotalNet(type: timeframe) }
+    private var totalSpent: Double { dataController.getLogViewTotalSpent(type: timeframe) }
+    private var totalIncome: Double { dataController.getLogViewTotalIncome(type: timeframe) }
+
+    private var weekStart: Date {
+        var cal = Calendar(identifier: .gregorian)
+        cal.firstWeekday = UserDefaults(suiteName: "group.com.riskcreatives.duit")?.integer(forKey: "firstWeekday") ?? 1
+        let comps = cal.dateComponents([.weekOfYear, .yearForWeekOfYear], from: Date.now)
+        return cal.date(from: comps) ?? Date.now
     }
 
-    var range: Int {
-        var calendar = Calendar(identifier: .gregorian)
-
-        calendar.firstWeekday = UserDefaults(suiteName: "group.com.riskcreatives.duit")?.integer(forKey: "firstWeekday") ?? 0
-        calendar.minimumDaysInFirstWeek = 4
-
-        if timeframe == 3 {
-            let dateComponents = calendar.dateComponents([.month, .year], from: Date.now)
-
-            let thisMonth = calendar.date(from: dateComponents) ?? Date.now
-            let numberOfDays = calendar.dateComponents([.day], from: thisMonth, to: Date.now)
-
-            return (numberOfDays.day ?? 0) + 1
-        } else if timeframe == 4 {
-            let dateComponents = calendar.dateComponents([.year], from: Date.now)
-
-            let thisYear = calendar.date(from: dateComponents) ?? Date.now
-
-            let numberOfMonths = calendar.dateComponents([.month], from: thisYear, to: Date.now)
-
-            return (numberOfMonths.month ?? 0) + 1
-        } else {
-            let dateComponents = calendar.dateComponents([.weekOfYear, .yearForWeekOfYear], from: Date.now)
-            let thisWeek = calendar.date(from: dateComponents) ?? Date.now
-            let numberOfDays = calendar.dateComponents([.day], from: thisWeek, to: Date.now)
-
-            return (numberOfDays.day ?? 0) + 1
-        }
+    private var lastWeekStart: Date {
+        Calendar.current.date(byAdding: .weekOfYear, value: -1, to: weekStart) ?? Date.now
     }
 
-    var totalSpent: Double {
-        return dataController.getLogViewTotalSpent(type: timeframe)
+    private var thisWeekData: (amount: Double, maximum: Double, average: Double, numberOfDays: Int, dates: [Date], dateDictionary: [Date: Double]) {
+        dataController.getInsights(type: 1, date: weekStart, income: false)
     }
 
-    var totalIncome: Double {
-        return dataController.getLogViewTotalIncome(type: timeframe)
+    private var lastWeekTotal: Double {
+        dataController.getInsights(type: 1, date: lastWeekStart, income: false).amount
     }
 
-    var lineGraphData: [LineGraphDataPoint] {
-        if insightsType == 1 {
-            return dataController.getLineGraphDataNet(type: timeframe)
-        } else if insightsType == 2 {
-            return dataController.getLineGraphData(income: true, type: timeframe)
-        } else {
-            return dataController.getLineGraphData(income: false, type: timeframe)
-        }
-    }
-
-    var lineGraphGreen: Bool {
-        if insightsType == 1 {
-            return (lineGraphData.first?.amount ?? 0.0) < (lineGraphData.last?.amount ?? 0.0)
-        } else if insightsType == 2 {
-            return true
-        } else {
-            return false
-        }
-    }
-
-    var amount: Double {
-        if insightsType == 1 {
-            return netTotal.value
-        } else if insightsType == 2 {
-            return totalIncome
-        } else {
-            return totalSpent
-        }
-    }
-
-    var headingText: String {
-        if insightsType == 1 {
-            return "Net total"
-        } else if insightsType == 2 {
-            return "Earned"
-        } else {
-            return "Spent"
-        }
+    private var weekChangePercent: Int? {
+        guard lastWeekTotal > 0 else { return nil }
+        let pct = ((thisWeekData.amount - lastWeekTotal) / lastWeekTotal) * 100
+        return Int(pct.rounded())
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // "Net total" title + timeframe + amount
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 8) {
-                    Text("Net total")
-                        .font(Font.satoshi(.title2, weight: .bold))
-                        .foregroundColor(Color.PrimaryText)
-                    Button { showMenu1 = true } label: {
-                        HStack(spacing: 3) {
-                            Text(LocalizedStringKey(subtitleText[timeframe - 1]))
-                                .font(Font.satoshi(.caption, weight: .semibold))
-                                .foregroundColor(Color.SubtitleText)
-                            Image(systemName: "chevron.down")
-                                .font(Font.satoshi(10, weight: .bold))
-                                .foregroundColor(Color.SubtitleText)
-                        }
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.SecondaryBackground, in: Capsule())
-                    }
-                    .popover(present: $showMenu1, attributes: {
-                        $0.position = .absolute(originAnchor: .bottomRight, popoverAnchor: .topRight)
-                        $0.rubberBandingMode = .none
-                        $0.sourceFrameInset = UIEdgeInsets(top: 0, left: 0, bottom: -10, right: 0)
-                        $0.presentation.animation = .easeInOut(duration: 0.2)
-                        $0.dismissal.animation = .easeInOut(duration: 0.3)
-                    }) {
-                        TimePickerView(showMenu: $showMenu1, timeframe: $timeframe)
-                    }
-                }
+            headingSection
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
+                .padding(.bottom, 22)
 
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(currencySymbol)
-                        .font(Font.satoshi(.title, weight: .semibold))
-                        .foregroundColor(Color.SubtitleText)
-                    Text(formatNumber(showCents: showCents, number: netTotal.value))
-                        .font(Font.satoshi(46, weight: .bold))
-                        .foregroundColor(Color.PrimaryText)
-                        .minimumScaleFactor(0.5)
-                        .lineLimit(1)
+            balanceCard
+                .padding(.horizontal, 16)
+
+            weeklyChartSection
+                .padding(.horizontal, 16)
+                .padding(.top, 20)
+                .padding(.bottom, 8)
+        }
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+    }
+
+    // MARK: - Heading
+
+    private var headingSection: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Here's your money statement for")
+                .font(Font.satoshi(24, weight: .semibold))
+                .foregroundColor(Color.PrimaryText)
+
+            Button { showMenu = true } label: {
+                HStack(spacing: 4) {
+                    Text(periodLabels[timeframe - 1] + ".")
+                        .font(Font.satoshi(24, weight: .semibold))
+                        .foregroundColor(Color(hex: "C75538"))
+                    Image(systemName: "chevron.down")
+                        .font(Font.satoshi(12, weight: .bold))
+                        .foregroundColor(Color(hex: "C75538").opacity(0.65))
+                }
+            }
+            .buttonStyle(.plain)
+            .popover(present: $showMenu, attributes: {
+                $0.position = .absolute(originAnchor: .bottomLeft, popoverAnchor: .topLeft)
+                $0.rubberBandingMode = .none
+                $0.sourceFrameInset = UIEdgeInsets(top: 0, left: 0, bottom: -10, right: 0)
+                $0.presentation.animation = .easeInOut(duration: 0.2)
+                $0.dismissal.animation = .easeInOut(duration: 0.3)
+            }) {
+                TimePickerView(showMenu: $showMenu, timeframe: $timeframe)
+            }
+        }
+    }
+
+    // MARK: - Balance Card
+
+    private var balanceCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top) {
+                Text("AVAILABLE")
+                    .font(Font.satoshi(11, weight: .semibold))
+                    .foregroundColor(Color.white.opacity(0.50))
+                    .tracking(1.2)
+
+                Spacer()
+
+                ZStack {
+                    Circle()
+                        .fill(Color.white.opacity(0.10))
+                        .frame(width: 32, height: 32)
+                    Image(systemName: "arrow.up.right")
+                        .font(Font.satoshi(13, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.70))
                 }
             }
             .padding(.horizontal, 20)
-            .padding(.top, 8)
-            .padding(.bottom, 20)
+            .padding(.top, 20)
 
-            // Two stat cards — SAKU style
-            HStack(spacing: 12) {
-                // Spent card
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Text("Spent")
-                            .font(Font.satoshi(.caption, weight: .medium))
-                            .foregroundColor(Color.SubtitleText)
-                        Spacer()
-                        ZStack {
-                            Circle()
-                                .fill(Color(hex: "D95F5F").opacity(0.12))
-                                .frame(width: 28, height: 28)
-                            Image(systemName: "arrow.up.right")
-                                .font(Font.satoshi(11, weight: .bold))
-                                .foregroundColor(Color(hex: "D95F5F"))
-                        }
-                    }
-
-                    Spacer(minLength: 0)
-
-                    Text("\(currencySymbol)\(formatNumber(showCents: showCents, number: totalSpent))")
-                        .font(Font.satoshi(.title3, weight: .bold))
-                        .foregroundColor(Color.PrimaryText)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-
-                    Text(subtitleText[timeframe - 1])
-                        .font(Font.satoshi(.caption2, weight: .medium))
-                        .foregroundColor(Color.EvenLighterText)
-                }
-                .padding(16)
-                .frame(maxWidth: .infinity, minHeight: 130)
-                .background(Color.SecondaryBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(Color.Outline, lineWidth: 1)
-                )
-
-                // Income card
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Text("Income")
-                            .font(Font.satoshi(.caption, weight: .medium))
-                            .foregroundColor(Color.SubtitleText)
-                        Spacer()
-                        ZStack {
-                            Circle()
-                                .fill(Color(hex: "5B8C5A").opacity(0.12))
-                                .frame(width: 28, height: 28)
-                            Image(systemName: "arrow.down.left")
-                                .font(Font.satoshi(11, weight: .bold))
-                                .foregroundColor(Color(hex: "5B8C5A"))
-                        }
-                    }
-
-                    Spacer(minLength: 0)
-
-                    Text("\(currencySymbol)\(formatNumber(showCents: showCents, number: totalIncome))")
-                        .font(Font.satoshi(.title3, weight: .bold))
-                        .foregroundColor(Color.PrimaryText)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-
-                    Text(subtitleText[timeframe - 1])
-                        .font(Font.satoshi(.caption2, weight: .medium))
-                        .foregroundColor(Color.EvenLighterText)
-                }
-                .padding(16)
-                .frame(maxWidth: .infinity, minHeight: 130)
-                .background(Color.SecondaryBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(Color.Outline, lineWidth: 1)
-                )
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(currencySymbol)
+                    .font(Font.satoshi(22, weight: .medium))
+                    .foregroundColor(Color.white.opacity(0.65))
+                Text(formatNumber(showCents: showCents, number: netTotal.value))
+                    .font(Font.satoshi(42, weight: .semibold))
+                    .foregroundColor(Color.white)
+                    .monospacedDigit()
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(1)
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 8)
+            .padding(.horizontal, 20)
+            .padding(.top, 10)
+
+            Rectangle()
+                .fill(Color.white.opacity(0.10))
+                .frame(height: 1)
+                .padding(.horizontal, 20)
+                .padding(.top, 18)
+                .padding(.bottom, 0)
+
+            HStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("SPENT \(periodLabels[timeframe - 1].uppercased())")
+                        .font(Font.satoshi(10, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.45))
+                        .tracking(0.8)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                    Text("\(currencySymbol)\(formatNumber(showCents: showCents, number: totalSpent))")
+                        .font(Font.satoshi(16, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.90))
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Rectangle()
+                    .fill(Color.white.opacity(0.12))
+                    .frame(width: 1, height: 32)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("INCOME \(periodLabels[timeframe - 1].uppercased())")
+                        .font(Font.satoshi(10, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.45))
+                        .tracking(0.8)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                    Text("\(currencySymbol)\(formatNumber(showCents: showCents, number: totalIncome))")
+                        .font(Font.satoshi(16, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.90))
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.leading, 16)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
         }
-        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+        .background(Color(hex: "2E3428"))
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+    }
+
+    // MARK: - Weekly Chart
+
+    private var weeklyChartSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .center) {
+                Text("Spent this week")
+                    .font(Font.satoshi(.subheadline, weight: .semibold))
+                    .foregroundColor(Color.PrimaryText)
+
+                Spacer()
+
+                if let pct = weekChangePercent {
+                    HStack(spacing: 3) {
+                        Image(systemName: pct <= 0 ? "arrow.down" : "arrow.up")
+                            .font(Font.satoshi(10, weight: .bold))
+                        Text("\(abs(pct))% vs last week")
+                            .font(Font.satoshi(12, weight: .medium))
+                    }
+                    .foregroundColor(pct <= 0 ? Color(hex: "4A8C4A") : Color(hex: "C75538"))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(
+                        (pct <= 0 ? Color(hex: "4A8C4A") : Color(hex: "C75538")).opacity(0.10),
+                        in: Capsule()
+                    )
+                }
+            }
+
+            DashboardWeekChart(
+                daysOfWeek: thisWeekData.dates,
+                dayDictionary: thisWeekData.dateDictionary,
+                maxValue: thisWeekData.maximum,
+                currencySymbol: currencySymbol,
+                showCents: showCents
+            )
+        }
     }
 
     func formatNumber(showCents: Bool, number: Double) -> String {
@@ -821,6 +809,59 @@ struct LogInsightsView: View {
         } else {
             return String(format: "%d", Int(floor(number)))
         }
+    }
+}
+
+private struct DashboardWeekChart: View {
+    let daysOfWeek: [Date]
+    let dayDictionary: [Date: Double]
+    let maxValue: Double
+    let currencySymbol: String
+    let showCents: Bool
+
+    private let barHeight: CGFloat = 80
+    private let dayLetters = ["M", "T", "W", "T", "F", "S", "S"]
+
+    private func safeMax() -> Double { max(maxValue * 1.15, 1) }
+
+    private func barHeightFor(_ date: Date) -> CGFloat {
+        let val = dayDictionary[date] ?? 0
+        guard safeMax() > 0 else { return 0 }
+        return CGFloat(val / safeMax()) * barHeight
+    }
+
+    private func isToday(_ date: Date) -> Bool {
+        Calendar.current.isDateInToday(date)
+    }
+
+    private func dayLetter(for index: Int) -> String {
+        guard index < dayLetters.count else { return "?" }
+        return dayLetters[index]
+    }
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: 0) {
+            ForEach(Array(daysOfWeek.enumerated()), id: \.offset) { index, day in
+                VStack(spacing: 6) {
+                    ZStack(alignment: .bottom) {
+                        RoundedRectangle(cornerRadius: 5, style: .continuous)
+                            .fill(Color(hex: "2E3428").opacity(0.07))
+                            .frame(width: 20, height: barHeight)
+
+                        RoundedRectangle(cornerRadius: 5, style: .continuous)
+                            .fill(isToday(day) ? Color(hex: "2E3428") : Color(hex: "2E3428").opacity(0.42))
+                            .frame(width: 20, height: max(barHeightFor(day), barHeightFor(day) > 0 ? 4 : 0))
+                    }
+                    .opacity(day > Date.now ? 0.25 : 1)
+
+                    Text(dayLetter(for: index))
+                        .font(Font.satoshi(11, weight: isToday(day) ? .bold : .medium))
+                        .foregroundColor(isToday(day) ? Color.PrimaryText : Color.SubtitleText)
+                }
+                .frame(maxWidth: .infinity)
+            }
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 
