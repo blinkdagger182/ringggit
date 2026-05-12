@@ -929,61 +929,59 @@ private struct HomeAIMarkdownText: View {
     let text: String
 
     var body: some View {
-        Markdown(text)
-        .markdownTheme(.gitHub)
-        .markdownBlockStyle(\.document) { configuration in
-            configuration.label
-                .background(Color.clear)
-        }
-        .markdownTextStyle(\.text) {
-            FontSize(.em(1.0))
-            ForegroundColor(Color.white.opacity(0.90))
-            BackgroundColor(nil)
-        }
-        .markdownTextStyle(\.strong) {
-            FontWeight(.semibold)
-        }
-        .markdownTextStyle(\.code) {
-            FontFamilyVariant(.monospaced)
-            FontSize(.em(0.92))
-            BackgroundColor(nil)
-        }
-        .markdownBlockStyle(\.paragraph) { configuration in
-            configuration.label
-                .relativeLineSpacing(.em(0.22))
-                .markdownMargin(top: 0, bottom: 14)
-        }
-        .markdownBlockStyle(\.codeBlock) { configuration in
-            ScrollView(.horizontal, showsIndicators: false) {
-                configuration.label
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-            }
+        markdownWithBlockStyles
+            .tint(Color(hex: "4A5240"))
+            .textSelection(.enabled)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.clear)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(Color(hex: "4A5240").opacity(0.22), lineWidth: 1)
-            )
-            .markdownMargin(top: 6, bottom: 16)
-        }
-        .markdownBlockStyle(\.blockquote) { configuration in
-            configuration.label
-                .padding(.leading, 14)
-                .padding(.vertical, 2)
-                .markdownTextStyle {
-                    ForegroundColor(Color(.secondaryLabel))
+    }
+
+    private var markdownWithBlockStyles: some View {
+        markdownWithTextStyles
+            .markdownBlockStyle(\.paragraph) { c in
+                c.label
+                    .relativeLineSpacing(.em(0.22))
+                    .markdownMargin(top: 0, bottom: 14)
+            }
+            .markdownBlockStyle(\.codeBlock) { c in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    c.label.padding(.horizontal, 12).padding(.vertical, 10)
                 }
-                .overlay(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 999, style: .continuous)
-                        .fill(Color(hex: "4A5240").opacity(0.45))
-                        .frame(width: 3)
-                }
-                .markdownMargin(top: 4, bottom: 16)
-        }
-        .tint(Color(hex: "4A5240"))
-        .textSelection(.enabled)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.clear)
+                .background(Color.clear)
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(Color(hex: "4A5240").opacity(0.22), lineWidth: 1))
+                .markdownMargin(top: 6, bottom: 16)
+            }
+            .markdownBlockStyle(\.blockquote) { c in
+                c.label
+                    .padding(.leading, 14)
+                    .padding(.vertical, 2)
+                    .markdownTextStyle { ForegroundColor(Color(.secondaryLabel)) }
+                    .overlay(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 999, style: .continuous)
+                            .fill(Color(hex: "4A5240").opacity(0.45))
+                            .frame(width: 3)
+                    }
+                    .markdownMargin(top: 4, bottom: 16)
+            }
+    }
+
+    private var markdownWithTextStyles: some View {
+        Markdown(text)
+            .markdownTheme(.gitHub)
+            .markdownTextStyle(\.text) {
+                FontSize(.em(1.0))
+                ForegroundColor(Color.white.opacity(0.90))
+                BackgroundColor(nil)
+            }
+            .markdownTextStyle(\.strong) {
+                FontWeight(.semibold)
+            }
+            .markdownTextStyle(\.code) {
+                FontFamilyVariant(.monospaced)
+                FontSize(.em(0.92))
+                BackgroundColor(nil)
+            }
     }
 }
 

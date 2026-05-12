@@ -6,6 +6,7 @@
 //
 
 import Combine
+import CoreData
 import Foundation
 import PDFKit
 import Popovers
@@ -40,6 +41,7 @@ struct TransactionView: View {
     @State private var repeatCoefficient = 1
     @State private var showRecurring = false
     @State var income = false
+    @State private var recurringDetection: (type: Int, coefficient: Int)?
 
     var transactionTypeString: String {
         if income {
@@ -466,6 +468,10 @@ struct TransactionView: View {
                         }
 
                         NoteView(note: $note, focused: $textFieldFocused)
+
+                        if let detection = recurringDetection, repeatType == 0 {
+                            recurringDetectionBanner(detection)
+                        }
 
                         transactionAttachmentBox
                     }
@@ -901,9 +907,13 @@ struct TransactionView: View {
                 }
             }
         }
+        .onChange(of: note) { newNote in
+            detectRecurring(for: newNote)
+        }
         .onChange(of: income) { _ in
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             category = nil
+            detectRecurring(for: note)
         }
         .onChange(of: isDragging) { _ in
             if !isDragging {
@@ -1223,6 +1233,95 @@ struct TransactionView: View {
                     .strokeBorder(bucket == nil ? Color.Outline : Color(hex: bucket?.colour ?? "4A5240").opacity(0.28), lineWidth: 1.5)
             )
         }
+    }
+
+    @ViewBuilder
+    private func recurringDetectionBanner(_ detection: (type: Int, coefficient: Int)) -> some View {
+        let label: String = {
+            switch detection.type {
+            case 1: return detection.coefficient == 1 ? "daily" : "every \(detection.coefficient) days"
+            case 2: return detection.coefficient == 1 ? "weekly" : "every \(detection.coefficient) weeks"
+            case 3: return detection.coefficient == 1 ? "monthly" : "every \(detection.coefficient) months"
+            default: return "recurring"
+            }
+        }()
+        Button {
+            repeatType = detection.type
+            repeatCoefficient = detection.coefficient
+            recurringDetection = nil
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.clockwise")
+                    .font(Font.satoshi(12, weight: .semibold))
+                Text("Looks \(label) — tap to set recurring")
+                    .font(Font.satoshi(.subheadline, weight: .medium))
+                    .lineLimit(1)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(Font.satoshi(11, weight: .semibold))
+            }
+            .foregroundColor(Color.IncomeGreen)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .background(Color.IncomeGreen.opacity(0.12), in: RoundedRectangle(cornerRadius: 11.5, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 11.5, style: .continuous)
+                    .strokeBorder(Color.IncomeGreen.opacity(0.25), lineWidth: 1.5)
+            )
+        }
+        .buttonStyle(.plain)
+        .transition(.opacity.combined(with: .move(edge: .top)))
+    }
+
+    private func detectRecurring(for noteText: String) {
+        let trimmed = noteText.trimmingCharacters(in: .whitespaces)
+        guard trimmed.count >= 2 else {
+            withAnimation { recurringDetection = nil }
+            return
+        }
+        let ctx = dataController.container.viewContext
+        let req = NSFetchRequest<Transaction>(entityName: "Transaction")
+        req.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            NSPredicate(format: "note ==[cd] %@", trimmed),
+            NSPredicate(format: "income == %d", income)
+        ])
+        req.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
+        req.fetchLimit = 6
+        guard let results = try? ctx.fetch(req), results.count >= 2 else {
+            withAnimation { recurringDetection = nil }
+            return
+        }
+        let dates = results.compactMap { $0.date }.sorted(by: >)
+        guard dates.count >= 2 else {
+            withAnimation { recurringDetection = nil }
+            return
+        }
+        var intervals: [Int] = []
+        for i in 0 ..< dates.count - 1 {
+            let diff = Calendar.current.dateComponents([.day], from: dates[i + 1], to: dates[i]).day ?? 0
+            intervals.append(diff)
+        }
+        func allClose(_ values: [Int], to target: Int, tolerance: Int) -> Bool {
+            values.allSatisfy { abs($0 - target) <= tolerance }
+        }
+        let avg = intervals.reduce(0, +) / intervals.count
+        let result: (type: Int, coefficient: Int)?
+        if allClose(intervals, to: avg, tolerance: 2) {
+            if allClose(intervals, to: 1, tolerance: 1) {
+                result = (1, 1)
+            } else if avg % 7 == 0 || allClose(intervals, to: avg, tolerance: 2) && avg >= 5 && avg <= 9 {
+                result = (2, max(1, avg / 7))
+            } else if allClose(intervals, to: avg, tolerance: 5) && avg >= 25 && avg <= 35 {
+                result = (3, 1)
+            } else if allClose(intervals, to: avg, tolerance: 5) && avg >= 55 && avg <= 65 {
+                result = (3, 2)
+            } else {
+                result = nil
+            }
+        } else {
+            result = nil
+        }
+        withAnimation { recurringDetection = result }
     }
 
     @ViewBuilder

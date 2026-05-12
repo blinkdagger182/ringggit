@@ -36,7 +36,7 @@ struct HomeAIAttachmentSheet: View {
                 .fill(Color(.systemGray4))
                 .frame(width: 36, height: 5)
                 .frame(maxWidth: .infinity)
-                .padding(.top, 10)
+                .padding(.top, 24)
                 .padding(.bottom, 18)
 
             // Photos header

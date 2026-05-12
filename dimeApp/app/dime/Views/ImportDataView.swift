@@ -6,6 +6,7 @@
 //
 
 import ConfettiSwiftUI
+import CoreData
 import Foundation
 import SwiftUI
 import UIKit
@@ -890,6 +891,25 @@ struct ImportDataView: View {
         }
     }
 
+    private func uncategorizedCategory() -> Category {
+        let ctx = dataController.container.viewContext
+        let req = NSFetchRequest<Category>(entityName: "Category")
+        req.predicate = NSPredicate(format: "name ==[cd] %@", "Uncategorized")
+        req.fetchLimit = 1
+        if let existing = try? ctx.fetch(req), let cat = existing.first {
+            return cat
+        }
+        let cat = Category(context: ctx)
+        cat.name = "Uncategorized"
+        cat.emoji = "❓"
+        cat.colour = "SubtitleText"
+        cat.income = false
+        cat.dateCreated = Date.now
+        cat.id = UUID()
+        cat.order = (dataController.getAllCategories(income: false).map(\.order).max() ?? 0) + 1
+        return cat
+    }
+
     func importData() {
         let categoryColumnIndex = selectedColumns[0]
         let noteColumnIndex = selectedColumns[1]
@@ -899,22 +919,25 @@ struct ImportDataView: View {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = dateFormatString
 
-        let categoryDictionary: [String: Category] = Dictionary(uniqueKeysWithValues: uniqueCategories.map { ($0.excelValue, $0.category!) })
+        let categoryDictionary: [String: Category?] = Dictionary(uniqueKeysWithValues: uniqueCategories.map { ($0.excelValue, $0.category) })
+
+        var uncategorized: Category?
 
         rows.forEach { row in
-//            let rowCategory = categoryDictionary[row[categoryColumnIndex]]
             if let transactionDate = dateFormatter.date(from: row[dateColumnIndex]) {
-                if let rowCategory = categoryDictionary[row[categoryColumnIndex]] {
-                    if let transactionAmount = Double(row[amountColumnIndex]) {
-                        _ = dataController.newTransaction(note: row[noteColumnIndex], category: rowCategory, income: rowCategory.income, amount: abs(transactionAmount), date: transactionDate, repeatType: 0, repeatCoefficient: 1, delay: false)
-                    } else {
-                        processingState = .error
-                        errorMessage = "Invalid values in amount column."
-                        return
-                    }
+                let rowCategory: Category
+                let matched: Category? = categoryDictionary[row[categoryColumnIndex]] ?? nil
+                if let matched {
+                    rowCategory = matched
+                } else {
+                    if uncategorized == nil { uncategorized = uncategorizedCategory() }
+                    rowCategory = uncategorized!
+                }
+                if let transactionAmount = Double(row[amountColumnIndex]) {
+                    _ = dataController.newTransaction(note: row[noteColumnIndex], category: rowCategory, income: rowCategory.income, amount: abs(transactionAmount), date: transactionDate, repeatType: 0, repeatCoefficient: 1, delay: false)
                 } else {
                     processingState = .error
-                    errorMessage = "Error occurred while matching categories."
+                    errorMessage = "Invalid values in amount column."
                     return
                 }
             } else {

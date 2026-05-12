@@ -1421,11 +1421,41 @@ struct SingleTransactionView: View {
     let future: Bool
     let showExpenseOrIncomeSign: Bool
 
+    @FetchRequest var potentialDuplicates: FetchedResults<Transaction>
+
+    var isDuplicate: Bool { potentialDuplicates.count > 1 }
+
     @State var refreshID = UUID()
 
     @Environment(\.managedObjectContext) var moc
     @EnvironmentObject var dataController: DataController
     @EnvironmentObject var transactionManager: OverallTransactionManager
+
+    init(transaction: Transaction, showCents: Bool, currencySymbol: String, currency: String, swapTimeLabel: Bool, future: Bool, showExpenseOrIncomeSign: Bool) {
+        self.transaction = transaction
+        self.showCents = showCents
+        self.currencySymbol = currencySymbol
+        self.currency = currency
+        self.swapTimeLabel = swapTimeLabel
+        self.future = future
+        self.showExpenseOrIncomeSign = showExpenseOrIncomeSign
+
+        let dayStart = Calendar.current.startOfDay(for: transaction.wrappedDate)
+        let dayEnd = Calendar.current.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart
+
+        var predicates: [NSPredicate] = [
+            NSPredicate(format: "amount == %f", transaction.amount),
+            NSPredicate(format: "income == %d", transaction.income),
+            NSPredicate(format: "date >= %@ AND date < %@", dayStart as CVarArg, dayEnd as CVarArg)
+        ]
+        if let category = transaction.category {
+            predicates.append(NSPredicate(format: "category == %@", category))
+        }
+        let req = NSFetchRequest<Transaction>(entityName: "Transaction")
+        req.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+        req.sortDescriptors = []
+        _potentialDuplicates = FetchRequest(fetchRequest: req)
+    }
 
     // delete mode
 //    @State private var toDelete: Transaction?
@@ -1496,6 +1526,16 @@ struct SingleTransactionView: View {
                                 .padding(3)
                                 .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 6))
                                 .offset(x: 5, y: 5)
+                        }
+                    }
+                    .overlay(alignment: .topLeading) {
+                        if isDuplicate {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(Font.satoshi(10, weight: .bold))
+                                .foregroundColor(.orange)
+                                .padding(2)
+                                .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 4))
+                                .offset(x: -4, y: -4)
                         }
                     }
 
