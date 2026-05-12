@@ -931,6 +931,10 @@ private struct HomeAIMarkdownText: View {
     var body: some View {
         Markdown(text)
         .markdownTheme(.gitHub)
+        .markdownBlockStyle(\.document) { configuration in
+            configuration.label
+                .background(Color.clear)
+        }
         .markdownTextStyle(\.text) {
             FontSize(.em(1.0))
             ForegroundColor(Color.white.opacity(0.90))

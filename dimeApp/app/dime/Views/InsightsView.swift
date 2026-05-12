@@ -40,145 +40,93 @@ struct InsightsView: View {
         }
     }
 
-//    @State private var holdingIncome = false
-//    @Namespace var animation
-
     var body: some View {
-        if transactions.isEmpty {
-            VStack(spacing: 5) {
-                Image("chart")
-                    .resizable()
-                    .frame(width: 75, height: 75)
-                    .padding(.bottom, 20)
+        VStack(spacing: 0) {
+            insightsHeader
 
-                Text("Analyse Your Expenditure")
-                    .font(Font.satoshi(.title2, weight: .medium))
-//                    .font(Font.satoshi(23.5, weight: .medium))
-                    .foregroundColor(Color.PrimaryText.opacity(0.8))
-                    .multilineTextAlignment(.center)
-
-                Text("As transactions start piling up")
-                    .font(Font.satoshi(.body, weight: .medium))
-//                    .font(Font.satoshi(18, weight: .medium))
-                    .foregroundColor(Color.SubtitleText.opacity(0.7))
-                    .multilineTextAlignment(.center)
-            }
-            .padding(.horizontal, 30)
-            .frame(height: 250, alignment: .top)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .ignoresSafeArea(.all)
-            .background(
-                ZStack {
-                    Color.PrimaryBackground
-                    HomeAIAnimatedGradientBackground()
-                        .opacity(0.9)
-                        .mask(
-                            LinearGradient(
-                                colors: [.clear, .black, .black],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                }
-            )
-            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-            .onAppear {
-                print("InsightsView: empty state, transactions=0")
-            }
-
-        } else {
-            VStack(spacing: 5) {
-                HStack {
-                    Text("Insights")
-                        .font(Font.satoshi(.title, weight: .semibold))
-                        .accessibility(addTraits: .isHeader)
-                    Spacer()
-
-                    Button {
-                        showTimeMenu = true
-                    } label: {
-                        HStack(spacing: 4.5) {
-                            Text(chartTypeString)
-                                .font(Font.satoshi(.body, weight: .medium))
-
-                            Image(systemName: "chevron.up.chevron.down")
-                                .font(Font.satoshi(.caption, weight: .medium))
-                        }
-                        .padding(3)
-                        .padding(.horizontal, 6)
-                        .foregroundColor(Color.PrimaryText.opacity(0.9))
-                        .background(Color.Outline, in: RoundedRectangle(cornerRadius: 6))
-                    }
-                    .popover(present: $showTimeMenu, attributes: {
-                        $0.position = .absolute(
-                            originAnchor: .bottomRight,
-                            popoverAnchor: .topRight
-                        )
-                        $0.rubberBandingMode = .none
-                        $0.sourceFrameInset = UIEdgeInsets(top: 0, left: 0, bottom: -10, right: 0)
-                        $0.presentation.animation = .easeInOut(duration: 0.2)
-                        $0.dismissal.animation = .easeInOut(duration: 0.3)
-                    }) {
-                        ChartTimePickerView(showMenu: $showTimeMenu)
-                    }
+            if transactions.isEmpty {
+                VStack(spacing: 5) {
+                    Image("chart")
+                        .resizable()
+                        .frame(width: 75, height: 75)
+                        .padding(.bottom, 20)
+                    Text("Analyse Your Expenditure")
+                        .font(Font.satoshi(.title2, weight: .medium))
+                        .foregroundColor(Color.PrimaryText.opacity(0.8))
+                        .multilineTextAlignment(.center)
+                    Text("As transactions start piling up")
+                        .font(Font.satoshi(.body, weight: .medium))
+                        .foregroundColor(Color.SubtitleText.opacity(0.7))
+                        .multilineTextAlignment(.center)
                 }
                 .padding(.horizontal, 30)
-                .padding(.top, 20)
-                .padding(.bottom, 20)
-
-                if chartType == 1 {
-                    LastThirtyDaysGraphView()
-                        .id(refreshID)
-                } else if chartType == 2 {
-                    LastSixMonthsGraphView()
-                        .id(refreshID)
-                } else if chartType == 3 {
-                    LastTwelveMonthsGraphView()
-                        .id(refreshID)
-                } else if chartType == 4 {
-                    MonthGraphView()
-                        .id(refreshID)
-                } else if chartType == 5 {
-                    YearGraphView()
-                        .id(refreshID)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                Group {
+                    if chartType == 1 {
+                        LastThirtyDaysGraphView().id(refreshID)
+                    } else if chartType == 2 {
+                        LastSixMonthsGraphView().id(refreshID)
+                    } else if chartType == 3 {
+                        LastTwelveMonthsGraphView().id(refreshID)
+                    } else if chartType == 4 {
+                        MonthGraphView().id(refreshID)
+                    } else if chartType == 5 {
+                        YearGraphView().id(refreshID)
+                    }
                 }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(
-                ZStack {
-                    Color.PrimaryBackground
-                    HomeAIAnimatedGradientBackground()
-                        .opacity(0.9)
-                        .mask(
-                            LinearGradient(
-                                colors: [.clear, .black, .black],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                }
-            )
-            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-            .onReceive(self.didSave) { _ in
-                self.refreshID = UUID()
-            }
-            .onAppear {
-                print("InsightsView: transactions=\(transactions.count)")
-                if let first = transactions.first {
-                    print("InsightsView: first transaction date=\(first.wrappedDate), note=\(first.wrappedNote)")
-                }
-
-                if chartType == 1 && !hasTransactions(inLastDays: 30) {
-                    chartType = 2
-                }
-
-                dataController.fixTwoDigitYearTransactions()
-                syncIncomePreference()
-            }
-            .onChange(of: chartType) { _ in
-                syncIncomePreference()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(Color.PrimaryBackground.ignoresSafeArea())
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+        .onReceive(self.didSave) { _ in self.refreshID = UUID() }
+        .onAppear {
+            if chartType == 1 && !hasTransactions(inLastDays: 30) { chartType = 2 }
+            dataController.fixTwoDigitYearTransactions()
+            syncIncomePreference()
+        }
+        .onChange(of: chartType) { _ in syncIncomePreference() }
+    }
+
+    private var insightsHeader: some View {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Insights")
+                    .font(Font.satoshi(.title, weight: .bold))
+                    .foregroundColor(Color.PrimaryText)
+
+                Button { showTimeMenu = true } label: {
+                    HStack(spacing: 4) {
+                        Text(chartTypeString)
+                            .font(Font.satoshi(.subheadline, weight: .medium))
+                        Image(systemName: "chevron.down")
+                            .font(Font.satoshi(11, weight: .semibold))
+                    }
+                    .foregroundColor(Color.SubtitleText)
+                }
+                .buttonStyle(.plain)
+                .popover(present: $showTimeMenu, attributes: {
+                    $0.position = .absolute(originAnchor: .bottomLeft, popoverAnchor: .topLeft)
+                    $0.rubberBandingMode = .none
+                    $0.sourceFrameInset = UIEdgeInsets(top: 0, left: 0, bottom: -10, right: 0)
+                    $0.presentation.animation = .easeInOut(duration: 0.2)
+                    $0.dismissal.animation = .easeInOut(duration: 0.3)
+                }) {
+                    ChartTimePickerView(showMenu: $showTimeMenu)
+                }
+            }
+
+            Spacer()
+
+            Image(systemName: "bell")
+                .font(Font.satoshi(.title3, weight: .regular))
+                .foregroundColor(Color.PrimaryText)
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 20)
+        .padding(.bottom, 14)
     }
 
     func hasTransactions(inLastDays days: Int) -> Bool {

@@ -701,10 +701,10 @@ struct LogInsightsView: View {
 
             HStack(alignment: .firstTextBaseline, spacing: 3) {
                 Text(currencySymbol)
-                    .font(Font.satoshi(22, weight: .medium))
+                    .font(.system(size: 22, weight: .medium, design: .default))
                     .foregroundColor(Color.white.opacity(0.65))
                 Text(formatNumber(showCents: showCents, number: netTotal.value))
-                    .font(Font.satoshi(42, weight: .semibold))
+                    .font(.system(size: 42, weight: .semibold, design: .default))
                     .foregroundColor(Color.white)
                     .monospacedDigit()
                     .minimumScaleFactor(0.5)
@@ -729,7 +729,7 @@ struct LogInsightsView: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
                     Text("\(currencySymbol)\(formatNumber(showCents: showCents, number: totalSpent))")
-                        .font(Font.satoshi(16, weight: .semibold))
+                        .font(.system(size: 16, weight: .semibold, design: .default))
                         .foregroundColor(Color.white.opacity(0.90))
                         .monospacedDigit()
                         .lineLimit(1)
@@ -749,7 +749,7 @@ struct LogInsightsView: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
                     Text("\(currencySymbol)\(formatNumber(showCents: showCents, number: totalIncome))")
-                        .font(Font.satoshi(16, weight: .semibold))
+                        .font(.system(size: 16, weight: .semibold, design: .default))
                         .foregroundColor(Color.white.opacity(0.90))
                         .monospacedDigit()
                         .lineLimit(1)
@@ -844,15 +844,15 @@ private struct DashboardWeekChart: View {
             ForEach(Array(daysOfWeek.enumerated()), id: \.offset) { index, day in
                 VStack(spacing: 6) {
                     ZStack(alignment: .bottom) {
-                        RoundedRectangle(cornerRadius: 5, style: .continuous)
-                            .fill(Color(hex: "2E3428").opacity(0.07))
-                            .frame(width: 20, height: barHeight)
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .fill(Color.PrimaryText.opacity(0.06))
+                            .frame(width: 12, height: barHeight)
 
-                        RoundedRectangle(cornerRadius: 5, style: .continuous)
-                            .fill(isToday(day) ? Color(hex: "2E3428") : Color(hex: "2E3428").opacity(0.42))
-                            .frame(width: 20, height: max(barHeightFor(day), barHeightFor(day) > 0 ? 4 : 0))
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .fill(isToday(day) ? Color(hex: "2E3428") : Color(hex: "2E3428").opacity(0.35))
+                            .frame(width: 12, height: max(barHeightFor(day), barHeightFor(day) > 0 ? 4 : 0))
                     }
-                    .opacity(day > Date.now ? 0.25 : 1)
+                    .opacity(day > Date.now ? 0.20 : 1)
 
                     Text(dayLetter(for: index))
                         .font(Font.satoshi(11, weight: isToday(day) ? .bold : .medium))

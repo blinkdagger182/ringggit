@@ -5,7 +5,6 @@
 //  Created by Rafael Soh on 20/5/22.
 //
 
-import CrookedText
 import CoreData
 import Foundation
 import Popovers
@@ -102,30 +101,29 @@ struct ActualBudgetView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                HStack {
-                    Text("Budgets")
-                        .font(Font.satoshi(.title, weight: .semibold))
-//                        .font(Font.satoshi(25, weight: .semibold))
+                HStack(alignment: .center) {
+                    Text("BUDGETS")
+                        .font(.system(size: 36, weight: .black))
+                        .tracking(1.5)
+                        .foregroundColor(Color.PrimaryText)
                         .accessibility(addTraits: .isHeader)
+
+                    Spacer()
 
                     Button {
                         newBudget = true
                     } label: {
                         Image(systemName: "plus")
-                            .font(Font.satoshi(.subheadline, weight: .semibold))
-//                            .font(Font.satoshi(14, weight: .semibold))
-                            .foregroundColor(Color.SubtitleText)
-                            .padding(4)
+                            .font(Font.satoshi(16, weight: .semibold))
+                            .foregroundColor(Color.PrimaryText)
+                            .frame(width: 40, height: 40)
                             .background(Color.SecondaryBackground, in: Circle())
-                            .contentShape(Circle())
                     }
-
-                    Spacer()
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.top, 20)
-                .padding(.horizontal, 30)
-                .padding(.bottom, 20)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 16)
 
                 if !budgets.isEmpty || !mainBudget.isEmpty || !buckets.isEmpty {
                     ScrollView(showsIndicators: false) {
@@ -203,29 +201,35 @@ struct ActualBudgetView: View {
                                 .padding(5)
                             }
 
-                            if !buckets.isEmpty {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    HStack {
-                                        Text("Buckets")
-                                            .font(Font.satoshi(.title3, weight: .semibold))
+                            VStack(alignment: .leading, spacing: 10) {
+                                HStack {
+                                    Text("BUCKETS")
+                                        .font(.system(size: 18, weight: .black))
+                                        .tracking(1.2)
+                                        .foregroundColor(Color.PrimaryText)
+
+                                    Spacer()
+
+                                    Button {
+                                        newBucket = true
+                                    } label: {
+                                        Image(systemName: "plus")
+                                            .font(Font.satoshi(14, weight: .semibold))
                                             .foregroundColor(Color.PrimaryText)
-
-                                        Spacer()
-
-                                        Button {
-                                            newBucket = true
-                                        } label: {
-                                            Image(systemName: "plus")
-                                                .font(Font.satoshi(.subheadline, weight: .semibold))
-                                                .foregroundColor(Color.SubtitleText)
-                                                .padding(4)
-                                                .background(Color.SecondaryBackground, in: Circle())
-                                        }
+                                            .frame(width: 32, height: 32)
+                                            .background(Color.SecondaryBackground, in: Circle())
                                     }
-                                    .padding(.horizontal, 25)
-                                    .padding(.top, 6)
+                                }
+                                .padding(.horizontal, 20)
+                                .padding(.top, 8)
 
-                                    VStack(spacing: 10) {
+                                if buckets.isEmpty {
+                                    Text("Create buckets for trips, claims, projects, and other spending workspaces.")
+                                        .font(Font.satoshi(.subheadline, weight: .medium))
+                                        .foregroundColor(Color.SubtitleText)
+                                        .padding(.horizontal, 20)
+                                } else {
+                                    VStack(spacing: 0) {
                                         ForEach(buckets, id: \.self) { bucket in
                                             NavigationLink(destination: DetailedBucketView(bucket: bucket)) {
                                                 BucketSummaryRow(bucket: bucket, onEdit: {
@@ -237,38 +241,10 @@ struct ActualBudgetView: View {
                                             .buttonStyle(.plain)
                                         }
                                     }
-                                    .padding(.horizontal, 25)
+                                    .padding(.horizontal, 20)
                                 }
-                                .padding(.top, 12)
-                            } else {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    HStack {
-                                        Text("Buckets")
-                                            .font(Font.satoshi(.title3, weight: .semibold))
-                                            .foregroundColor(Color.PrimaryText)
-
-                                        Spacer()
-
-                                        Button {
-                                            newBucket = true
-                                        } label: {
-                                            Image(systemName: "plus")
-                                                .font(Font.satoshi(.subheadline, weight: .semibold))
-                                                .foregroundColor(Color.SubtitleText)
-                                                .padding(4)
-                                                .background(Color.SecondaryBackground, in: Circle())
-                                        }
-                                    }
-                                    .padding(.horizontal, 25)
-                                    .padding(.top, 6)
-
-                                    Text("Create buckets for trips, claims, projects, and other spending workspaces.")
-                                        .font(Font.satoshi(.subheadline, weight: .medium))
-                                        .foregroundColor(Color.SubtitleText)
-                                        .padding(.horizontal, 25)
-                                }
-                                .padding(.top, 12)
                             }
+                            .padding(.top, 8)
                         }
                         .padding(.bottom, 70)
                     }
@@ -318,6 +294,7 @@ struct ActualBudgetView: View {
                             )
                         )
                 }
+                .ignoresSafeArea()
             )
             .sheet(item: $toEdit, onDismiss: {
                 toEdit = nil
@@ -465,6 +442,33 @@ private struct BudgetLimitMarker: View {
     }
 }
 
+private struct NewBudgetSpentBar: View {
+    let color: Color
+    let percent: Double
+    let totalWidth: CGFloat
+    let height: CGFloat
+
+    @State private var animWidth: CGFloat = 0
+    @AppStorage("animated", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) var animated: Bool = true
+
+    var body: some View {
+        ZStack(alignment: .leading) {
+            RoundedRectangle(cornerRadius: height / 2, style: .continuous)
+                .fill(color.opacity(0.12))
+                .frame(width: totalWidth, height: height)
+            RoundedRectangle(cornerRadius: height / 2, style: .continuous)
+                .fill(color)
+                .frame(width: max(animWidth, percent > 0 ? height : 0), height: height)
+        }
+        .frame(width: totalWidth, height: height, alignment: .leading)
+        .onAppear {
+            let target = totalWidth * CGFloat(min(max(percent, 0), 1))
+            if !animated { animWidth = target }
+            else { withAnimation(.easeInOut(duration: 0.7)) { animWidth = target } }
+        }
+    }
+}
+
 private struct OverBudgetHorizontalBar: View {
     let fillColor: Color
     let boundaryPercent: Double
@@ -478,28 +482,39 @@ private struct OverBudgetHorizontalBar: View {
         let greenWidth = totalWidth * min(max(boundaryPercent, 0), 1)
 
         return ZStack(alignment: .leading) {
-            Rectangle()
+            RoundedRectangle(cornerRadius: height / 2, style: .continuous)
                 .fill(fillColor)
-                .frame(width: greenWidth, height: height, alignment: .leading)
+                .frame(width: greenWidth, height: height)
 
-            Rectangle()
-                .fill(Color.BudgetRed)
-                .frame(width: totalWidth, height: height, alignment: .leading)
-                .offset(x: redOffset)
+            ZStack {
+                Color.BudgetRed
+                Canvas { context, size in
+                    let stripeW: CGFloat = 3
+                    let gap: CGFloat = 6
+                    var x: CGFloat = -size.height
+                    while x < size.width + size.height {
+                        let path = Path { p in
+                            p.move(to: CGPoint(x: x, y: 0))
+                            p.addLine(to: CGPoint(x: x + size.height, y: size.height))
+                            p.addLine(to: CGPoint(x: x + size.height + stripeW, y: size.height))
+                            p.addLine(to: CGPoint(x: x + stripeW, y: 0))
+                        }
+                        context.fill(path, with: .color(.white.opacity(0.22)))
+                        x += gap + stripeW
+                    }
+                }
+            }
+            .frame(width: totalWidth, height: height)
+            .offset(x: redOffset)
 
             BudgetLimitMarker(tint: fillColor)
                 .offset(x: min(max(greenWidth - 3.5, 0), max(totalWidth - 7, 0)))
         }
         .frame(width: totalWidth, height: height, alignment: .leading)
-        .clipShape(RoundedRectangle(cornerRadius: 11.5, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: height / 2, style: .continuous))
         .onAppear {
-            if !animated {
-                redOffset = greenWidth
-            } else {
-                withAnimation(.easeInOut(duration: 0.7)) {
-                    redOffset = greenWidth
-                }
-            }
+            if !animated { redOffset = greenWidth }
+            else { withAnimation(.easeInOut(duration: 0.7)) { redOffset = greenWidth } }
         }
     }
 }
@@ -1259,98 +1274,123 @@ struct MainBudgetView: View {
         }
     }
 
+    var thisPeriodLabel: String {
+        switch budget.type {
+        case 1: return "TODAY"
+        case 2: return "THIS WEEK"
+        case 3: return "THIS MONTH"
+        case 4: return "THIS YEAR"
+        default: return "THIS WEEK"
+        }
+    }
+
+    var spentPeriodLabel: String {
+        switch budget.type {
+        case 1: return "SPENT TODAY"
+        case 2: return "SPENT THIS WEEK"
+        case 3: return "SPENT THIS MONTH"
+        case 4: return "SPENT THIS YEAR"
+        default: return "SPENT THIS WEEK"
+        }
+    }
+
     var body: some View {
-        VStack(spacing: 5) {
-            ZStack(alignment: .bottom) {
-                ZStack {
-                    DonutSemicircle(percent: 1, cornerRadius: 6.5, width: soloBudget ? 35 : 25)
-                        .fill(Color.SecondaryBackground)
-                        .frame(width: width, height: width / 2)
-
-                    if isOverBudget {
-                        OverBudgetCurvedBarGraphMainBudget(
-                            boundaryPercent: overBudgetBoundaryPercent,
-                            cornerRadius: 6.5,
-                            width: soloBudget ? 35 : 25
-                        )
-                        .frame(width: width, height: width / 2)
-                    } else if totalSpent / budgetAmount < 0.97 {
-                        AnimatedCurvedBarGraphMainBudget(transactions: transactions, budgetTotal: budgetAmount, cornerRadius: 6.5, width: soloBudget ? 35 : 25)
-                            .frame(width: width, height: width / 2)
-                    }
-                }
-                .overlay(alignment: .top) {
-                    if isOverBudget {
-                        BudgetLimitMarker(tint: Color.IncomeGreen)
-                            .rotationEffect(.degrees(budgetBoundaryRotation))
-                            .offset(x: budgetBoundaryOffset.x, y: budgetBoundaryOffset.y)
-                    }
-
-                    if budget.type != 1 && totalSpent < budgetAmount && targetPercent > 0 {
-                        RoundedTriangle(cornerRadius: 2)
-
-                            .fill((targetPercent * budgetAmount) < (budgetAmount - totalSpent) ? Color.SubtitleText : Color.BudgetRed)
-                            .frame(width: 20, height: 10)
-                            .rotationEffect(Angle(degrees: triangleRotation), anchor: .bottom)
-                            .offset(x: triangleOffset.x, y: triangleOffset.y)
-                    }
-                }
-
-                CrookedText(text: String(localized: "OVERALL SPENT: \(percentString1)"), radius: width / 2 + 8)
-                    .font(Font.satoshi(.footnote, weight: .medium))
-//                    .font(Font.satoshi(13, weight: .medium))
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 4) {
+                Text(thisPeriodLabel)
+                    .font(Font.satoshi(.caption, weight: .semibold))
                     .foregroundColor(Color.SubtitleText)
-                    .frame(width: width, height: 10)
+                Text("•")
+                    .font(Font.satoshi(.caption, weight: .semibold))
+                    .foregroundColor(Color.SubtitleText)
+                Text("\(percentString1) OF BUDGET")
+                    .font(Font.satoshi(.caption, weight: .semibold))
+                    .foregroundColor(isOverBudget ? Color("BudgetRed") : Color.SubtitleText)
+                Spacer()
+            }
+            .padding(.bottom, 10)
 
-                VStack(spacing: -4) {
-                    let internalWidth = soloBudget ? width - 90 : width - 60
-                    BudgetDollarView(amount: difference, red: totalSpent >= budgetAmount, scale: 3, size: internalWidth)
-                        .frame(width: internalWidth)
-
-                    Text("\(budgetAmount >= totalSpent ? "left" : "over") \(budgetType)")
-                        .font(Font.satoshi(.subheadline, weight: .medium))
-//                        .font(Font.satoshi(15, weight: .medium))
-                        .foregroundColor(Color.SubtitleText)
+            GeometryReader { geo in
+                if isOverBudget {
+                    OverBudgetHorizontalBar(
+                        fillColor: Color.IncomeGreen,
+                        boundaryPercent: overBudgetBoundaryPercent,
+                        totalWidth: geo.size.width,
+                        height: 8
+                    )
+                } else {
+                    NewBudgetSpentBar(
+                        color: Color.IncomeGreen,
+                        percent: budgetAmount > 0 ? totalSpent / budgetAmount : 0,
+                        totalWidth: geo.size.width,
+                        height: 8
+                    )
                 }
             }
+            .frame(height: 8)
+            .padding(.bottom, 12)
+
+            Text(spentPeriodLabel)
+                .font(Font.satoshi(.caption2, weight: .semibold))
+                .foregroundColor(Color.SubtitleText)
+                .padding(.bottom, 2)
+
+            HStack(alignment: .lastTextBaseline, spacing: 2) {
+                Text(currencySymbol)
+                    .font(Font.satoshi(.subheadline, weight: .medium))
+                    .foregroundColor(Color.SubtitleText)
+                Text("\(totalSpent, specifier: "%.2f")")
+                    .font(.system(size: 32, weight: .semibold, design: .default))
+                    .monospacedDigit()
+                    .foregroundColor(Color.PrimaryText)
+            }
+            .minimumScaleFactor(0.5)
+            .lineLimit(1)
+
+            Rectangle()
+                .fill(Color.Outline.opacity(0.5))
+                .frame(height: 0.5)
+                .padding(.vertical, 12)
 
             HStack {
-                if totalSpent < 1000 && budgetAmount < 1000 {
-                    Text("\(totalSpent, specifier: "%.2f")")
-                        .frame(width: 60, alignment: .leading)
-                    Spacer()
-                    Text("\(budgetAmount, specifier: "%.2f")")
-                        .frame(width: 60, alignment: .trailing)
-                } else {
-                    Text("\(Int(round(totalSpent)))")
-                        .frame(width: 60, alignment: .leading)
-                    Spacer()
-                    Text("\(Int(round(budgetAmount)))")
-                        .frame(width: 60, alignment: .trailing)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("BUDGET")
+                        .font(Font.satoshi(.caption2, weight: .semibold))
+                        .foregroundColor(Color.SubtitleText)
+                    Text("\(currencySymbol)\(budgetAmount, specifier: "%.2f")")
+                        .font(Font.satoshi(.subheadline, weight: .semibold))
+                        .foregroundColor(Color.PrimaryText)
+                        .minimumScaleFactor(0.6)
+                        .lineLimit(1)
+                }
+                Spacer()
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(isOverBudget ? "OVER BUDGET" : "REMAINING")
+                        .font(Font.satoshi(.caption2, weight: .semibold))
+                        .foregroundColor(isOverBudget ? Color("BudgetRed") : Color.SubtitleText)
+                    Text("\(currencySymbol)\(difference, specifier: "%.2f")")
+                        .font(Font.satoshi(.subheadline, weight: .semibold))
+                        .foregroundColor(isOverBudget ? Color("BudgetRed") : Color.PrimaryText)
+                        .minimumScaleFactor(0.6)
+                        .lineLimit(1)
                 }
             }
-            .font(Font.satoshi(.caption2, weight: .medium))
-//            .font(Font.satoshi(10, weight: .medium))
-            .frame(width: width)
-            .foregroundColor(Color.SubtitleText)
         }
-        .padding(.bottom)
-        .frame(width: width + 30, height: soloBudget ? 230 : 200, alignment: .bottom)
+        .padding(20)
+        .frame(maxWidth: .infinity)
         .background(
-            soloBudget ? Color.Outline.opacity(0.2) : Color.SecondaryBackground.opacity(0.5),
-            in: RoundedRectangle(cornerRadius: 13, style: .continuous)
+            colorScheme == .dark ? Color.Outline.opacity(0.2) : Color.SecondaryBackground,
+            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
         )
-        .contentShape(RoundedRectangle(cornerRadius: 13))
+        .contentShape(RoundedRectangle(cornerRadius: 20))
         .contextMenu {
             Button {
                 toEdit = budget
-
             } label: {
                 Label("Edit", systemImage: "pencil")
             }
             Button {
                 toDelete = budget
-
             } label: {
                 Label("Delete", systemImage: "xmark.bin")
             }
@@ -1538,6 +1578,26 @@ struct SingleBudgetView: View {
         return Double(numberOfDays - numberOfDaysPast) / Double(numberOfDays)
     }
 
+    var thisPeriodLabel: String {
+        switch budget.type {
+        case 1: return "TODAY"
+        case 2: return "THIS WEEK"
+        case 3: return "THIS MONTH"
+        case 4: return "THIS YEAR"
+        default: return "THIS WEEK"
+        }
+    }
+
+    var spentPeriodLabel: String {
+        switch budget.type {
+        case 1: return "SPENT TODAY"
+        case 2: return "SPENT THIS WEEK"
+        case 3: return "SPENT THIS MONTH"
+        case 4: return "SPENT THIS YEAR"
+        default: return "SPENT THIS WEEK"
+        }
+    }
+
     @Environment(\.colorScheme) var colorScheme
 
     // swipe to delete
@@ -1687,95 +1747,90 @@ struct SingleBudgetView: View {
                     }
                 }
             } else {
-                VStack {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 0.5) {
-                            HStack(spacing: 4) {
-                                Text(budget.wrappedEmoji)
-                                    .font(Font.satoshi(.caption))
-//                                    .font(Font.satoshi(11.5))
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(spacing: 8) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(.white)
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(Color(hex: budget.wrappedColour).opacity(0.3))
+                        }
+                        .frame(width: 32, height: 32)
+                        .overlay {
+                            Text(budget.wrappedEmoji)
+                                .font(Font.satoshi(16))
+                        }
 
-                                Text(budget.wrappedName)
-                                    .font(Font.satoshi(.subheadline, weight: .semibold))
-//                                    .font(Font.satoshi(15, weight: .semibold))
-                                    .lineLimit(1)
-                                    .foregroundColor(Color.PrimaryText)
-                            }
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(budget.wrappedName.uppercased())
+                                .font(Font.satoshi(.caption, weight: .black))
+                                .foregroundColor(Color.PrimaryText)
+                                .lineLimit(1)
 
                             Text(timeLeft)
-                                .font(Font.satoshi(.footnote, weight: .semibold))
-//                                .font(Font.satoshi(13, weight: .semibold))
+                                .font(Font.satoshi(.caption2, weight: .medium))
                                 .foregroundColor(Color.SubtitleText)
-                                .multilineTextAlignment(.leading)
-                        }
-
-                        Spacer()
-                    }
-                    .frame(maxWidth: .infinity)
-
-                    Spacer(minLength: 30)
-
-                    HStack {
-                        VStack(alignment: .leading, spacing: -2) {
-                            if totalSpent < budgetAmount {
-                                Text("\(percentString1) SPENT")
-                                    .font(Font.satoshi(.caption2, weight: .semibold))
-//                                    .font(Font.satoshi(11, weight: .semibold))
-                                    .lineLimit(1)
-                                    .foregroundColor(totalSpent / budgetAmount > 1 ? Color("BudgetRed") : Color.IncomeGreen)
-                                    .padding(.bottom, 5)
-                            }
-
-                            BudgetDollarView(amount: difference, red: totalSpent >= budgetAmount, scale: 2, size: width - 40)
-
-                            Text("\(budgetAmount >= totalSpent ? "left" : "over") \(budgetType)")
-                                .font(Font.satoshi(.footnote, weight: .medium))
-                                .foregroundColor(Color.SubtitleText)
-                                .minimumScaleFactor(0.7)
-                                .lineLimit(1)
-                        }
-
-                        Spacer()
-                    }
-                    .frame(maxWidth: .infinity)
-
-                    GeometryReader { proxy in
-                        ZStack(alignment: .leading) {
-                            RoundedRectangle(cornerRadius: 11.5, style: .continuous)
-                                .fill(Color.SecondaryBackground.opacity(0.5))
-                                .frame(width: proxy.size.width)
-
-                            if isOverBudget {
-                                if let category = budget.category {
-                                    OverBudgetHorizontalBar(fillColor: Color.IncomeGreen, boundaryPercent: overBudgetBoundaryPercent, totalWidth: proxy.size.width, height: 17.5)
-                                }
-                            } else if totalSpent / budgetAmount < 0.98 {
-                                if let category = budget.category {
-                                    AnimatedHorizontalBarGraphBudget(category: category)
-                                        .frame(width: proxy.size.width * (1 - totalSpent / budgetAmount))
-                                }
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .overlay(alignment: .topLeading) {
-                            if budget.type != 1 && totalSpent < budgetAmount && targetPercent > 0 && targetPercent < 0.95 {
-                                RoundedTriangle(cornerRadius: 1.3)
-                                    .fill((targetPercent * budgetAmount) <= (budgetAmount - totalSpent) ? Color.DarkBackground : Color.BudgetRed)
-                                    .frame(width: 14, height: 6.5)
-                                    .offset(x: (targetPercent * proxy.size.width) - 7, y: -3.5)
-                            }
                         }
                     }
-                    .frame(height: 17.5)
+                    .padding(.bottom, 10)
+
+                    Rectangle()
+                        .fill(Color.Outline.opacity(0.5))
+                        .frame(height: 0.5)
+                        .padding(.bottom, 10)
+
+                    Text(spentPeriodLabel)
+                        .font(Font.satoshi(.caption2, weight: .semibold))
+                        .foregroundColor(Color.SubtitleText)
+                        .padding(.bottom, 2)
+
+                    HStack(alignment: .lastTextBaseline, spacing: 2) {
+                        Text(currencySymbol)
+                            .font(Font.satoshi(.caption, weight: .medium))
+                            .foregroundColor(Color.SubtitleText)
+                        Text("\(totalSpent, specifier: "%.2f")")
+                            .font(Font.satoshi(.title3, weight: .semibold))
+                            .foregroundColor(isOverBudget ? Color("BudgetRed") : Color.PrimaryText)
+                            .minimumScaleFactor(0.5)
+                            .lineLimit(1)
+                    }
+                    .padding(.bottom, 8)
+
+                    GeometryReader { geo in
+                        if isOverBudget {
+                            OverBudgetHorizontalBar(
+                                fillColor: Color.IncomeGreen,
+                                boundaryPercent: overBudgetBoundaryPercent,
+                                totalWidth: geo.size.width,
+                                height: 6
+                            )
+                        } else {
+                            NewBudgetSpentBar(
+                                color: Color(hex: budget.wrappedColour),
+                                percent: budgetAmount > 0 ? totalSpent / budgetAmount : 0,
+                                totalWidth: geo.size.width,
+                                height: 6
+                            )
+                        }
+                    }
+                    .frame(height: 6)
+                    .padding(.bottom, 8)
+
+                    Text("\(percentString1) OF \(thisPeriodLabel) BUDGET")
+                        .font(Font.satoshi(.caption2, weight: .semibold))
+                        .foregroundColor(isOverBudget ? Color("BudgetRed") : Color.SubtitleText)
+                        .lineLimit(1)
                 }
-                .padding(15)
-                .frame(width: width + 30)
-                .background(colorScheme == .dark ? Color.Outline.opacity(0.2) : Color.Outline.opacity(0.35), in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    colorScheme == .dark ? Color.Outline.opacity(0.2) : Color.Outline.opacity(0.35),
+                    in: RoundedRectangle(cornerRadius: 13, style: .continuous)
+                )
                 .contentShape(RoundedRectangle(cornerRadius: 13))
                 .contextMenu {
                     Button {
                         toEdit = budget
-
                     } label: {
                         Label("Edit", systemImage: "pencil")
                     }

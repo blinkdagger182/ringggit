@@ -37,7 +37,7 @@ struct CustomTabBar: View {
         HStack(spacing: 0) {
             TabButton(image: "Log", zoomed: isZoomed, currentTab: $currentTab)
 
-            TabButton(image: "Insights", zoomed: isZoomed, currentTab: $currentTab)
+            TabButton(image: "Budget", zoomed: isZoomed, currentTab: $currentTab)
 
             ZStack {
                 RoundedRectangle(cornerRadius: 28, style: .continuous).fill(Color.DarkBackground.opacity(0.6))
@@ -69,7 +69,7 @@ struct CustomTabBar: View {
             }
             .accessibilityLabel("Add New Transaction")
 
-            TabButton(image: "Budget", zoomed: isZoomed, currentTab: $currentTab)
+            TabButton(image: "Insights", zoomed: isZoomed, currentTab: $currentTab)
 
             TabButton(image: "Settings", zoomed: isZoomed, currentTab: $currentTab)
         }

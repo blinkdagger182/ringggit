@@ -270,13 +270,13 @@ struct HomeView: View {
                 .ignoresSafeArea(.all)
                 .tag("Log")
 
-                InsightsView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .tag("Insights")
-
                 BudgetView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .tag("Budget")
+
+                InsightsView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .tag("Insights")
 
                 SettingsView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)

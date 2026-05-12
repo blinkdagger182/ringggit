@@ -68,6 +68,10 @@
 		<string>Satoshi-Medium.otf</string>
 		<string>Satoshi-Regular.otf</string>
 		<string>Satoshi-Light.otf</string>
+		<string>Geist-Regular.otf</string>
+		<string>Geist-Medium.otf</string>
+		<string>Geist-SemiBold.otf</string>
+		<string>Geist-Bold.otf</string>
 	</array>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>KIRA reads your photos and receipts to automatically log transactions.</string>

@@ -10,6 +10,10 @@
 		04A8E059AA45012A1B4DE5A7 /* HomeAIAttachmentSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44B152FB18238AB615708622 /* HomeAIAttachmentSheet.swift */; };
 		0567133628DA33315DAC9DF6 /* Satoshi-Medium.otf in Resources */ = {isa = PBXBuildFile; fileRef = 75C40ECC4B5691DE975C9F96 /* Satoshi-Medium.otf */; };
 		0CCE11AED2D75697C7511294 /* Satoshi-Bold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 4A24558D9748F66F5CDD07E7 /* Satoshi-Bold.otf */; };
+		D89333C1A5D9452AA2167B29 /* Geist-Regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = F716FDC1AE6549A3B82173B9 /* Geist-Regular.otf */; };
+		6158A50B73544687ADAD8D5B /* Geist-Medium.otf in Resources */ = {isa = PBXBuildFile; fileRef = B0FE6E29E9A447ACA150304B /* Geist-Medium.otf */; };
+		E5DDF4FB7ADC438FA9243271 /* Geist-SemiBold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 1B3A657D6C8047028F1853E7 /* Geist-SemiBold.otf */; };
+		1A57BE1BA58B4BB08385D3D8 /* Geist-Bold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 53AAEF0694884BBF945EF492 /* Geist-Bold.otf */; };
 		1D1E777C707D5144EFFF83B1 /* AIConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C58E9A9574F6F65BFAAD177 /* AIConfig.swift */; };
 		34596E9AB10C3FF6A221FC44 /* Satoshi-Black.otf in Resources */ = {isa = PBXBuildFile; fileRef = 47F5DDF794EFBCAAEE499A30 /* Satoshi-Black.otf */; };
 		37DF5605B4BEA2CBC2061303 /* AIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D798336B86A8F793296E0DBD /* AIService.swift */; };
@@ -176,6 +180,7 @@
 		D6A4DE242D61744400F7F751 /* SwiftUIIntrospect-Static in Frameworks */ = {isa = PBXBuildFile; productRef = D6A4DE232D61744400F7F751 /* SwiftUIIntrospect-Static */; };
 		DF6DDDC29EB8D84CD6E4E601 /* Satoshi-Light.otf in Resources */ = {isa = PBXBuildFile; fileRef = 16D65D0C8F08E2A6F033622F /* Satoshi-Light.otf */; };
 		FA7D206D7B5E561D07437403 /* Font+Satoshi.swift in Sources */ = {isa = PBXBuildFile; fileRef = 420003BC1DCA12AB4E7B45E5 /* Font+Satoshi.swift */; };
+		49BE316DAAA240E5B9BA0B94 /* Font+Geist.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCCE47B5563A4D6A9369DC3F /* Font+Geist.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -230,7 +235,12 @@
 
 /* Begin PBXFileReference section */
 		16D65D0C8F08E2A6F033622F /* Satoshi-Light.otf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "Satoshi-Light.otf"; sourceTree = "<group>"; };
+		F716FDC1AE6549A3B82173B9 /* Geist-Regular.otf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "Geist-Regular.otf"; sourceTree = "<group>"; };
+		B0FE6E29E9A447ACA150304B /* Geist-Medium.otf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "Geist-Medium.otf"; sourceTree = "<group>"; };
+		1B3A657D6C8047028F1853E7 /* Geist-SemiBold.otf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "Geist-SemiBold.otf"; sourceTree = "<group>"; };
+		53AAEF0694884BBF945EF492 /* Geist-Bold.otf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "Geist-Bold.otf"; sourceTree = "<group>"; };
 		420003BC1DCA12AB4E7B45E5 /* Font+Satoshi.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "Font+Satoshi.swift"; sourceTree = "<group>"; };
+		FCCE47B5563A4D6A9369DC3F /* Font+Geist.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "Font+Geist.swift"; sourceTree = "<group>"; };
 		44B152FB18238AB615708622 /* HomeAIAttachmentSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeAIAttachmentSheet.swift; sourceTree = "<group>"; };
 		47F5DDF794EFBCAAEE499A30 /* Satoshi-Black.otf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "Satoshi-Black.otf"; sourceTree = "<group>"; };
 		4A24558D9748F66F5CDD07E7 /* Satoshi-Bold.otf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "Satoshi-Bold.otf"; sourceTree = "<group>"; };
@@ -530,6 +540,7 @@
 				536A2A162A5A7C5D00D81E02 /* OffsetHelper.swift */,
 				533D1C3B2AE7BB6900894764 /* DynamicType.swift */,
 				420003BC1DCA12AB4E7B45E5 /* Font+Satoshi.swift */,
+				FCCE47B5563A4D6A9369DC3F /* Font+Geist.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -702,6 +713,10 @@
 				75C40ECC4B5691DE975C9F96 /* Satoshi-Medium.otf */,
 				8C3B458DD92ECF50A3F7F145 /* Satoshi-Regular.otf */,
 				16D65D0C8F08E2A6F033622F /* Satoshi-Light.otf */,
+				F716FDC1AE6549A3B82173B9 /* Geist-Regular.otf */,
+				B0FE6E29E9A447ACA150304B /* Geist-Medium.otf */,
+				1B3A657D6C8047028F1853E7 /* Geist-SemiBold.otf */,
+				53AAEF0694884BBF945EF492 /* Geist-Bold.otf */,
 			);
 			name = Fonts;
 			path = Fonts;
@@ -912,6 +927,10 @@
 				0567133628DA33315DAC9DF6 /* Satoshi-Medium.otf in Resources */,
 				ABC52249106203D5530AA079 /* Satoshi-Regular.otf in Resources */,
 				DF6DDDC29EB8D84CD6E4E601 /* Satoshi-Light.otf in Resources */,
+				D89333C1A5D9452AA2167B29 /* Geist-Regular.otf in Resources */,
+				6158A50B73544687ADAD8D5B /* Geist-Medium.otf in Resources */,
+				E5DDF4FB7ADC438FA9243271 /* Geist-SemiBold.otf in Resources */,
+				1A57BE1BA58B4BB08385D3D8 /* Geist-Bold.otf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1080,6 +1099,7 @@
 				04A8E059AA45012A1B4DE5A7 /* HomeAIAttachmentSheet.swift in Sources */,
 				7A4F10012E3C200100ABCD01 /* TransactionAttachmentReference.swift in Sources */,
 				FA7D206D7B5E561D07437403 /* Font+Satoshi.swift in Sources */,
+				49BE316DAAA240E5B9BA0B94 /* Font+Geist.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1419,7 +1439,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = dime/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Saku;
+				INFOPLIST_KEY_CFBundleDisplayName = Kira;
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "We need to unlock your data.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save an image of a transaction for sharing.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -1460,7 +1480,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = dime/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Saku;
+				INFOPLIST_KEY_CFBundleDisplayName = Kira;
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "We need to unlock your data.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save an image of a transaction for sharing.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
