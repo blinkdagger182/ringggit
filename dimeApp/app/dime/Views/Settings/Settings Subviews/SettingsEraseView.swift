@@ -16,7 +16,7 @@ struct SettingsEraseView: View {
   var body: some View {
     VStack(spacing: 10) {
       Text("Erase Data")
-        .font(.system(.title3, design: .rounded).weight(.semibold))
+        .font(Font.satoshi(.title3, weight: .semibold))
         .foregroundColor(Color.PrimaryText)
         .frame(maxWidth: .infinity)
         .overlay(alignment: .leading) {
@@ -32,7 +32,7 @@ struct SettingsEraseView: View {
         showAlert = true
       } label: {
         Text("Permanently Delete Everythin'")
-          .font(.system(.body, design: .rounded))
+          .font(Font.satoshi(.body))
           .foregroundColor(Color.PrimaryText)
           .frame(maxWidth: .infinity, alignment: .leading)
           .padding(.vertical, 12)
@@ -43,7 +43,7 @@ struct SettingsEraseView: View {
       Text(
         "This action would delete all existing transactions, categories, and budgets, and cannot be undone."
       )
-      .font(.system(.caption, design: .rounded).weight(.medium))
+      .font(Font.satoshi(.caption, weight: .medium))
       .multilineTextAlignment(.leading)
       .foregroundColor(Color.SubtitleText)
       .padding(.horizontal, 15)
@@ -93,15 +93,15 @@ struct DeleteAllAlert: View {
       VStack(alignment: .leading, spacing: 1.5) {
         HStack(spacing: 7) {
           Image(systemName: "exclamationmark.triangle.fill")
-            .font(.system(.callout, design: .rounded).weight(.medium))
+            .font(Font.satoshi(.callout, weight: .medium))
 
           Text("Danger Zone")
-            .font(.system(.title2, design: .rounded).weight(.medium))
+            .font(Font.satoshi(.title2, weight: .medium))
         }
         .foregroundColor(.PrimaryText)
 
         Text("This action genuinely cannot be undone. Long press to confirm.")
-          .font(.system(.title3, design: .rounded).weight(.medium))
+          .font(Font.satoshi(.title3, weight: .medium))
           .foregroundColor(.SubtitleText)
           .padding(.bottom, 15)
 
@@ -118,7 +118,7 @@ struct DeleteAllAlert: View {
               .animation(.easeInOut(duration: 2), value: isDetectingLongPress)
 
             Text("Delete Literally Everything")
-              .font(.system(.title3, design: .rounded).weight(.semibold))
+              .font(Font.satoshi(.title3, weight: .semibold))
               .foregroundColor(.white)
               .frame(width: proxy.size.width, alignment: .center)
           }

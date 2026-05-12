@@ -18,7 +18,7 @@ struct StepperButtonView: View {
             self.action()
         }) {
             Image(systemName: left ? "chevron.left" : "chevron.right")
-                .font(.system(.subheadline, design: .rounded))
+                .font(Font.satoshi(.subheadline))
                 .foregroundColor(Color.SubtitleText)
                 .padding(8)
                 .background(Color.SecondaryBackground, in: Circle())

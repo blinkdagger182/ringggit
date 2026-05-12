@@ -126,21 +126,19 @@ struct HomeView: View {
                     .allowsHitTesting(homeAIAssistantViewModel.isPresented)
                 }
 
-                // Home sheet — slides down to reveal AI behind it
+                // Home sheet — above overlay so peek is always visible.
+                // contentShape limits hit area to peek strip when AI is presented,
+                // letting touches above peek fall through to the overlay.
                 homeSheet(peekHeight: peek)
                     .clipShape(RoundedRectangle(cornerRadius: sheetCornerRadius, style: .continuous))
                     .shadow(color: .black.opacity(isLogTab ? 0.12 : 0), radius: 18, x: 0, y: -5)
                     .ignoresSafeArea(edges: .bottom)
+                    .contentShape(HomeSheetHitShape(
+                        peekHeight: peek,
+                        limitToPeek: homeAIAssistantViewModel.isPresented
+                    ))
                     .offset(y: sheetY)
                     .animation(.easeOut(duration: 0.22), value: isLogTab)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        guard liveProgress > 0.85 else { return }
-                        withAnimation(settleAnimation) { settledProgress = 0 }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.27) {
-                            homeAIAssistantViewModel.collapse()
-                        }
-                    }
                     .simultaneousGesture(makeDragGesture(rd: rd))
 
                 // Tab bar pinned to screen bottom, outside offset sheet
@@ -382,17 +380,17 @@ struct HomeView: View {
         ZStack {
             LinearGradient(
                 colors: [
-                    Color(red: 0.94, green: 1.00, blue: 1.00),
-                    Color.white,
-                    Color(red: 0.985, green: 0.965, blue: 1.00),
-                    Color(red: 0.93, green: 0.98, blue: 1.00)
+                    Color(hex: "F5F2ED"),
+                    Color(hex: "FAF8F4"),
+                    Color(hex: "F0ECE3"),
+                    Color(hex: "EDE9DF")
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
-            RadialGradient(colors: [Color.cyan.opacity(0.30), Color.cyan.opacity(0.10), .clear], center: .bottomLeading, startRadius: 20, endRadius: 380)
-            RadialGradient(colors: [Color.purple.opacity(0.22), Color.purple.opacity(0.08), .clear], center: .bottomTrailing, startRadius: 20, endRadius: 420)
-            RadialGradient(colors: [Color.cyan.opacity(0.16), .clear], center: .topLeading, startRadius: 20, endRadius: 300)
+            RadialGradient(colors: [Color(hex: "C8B94A").opacity(0.18), Color(hex: "C8B94A").opacity(0.06), .clear], center: .bottomLeading, startRadius: 20, endRadius: 380)
+            RadialGradient(colors: [Color(hex: "4A5240").opacity(0.12), Color(hex: "4A5240").opacity(0.04), .clear], center: .bottomTrailing, startRadius: 20, endRadius: 420)
+            RadialGradient(colors: [Color(hex: "5B8C5A").opacity(0.10), .clear], center: .topLeading, startRadius: 20, endRadius: 300)
         }
     }
 
@@ -400,12 +398,9 @@ struct HomeView: View {
         HStack(alignment: .center) {
             Button { } label: {
                 Circle()
-                    .fill(LinearGradient(
-                        colors: [Color(red: 0.36, green: 0.83, blue: 0.91), Color(red: 0.49, green: 0.79, blue: 0.96)],
-                        startPoint: .topLeading, endPoint: .bottomTrailing
-                    ))
-                    .frame(width: 48, height: 48)
-                    .overlay(Text("ME").font(.system(size: 17, weight: .bold, design: .rounded)).foregroundStyle(.white))
+                    .fill(Color(hex: "4A5240"))
+                    .frame(width: 44, height: 44)
+                    .overlay(Text("ME").font(Font.satoshi(14, weight: .bold)).foregroundStyle(.white))
             }
             .buttonStyle(.plain)
             .frame(width: 58, alignment: .leading)
@@ -414,24 +409,18 @@ struct HomeView: View {
 
             Button { onReveal() } label: {
                 HStack(spacing: 8) {
-                    Text("✦").font(.system(size: 22, weight: .semibold)).foregroundStyle(.white)
-                    Text("Ask Saku AI").font(.system(size: 18, weight: .bold, design: .rounded)).foregroundStyle(.white)
+                    Image(systemName: "sparkles")
+                        .font(Font.satoshi(16, weight: .semibold))
+                        .foregroundStyle(Color(hex: "4A5240"))
+                    Text("Ask KIRA").font(Font.satoshi(17, weight: .semibold)).foregroundStyle(Color(hex: "4A5240"))
                 }
-                .padding(.horizontal, 19)
-                .frame(height: 48)
-                .background(Capsule().fill(.white.opacity(0.11)))
-                .background(Capsule().fill(LinearGradient(
-                    colors: [.white.opacity(0.22), .white.opacity(0.07), .cyan.opacity(0.08)],
-                    startPoint: .topLeading, endPoint: .bottomTrailing
-                )))
+                .padding(.horizontal, 20)
+                .frame(height: 46)
+                .background(Capsule().fill(Color(hex: "F5F2ED")))
                 .overlay {
-                    Capsule().stroke(LinearGradient(
-                        colors: [Color.cyan.opacity(0.95), Color.white.opacity(0.62), Color.purple.opacity(0.65)],
-                        startPoint: .topLeading, endPoint: .bottomTrailing
-                    ), lineWidth: 1.5)
+                    Capsule().stroke(Color(hex: "4A5240").opacity(0.25), lineWidth: 1.2)
                 }
-                .shadow(color: Color.cyan.opacity(0.24), radius: 10, x: 0, y: 0)
-                .shadow(color: Color.purple.opacity(0.18), radius: 13, x: 0, y: 7)
+                .shadow(color: Color(hex: "4A5240").opacity(0.10), radius: 8, x: 0, y: 3)
                 .contentShape(Capsule())
             }
             .buttonStyle(.plain)
@@ -440,11 +429,11 @@ struct HomeView: View {
 
             Button { } label: {
                 Image(systemName: "bell")
-                    .font(.system(size: 22, weight: .medium))
-                    .foregroundStyle(Color(red: 0.43, green: 0.36, blue: 0.90))
+                    .font(Font.satoshi(20, weight: .medium))
+                    .foregroundStyle(Color(hex: "4A5240"))
                     .frame(width: 48, height: 48)
                     .overlay(alignment: .topTrailing) {
-                        Circle().fill(Color.AlertRed).frame(width: 9, height: 9).offset(x: 1, y: 4)
+                        Circle().fill(Color.AlertRed).frame(width: 8, height: 8).offset(x: 1, y: 4)
                     }
             }
             .buttonStyle(.plain)
@@ -454,17 +443,34 @@ struct HomeView: View {
     }
 }
 
+// Hit-test shape for homeSheet: full rect normally, top-peek-only when AI is presented.
+// The peek strip is the TOP `peekHeight` pixels of the layout frame, which is visually
+// the visible strip at the bottom of the screen (because the sheet is offset down by sheetY).
+private struct HomeSheetHitShape: Shape {
+    let peekHeight: CGFloat
+    let limitToPeek: Bool
+
+    func path(in rect: CGRect) -> Path {
+        Path(CGRect(
+            x: rect.minX,
+            y: rect.minY,
+            width: rect.width,
+            height: limitToPeek ? peekHeight : rect.height
+        ))
+    }
+}
+
 struct AppLockView: View {
     @EnvironmentObject var appLockVM: AppLockViewModel
 
     var body: some View {
         VStack(spacing: 15) {
             Image(systemName: "lock.fill")
-                .font(.system(size: 65))
+                .font(Font.satoshi(65))
                 .foregroundColor(Color.DarkIcon.opacity(0.7))
 
             Text("App Locked")
-                .font(.system(size: 28, weight: .semibold, design: .rounded))
+                .font(Font.satoshi(28, weight: .semibold))
                 .foregroundColor(Color.PrimaryText)
                 .padding(.bottom, 30)
 
@@ -475,7 +481,7 @@ struct AppLockView: View {
                     Image(systemName: "faceid")
                     Text("Unlock App")
                 }
-                .font(.system(size: 20, weight: .medium, design: .rounded))
+                .font(Font.satoshi(20, weight: .medium))
                 .foregroundColor(Color.PrimaryText)
                 .padding(.horizontal, 40)
                 .padding(.vertical, 15)
@@ -487,7 +493,7 @@ struct AppLockView: View {
 
             if appLockVM.enrollmentError {
                 Text("Please re-enable Face ID access in the Settings app to unlock application.")
-                    .font(.system(size: 15, weight: .regular, design: .rounded))
+                    .font(Font.satoshi(15, weight: .regular))
                     .foregroundColor(Color.SubtitleText)
                     .multilineTextAlignment(.center)
             }

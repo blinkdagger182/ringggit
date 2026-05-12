@@ -26,13 +26,13 @@ struct SettingsAppIconView: View {
       displaySubtitle: "Designed by the brilliant @rudra_dsigns, check out his work on Twitter."),
     AppIconBundle(
       actualFileName: "AppIcon2", exampleFileName: "AppIcon2_EG", displayName: "Unicorn",
-      displaySubtitle: "Dime definitely isn't becoming one but it never hurts to keep dreaming."),
+      displaySubtitle: "KIRA definitely isn't becoming one but it never hurts to keep dreaming."),
     AppIconBundle(
       actualFileName: "AppIcon3", exampleFileName: "AppIcon3_EG", displayName: "V1.5",
       displaySubtitle: "An early prototype also designed by @rudra_dsigns that I kinda fancy."),
     AppIconBundle(
       actualFileName: "AppIcon4", exampleFileName: "AppIcon4_EG", displayName: "O.G.",
-      displaySubtitle: "Haphazardly put together in under 30 minutes, the original Dime icon.")
+      displaySubtitle: "Haphazardly put together in under 30 minutes, the original KIRA icon.")
   ]
 
   @State private var position: Int?
@@ -42,7 +42,7 @@ struct SettingsAppIconView: View {
   var body: some View {
     VStack(spacing: 10) {
       Text("App Icon")
-        .font(.system(.title3, design: .rounded).weight(.semibold))
+        .font(Font.satoshi(.title3, weight: .semibold))
         .foregroundColor(Color.PrimaryText)
         .frame(maxWidth: .infinity)
         .overlay(alignment: .leading) {
@@ -66,11 +66,11 @@ struct SettingsAppIconView: View {
 
             VStack(alignment: .leading, spacing: 3) {
               Text(options[index].displayName)
-                .font(.system(.body, design: .rounded))
+                .font(Font.satoshi(.body))
                 .foregroundColor(Color.PrimaryText)
 
               Text(options[index].displaySubtitle)
-                .font(.system(.caption, design: .rounded))
+                .font(Font.satoshi(.caption))
                 .foregroundColor(Color.SubtitleText)
             }
 
@@ -78,12 +78,12 @@ struct SettingsAppIconView: View {
 
             if activeIcon == options[index].actualFileName {
               Image(systemName: "checkmark")
-                .font(.system(.subheadline, design: .rounded))
+                .font(Font.satoshi(.subheadline))
                 .foregroundColor(.DarkIcon.opacity(0.6))
                 .matchedGeometryEffect(id: "tick", in: animation)
             } else {
               Image(systemName: "checkmark")
-                .font(.system(.subheadline, design: .rounded))
+                .font(Font.satoshi(.subheadline))
                 .foregroundColor(.SettingsBackground)
             }
           }

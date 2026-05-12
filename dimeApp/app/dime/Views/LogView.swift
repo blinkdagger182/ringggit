@@ -232,20 +232,24 @@ struct LogView: View {
             } label: {
                 HStack(spacing: 8) {
                     Circle()
-                        .fill(Color(red: 0.42, green: 0.41, blue: 0.92).opacity(0.12))
+                        .fill(Color(hex: "4A5240").opacity(0.12))
                         .frame(width: 36, height: 36)
                         .overlay(
                             Image(systemName: "plus")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(Color(red: 0.42, green: 0.41, blue: 0.92))
+                                .font(Font.satoshi(16, weight: .semibold))
+                                .foregroundStyle(Color(hex: "4A5240"))
                         )
                     Text("Add")
-                        .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                        .font(Font.satoshi(.subheadline, weight: .semibold))
                         .foregroundStyle(Color.PrimaryText)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
                 .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(Color.Outline, lineWidth: 1)
+                )
             }
             .buttonStyle(.plain)
 
@@ -254,35 +258,31 @@ struct LogView: View {
             } label: {
                 HStack(spacing: 8) {
                     Circle()
-                        .fill(Color.cyan.opacity(0.12))
+                        .fill(Color(hex: "4A5240").opacity(0.12))
                         .frame(width: 36, height: 36)
                         .overlay(
                             Image(systemName: "viewfinder")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(Color.cyan)
+                                .font(Font.satoshi(16, weight: .semibold))
+                                .foregroundStyle(Color(hex: "4A5240"))
                         )
                     Text("Scan")
-                        .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                        .font(Font.satoshi(.subheadline, weight: .semibold))
                         .foregroundStyle(Color.PrimaryText)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
                 .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(Color.Outline, lineWidth: 1)
+                )
             }
             .buttonStyle(.plain)
         }
     }
 
     private var homeSurfaceBackground: some View {
-        ZStack(alignment: .top) {
-            Color.PrimaryBackground
-
-            LinearGradient(
-                colors: [Color(hex: "BEE8E8").opacity(0.65), Color(hex: "D5F5E3").opacity(0.32), Color.clear],
-                startPoint: .top,
-                endPoint: .init(x: 0.5, y: 0.4)
-            )
-        }
+        Color.PrimaryBackground
     }
 
     var body: some View {
@@ -295,14 +295,14 @@ struct LogView: View {
                     .accessibility(hidden: true)
 
                 Text("Your Log is Empty")
-                    .font(.system(.title2, design: .rounded).weight(.medium))
-//                    .font(.system(size: 23.5, weight: .medium, design: .rounded))
+                    .font(Font.satoshi(.title2, weight: .medium))
+//                    .font(Font.satoshi(23.5, weight: .medium))
                     .multilineTextAlignment(.center)
                     .foregroundColor(Color.PrimaryText.opacity(0.8))
 
                 Text("Press the plus button\nto add your first entry")
-                    .font(.system(.body, design: .rounded).weight(.medium))
-//                    .font(.system(size: 18, weight: .medium, design: .rounded))
+                    .font(Font.satoshi(.body, weight: .medium))
+//                    .font(Font.satoshi(18, weight: .medium))
                     .multilineTextAlignment(.center)
                     .foregroundColor(Color.SubtitleText.opacity(0.7))
             }
@@ -325,10 +325,10 @@ struct LogView: View {
                         Button { showFilter = true } label: {
                             HStack(spacing: 4) {
                                 Text(filter == .all ? "All entries" : filter.rawValue)
-                                    .font(.system(.subheadline, design: .rounded).weight(.medium))
+                                    .font(Font.satoshi(.subheadline, weight: .medium))
                                     .foregroundColor(Color.SubtitleText)
                                 Image(systemName: "chevron.down")
-                                    .font(.system(size: 11, weight: .semibold))
+                                    .font(Font.satoshi(11, weight: .semibold))
                                     .foregroundColor(Color.SubtitleText)
                             }
                         }
@@ -350,7 +350,7 @@ struct LogView: View {
                                 withAnimation(.easeIn(duration: 0.15)) { filter = .all }
                             } label: {
                                 Image(systemName: "xmark.circle.fill")
-                                    .font(.system(size: 15))
+                                    .font(Font.satoshi(15))
                                     .foregroundColor(Color.SubtitleText.opacity(0.7))
                             }
                         }
@@ -394,16 +394,16 @@ struct LogView: View {
                             VStack(spacing: 0) {
                                 HStack {
                                     Text("Recent activity")
-                                        .font(.system(.body, design: .rounded).weight(.semibold))
+                                        .font(Font.satoshi(.body, weight: .semibold))
                                         .foregroundColor(Color.PrimaryText)
                                     Spacer()
                                     Button { searchMode = true } label: {
                                         HStack(spacing: 3) {
                                             Text("View all")
-                                                .font(.system(.subheadline, design: .rounded))
+                                                .font(Font.satoshi(.subheadline))
                                                 .foregroundColor(Color.SubtitleText)
                                             Image(systemName: "chevron.right")
-                                                .font(.system(size: 11, weight: .semibold))
+                                                .font(Font.satoshi(11, weight: .semibold))
                                                 .foregroundColor(Color.SubtitleText)
                                         }
                                     }
@@ -503,7 +503,7 @@ struct LogView: View {
     func filterTagView(text: LocalizedStringKey) -> some View {
         HStack(spacing: 10) {
             Text(text)
-                .font(.system(.body, design: .rounded).weight(.medium))
+                .font(Font.satoshi(.body, weight: .medium))
                 .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
 
             Button {
@@ -514,7 +514,7 @@ struct LogView: View {
                 Image(systemName: "xmark")
 //                    .resizable()
 //                    .frame(width: 11, height: 11)
-                    .font(.system(.caption, design: .rounded).weight(.regular))
+                    .font(Font.satoshi(.caption, weight: .regular))
                     .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     .foregroundColor(Color.PrimaryText.opacity(0.7))
             }
@@ -523,7 +523,7 @@ struct LogView: View {
         .padding(4)
         .padding(.horizontal, 6)
         .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-//        .font(.system(size: 17, weight: .medium, design: .rounded))
+//        .font(Font.satoshi(17, weight: .medium))
         .foregroundColor(Color.PrimaryText)
     }
 }
@@ -571,11 +571,11 @@ struct NumberView: AnimatableModifier {
         HStack(alignment: .lastTextBaseline, spacing: 2) {
             Group {
                 Text(netTotal ? (positive ? "+\(currencySymbol)" : "-\(currencySymbol)") : currencySymbol)
-                    .font(.system(.largeTitle, design: .rounded))
+                    .font(Font.satoshi(.largeTitle))
                     .foregroundColor(Color.SubtitleText) +
 
                 Text("\(number, specifier: showCents  ? "%.2f" : "%.0f")")
-                    .font(.system(size: fontSize, weight: .regular, design: .rounded))
+                    .font(Font.satoshi(fontSize, weight: .regular))
                     .foregroundColor(Color.PrimaryText)
             }
         }
@@ -690,15 +690,15 @@ struct LogInsightsView: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 8) {
                     Text("Net total")
-                        .font(.system(.title2, design: .rounded).weight(.bold))
+                        .font(Font.satoshi(.title2, weight: .bold))
                         .foregroundColor(Color.PrimaryText)
                     Button { showMenu1 = true } label: {
                         HStack(spacing: 3) {
                             Text(LocalizedStringKey(subtitleText[timeframe - 1]))
-                                .font(.system(.caption, design: .rounded).weight(.semibold))
+                                .font(Font.satoshi(.caption, weight: .semibold))
                                 .foregroundColor(Color.SubtitleText)
                             Image(systemName: "chevron.down")
-                                .font(.system(size: 10, weight: .bold))
+                                .font(Font.satoshi(10, weight: .bold))
                                 .foregroundColor(Color.SubtitleText)
                         }
                         .padding(.horizontal, 8)
@@ -718,10 +718,10 @@ struct LogInsightsView: View {
 
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(currencySymbol)
-                        .font(.system(.title, design: .rounded).weight(.semibold))
+                        .font(Font.satoshi(.title, weight: .semibold))
                         .foregroundColor(Color.SubtitleText)
                     Text(formatNumber(showCents: showCents, number: netTotal.value))
-                        .font(.system(size: 46, weight: .bold, design: .rounded))
+                        .font(Font.satoshi(46, weight: .bold))
                         .foregroundColor(Color.PrimaryText)
                         .minimumScaleFactor(0.5)
                         .lineLimit(1)
@@ -731,104 +731,83 @@ struct LogInsightsView: View {
             .padding(.top, 8)
             .padding(.bottom, 20)
 
-            // Two stat cards
+            // Two stat cards — SAKU style
             HStack(spacing: 12) {
-                // Spent card — teal gradient
-                ZStack(alignment: .bottomTrailing) {
-                    VStack(alignment: .leading, spacing: 0) {
-                        HStack {
-                            Text("Spent \(subtitleText[timeframe - 1])")
-                                .font(.system(.subheadline, design: .rounded).weight(.semibold))
-                                .foregroundColor(.white.opacity(0.9))
-                            Spacer()
-                            ZStack {
-                                Circle()
-                                    .fill(Color.white.opacity(0.22))
-                                    .frame(width: 30, height: 30)
-                                Image(systemName: "arrow.up.right")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(.white)
-                            }
-                        }
-
-                        Spacer(minLength: 12)
-
-                        Text("\(currencySymbol) \(formatNumber(showCents: showCents, number: totalSpent))")
-                            .font(.system(.title3, design: .rounded).weight(.bold))
-                            .foregroundColor(.white)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.5)
-                            .padding(.bottom, 5)
-
-                        HStack(spacing: 3) {
+                // Spent card
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Text("Spent")
+                            .font(Font.satoshi(.caption, weight: .medium))
+                            .foregroundColor(Color.SubtitleText)
+                        Spacer()
+                        ZStack {
+                            Circle()
+                                .fill(Color(hex: "D95F5F").opacity(0.12))
+                                .frame(width: 28, height: 28)
                             Image(systemName: "arrow.up.right")
-                                .font(.system(size: 10, weight: .bold))
-                            Text("tracked expenses")
-                                .font(.system(.caption2, design: .rounded).weight(.medium))
+                                .font(Font.satoshi(11, weight: .bold))
+                                .foregroundColor(Color(hex: "D95F5F"))
                         }
-                        .foregroundColor(.white.opacity(0.72))
                     }
-                    .padding(16)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
 
-                    Image(systemName: "chart.pie.fill")
-                        .font(.system(size: 80))
-                        .foregroundColor(.white.opacity(0.1))
-                        .offset(x: 22, y: 22)
-                        .clipped()
+                    Spacer(minLength: 0)
+
+                    Text("\(currencySymbol)\(formatNumber(showCents: showCents, number: totalSpent))")
+                        .font(Font.satoshi(.title3, weight: .bold))
+                        .foregroundColor(Color.PrimaryText)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+
+                    Text(subtitleText[timeframe - 1])
+                        .font(Font.satoshi(.caption2, weight: .medium))
+                        .foregroundColor(Color.EvenLighterText)
                 }
-                .frame(maxWidth: .infinity, minHeight: 175)
-                .background(
-                    LinearGradient(
-                        colors: [Color(hex: "5DADE2"), Color(hex: "48C9B0")],
-                        startPoint: .topLeading, endPoint: .bottomTrailing
-                    )
+                .padding(16)
+                .frame(maxWidth: .infinity, minHeight: 130)
+                .background(Color.SecondaryBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(Color.Outline, lineWidth: 1)
                 )
-                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
 
-                // Income card — dark navy
-                ZStack(alignment: .bottomTrailing) {
-                    VStack(alignment: .leading, spacing: 0) {
-                        HStack {
-                            Text("Income")
-                                .font(.system(.subheadline, design: .rounded).weight(.semibold))
-                                .foregroundColor(.white.opacity(0.9))
-                            Spacer()
-                            ZStack {
-                                Circle()
-                                    .fill(Color.white.opacity(0.15))
-                                    .frame(width: 30, height: 30)
-                                Image(systemName: "arrow.clockwise")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(.white)
-                            }
+                // Income card
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Text("Income")
+                            .font(Font.satoshi(.caption, weight: .medium))
+                            .foregroundColor(Color.SubtitleText)
+                        Spacer()
+                        ZStack {
+                            Circle()
+                                .fill(Color(hex: "5B8C5A").opacity(0.12))
+                                .frame(width: 28, height: 28)
+                            Image(systemName: "arrow.down.left")
+                                .font(Font.satoshi(11, weight: .bold))
+                                .foregroundColor(Color(hex: "5B8C5A"))
                         }
-
-                        Spacer(minLength: 12)
-
-                        Text("\(currencySymbol) \(formatNumber(showCents: showCents, number: totalIncome))")
-                            .font(.system(.title3, design: .rounded).weight(.bold))
-                            .foregroundColor(.white)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.5)
-                            .padding(.bottom, 5)
-
-                        Text(subtitleText[timeframe - 1])
-                            .font(.system(.caption2, design: .rounded).weight(.medium))
-                            .foregroundColor(.white.opacity(0.6))
                     }
-                    .padding(16)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
 
-                    Image(systemName: "calendar.badge.clock")
-                        .font(.system(size: 64))
-                        .foregroundColor(.white.opacity(0.08))
-                        .offset(x: 18, y: 18)
-                        .clipped()
+                    Spacer(minLength: 0)
+
+                    Text("\(currencySymbol)\(formatNumber(showCents: showCents, number: totalIncome))")
+                        .font(Font.satoshi(.title3, weight: .bold))
+                        .foregroundColor(Color.PrimaryText)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+
+                    Text(subtitleText[timeframe - 1])
+                        .font(Font.satoshi(.caption2, weight: .medium))
+                        .foregroundColor(Color.EvenLighterText)
                 }
-                .frame(maxWidth: .infinity, minHeight: 175)
-                .background(Color(hex: "1A2035"))
-                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                .padding(16)
+                .frame(maxWidth: .infinity, minHeight: 130)
+                .background(Color.SecondaryBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(Color.Outline, lineWidth: 1)
+                )
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 8)
@@ -855,8 +834,8 @@ struct SearchView: View {
             HStack(spacing: 9) {
                 HStack {
                     Image(systemName: "magnifyingglass")
-//                        .font(.system(size: 17))
-                        .font(.system(.body, design: .rounded).weight(.regular))
+//                        .font(Font.satoshi(17))
+                        .font(Font.satoshi(.body, weight: .regular))
                         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                         .foregroundColor(Color.DarkIcon.opacity(0.8))
                         .accessibility(hidden: true)
@@ -864,9 +843,9 @@ struct SearchView: View {
                         .introspect(.textField, on: .iOS(.v13, .v14, .v15, .v16, .v17, .v18)) { textField in
                             textField.becomeFirstResponder()
                         }
-                        .font(.system(.body, design: .rounded).weight(.regular))
+                        .font(Font.satoshi(.body, weight: .regular))
                         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-//                        .font(.system(size: 17, weight: .regular, design: .rounded))
+//                        .font(Font.satoshi(17, weight: .regular))
                         .foregroundColor(Color.PrimaryText)
 
                     if searchQuery != "" {
@@ -874,9 +853,9 @@ struct SearchView: View {
                             searchQuery = ""
                         } label: {
                             Image(systemName: "xmark.circle.fill")
-                                .font(.system(.subheadline, design: .rounded).weight(.regular))
+                                .font(Font.satoshi(.subheadline, weight: .regular))
                                 .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-//                                .font(.system(size: 15))
+//                                .font(Font.satoshi(15))
                                 .foregroundColor(Color.SubtitleText)
                                 .background(Color.SecondaryBackground)
                         }
@@ -891,9 +870,9 @@ struct SearchView: View {
                 } label: {
                     Text("Cancel")
                         .foregroundColor(Color.PrimaryText)
-                        .font(.system(.body, design: .rounded).weight(.medium))
+                        .font(Font.satoshi(.body, weight: .medium))
                         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-//                        .font(.system(size: 18, weight: .medium, design: .rounded))
+//                        .font(Font.satoshi(18, weight: .medium))
                 }
             }
             
@@ -921,17 +900,17 @@ struct FilteredSearchView: View {
             if searchQuery != "" && transactions.count == 0 {
                 VStack(spacing: 2) {
                     Text("📭️")
-                        .font(.system(size: 50))
+                        .font(Font.satoshi(50))
                         .padding(.bottom, 15)
                     Text("No entries found.")
-                        .font(.system(.title3, design: .rounded).weight(.medium))
+                        .font(Font.satoshi(.title3, weight: .medium))
                         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-//                        .font(.system(size: 18, weight: .medium, design: .rounded))
+//                        .font(Font.satoshi(18, weight: .medium))
                         .foregroundColor(Color.PrimaryText)
                     Text("Try a different search query!")
-                        .font(.system(.subheadline, design: .rounded).weight(.regular))
+                        .font(Font.satoshi(.subheadline, weight: .regular))
                         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-//                        .font(.system(size: 14, weight: .regular, design: .rounded))
+//                        .font(Font.satoshi(14, weight: .regular))
                         .foregroundColor(Color.SubtitleText)
                 }
                 .frame(alignment: .center)
@@ -992,20 +971,20 @@ struct TimePickerView: View {
             ForEach(timeframes.indices, id: \.self) { index in
                 HStack {
                     Text(LocalizedStringKey(timeframes[index]))
-                        .font(.system(.body, design: .rounded).weight(.medium))
+                        .font(Font.satoshi(.body, weight: .medium))
                         .dynamicTypeSize(...DynamicTypeSize.xxLarge)
 
                     Spacer()
 
                     if holdingTimeframe == index + 1 {
                         Image(systemName: "checkmark")
-                            .font(.system(.footnote, design: .rounded).weight(.medium))
+                            .font(Font.satoshi(.footnote, weight: .medium))
                             .dynamicTypeSize(...DynamicTypeSize.xxLarge)
-//                            .font(.system(size: 14, weight: .medium))
+//                            .font(Font.satoshi(14, weight: .medium))
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-//                .font(.system(size: 18, weight: .medium, design: .rounded))
+//                .font(Font.satoshi(18, weight: .medium))
                 .padding(5)
                 .background {
                     if holdingTimeframe == index + 1 {
@@ -1064,22 +1043,22 @@ struct FilterPickerView: View {
             ForEach(FilterType.allCases, id: \.self) { filter in
                 HStack {
                     Image(systemName: FilterType.imageDictionary[filter] ?? "")
-//                        .font(.system(size: 16))
-                        .font(.system(.callout, design: .rounded).weight(.regular))
+//                        .font(Font.satoshi(16))
+                        .font(Font.satoshi(.callout, weight: .regular))
                         .dynamicTypeSize(...DynamicTypeSize.xxLarge)
                         .frame(width: 20)
                     Text(LocalizedStringKey(filter.rawValue))
-//                        .font(.system(size: 18, weight: .medium, design: .rounded))
-                        .font(.system(.body, design: .rounded).weight(.medium))
+//                        .font(Font.satoshi(18, weight: .medium))
+                        .font(Font.satoshi(.body, weight: .medium))
                         .dynamicTypeSize(...DynamicTypeSize.xxLarge)
                         .lineLimit(1)
                     Spacer()
 
                     if filterType == filter {
                         Image(systemName: "checkmark")
-                            .font(.system(.footnote, design: .rounded).weight(.medium))
+                            .font(Font.satoshi(.footnote, weight: .medium))
                             .dynamicTypeSize(...DynamicTypeSize.xxLarge)
-//                            .font(.system(size: 14, weight: .medium))
+//                            .font(Font.satoshi(14, weight: .medium))
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -1196,9 +1175,9 @@ struct ListView: View {
                             Text(filtered.string)
                                 .layoutPriority(1)
                         }
-                        .font(.system(.callout, design: .rounded).weight(.semibold))
+                        .font(Font.satoshi(.callout, weight: .semibold))
                         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-//                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+//                        .font(Font.satoshi(14, weight: .semibold))
                         .foregroundColor(Color.SubtitleText)
                         .accessibilityElement(children: .ignore)
                         .accessibilityLabel("\(currencySymbol)\(filtered.string) was spent \(dateConverterAccessibilityLabel(date: day.id ?? Date.now))")
@@ -1356,9 +1335,9 @@ struct FutureListView: View {
 
                         Text(totalString)
                     }
-                    .font(.system(.callout, design: .rounded).weight(.semibold))
+                    .font(Font.satoshi(.callout, weight: .semibold))
                     .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-//                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+//                    .font(Font.satoshi(14, weight: .semibold))
                     .foregroundColor(Color.SubtitleText)
                     .accessibilityElement(children: .ignore)
 
@@ -1452,7 +1431,7 @@ struct SingleTransactionView: View {
     var body: some View {
         ZStack(alignment: .trailing) {
 //            Image(systemName: "xmark")
-//                .font(.system(.caption, design: .rounded).weight(.bold))
+//                .font(Font.satoshi(.caption, weight: .bold))
 //                .dynamicTypeSize(...DynamicTypeSize.xLarge)
 //                .foregroundColor(deleteConfirm ? Color.AlertRed : Color.SubtitleText)
 //                .padding(5)
@@ -1471,7 +1450,7 @@ struct SingleTransactionView: View {
                     .overlay(alignment: .bottomTrailing) {
                         if transaction.recurringType > 0 {
                             Image(systemName: "arrow.clockwise")
-                                .font(.system(size: 12, weight: .medium))
+                                .font(Font.satoshi(12, weight: .medium))
                                 .foregroundColor(Color.DarkIcon)
                                 .padding(3)
                                 .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 6))
@@ -1481,13 +1460,13 @@ struct SingleTransactionView: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(transaction.wrappedNote)
-                        .font(.system(.body, design: .rounded).weight(.medium))
+                        .font(Font.satoshi(.body, weight: .medium))
                         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                         .foregroundColor(future ? Color.SubtitleText : Color.PrimaryText)
                         .lineLimit(1)
 
                     Text(getSubtitle())
-                        .font(.system(.subheadline, design: .rounded).weight(.medium))
+                        .font(Font.satoshi(.subheadline, weight: .medium))
                         .dynamicTypeSize(...DynamicTypeSize.xxLarge)
                         .foregroundColor(future ? Color.EvenLighterText : Color.SubtitleText)
                         .lineLimit(1)
@@ -1495,19 +1474,19 @@ struct SingleTransactionView: View {
                     if let bucket = transaction.bucket {
                         HStack(spacing: 4) {
                             Image(systemName: "flag.fill")
-                                .font(.system(size: 9, weight: .bold))
+                                .font(Font.satoshi(9, weight: .bold))
                             Text("\(bucket.emoji ?? "🏷️") \(bucket.name ?? "Bucket")")
                                 .lineLimit(1)
                         }
-                        .font(.system(.caption2, design: .rounded).weight(.semibold))
-                        .foregroundColor(future ? Color.EvenLighterText : Color(hex: bucket.colour ?? "7B8FF8"))
+                        .font(Font.satoshi(.caption2, weight: .semibold))
+                        .foregroundColor(future ? Color.EvenLighterText : Color(hex: bucket.colour ?? "4A5240"))
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
                 if transaction.income {
                     Text(showExpenseOrIncomeSign ? "+\(transactionAmountString)" : transactionAmountString)
-                        .font(.system(.title3, design: .rounded).weight(.medium))
+                        .font(Font.satoshi(.title3, weight: .medium))
                         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                         .foregroundColor(future ? Color.SubtitleText : Color.IncomeGreen)
                         .minimumScaleFactor(0.7)
@@ -1516,7 +1495,7 @@ struct SingleTransactionView: View {
 
                 } else {
                     Text(showExpenseOrIncomeSign ? "-\(transactionAmountString)" : transactionAmountString)
-                        .font(.system(.title3, design: .rounded).weight(.medium))
+                        .font(Font.satoshi(.title3, weight: .medium))
                         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                         .foregroundColor(future ? Color.SubtitleText : Color.PrimaryText)
                         .minimumScaleFactor(0.7)
@@ -1679,11 +1658,11 @@ struct EmojiLogView: View {
             }
 
             Text(emoji)
-                .font(.system(huge ? .title : .title3))
+                .font(Font.satoshi(huge ? .title : .title3))
                 // future ? .caption :
                 .dynamicTypeSize(...DynamicTypeSize.xxLarge)
                 .padding(8)
-//                .font(.system(size: huge ? 45 : future ? 16: 20))
+//                .font(Font.satoshi(huge ? 45 : future ? 16: 20))
         }
         .opacity(future ? 0.6 : 1)
     }
@@ -1720,16 +1699,16 @@ struct DeleteTransactionAlert: View {
         if let unwrappedToDelete = transactionManager.toDelete {
             VStack(alignment: .leading, spacing: 1.5) {
                 Text(stopRecurring ? "Stop Recurring?" : "Delete '\(unwrappedToDelete.wrappedNote)'?")
-                    .font(.system(.title2, design: .rounded).weight(.medium))
+                    .font(Font.satoshi(.title2, weight: .medium))
                     .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-//                    .font(.system(size: 25, weight: .medium, design: .rounded))
+//                    .font(Font.satoshi(25, weight: .medium))
                     .foregroundColor(.PrimaryText)
                     .accessibilityLabel("Delete \(unwrappedToDelete.wrappedNote) transaction confirmation. This action cannot be undone.")
 
                 Text(stopRecurring ? "The transaction will no longer be automatically logged." : "This action cannot be undone.")
-                    .font(.system(.title3, design: .rounded).weight(.medium))
+                    .font(Font.satoshi(.title3, weight: .medium))
                     .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-//                    .font(.system(size: 20, weight: .medium, design: .rounded))
+//                    .font(Font.satoshi(20, weight: .medium))
                     .foregroundColor(.SubtitleText)
                     .padding(.bottom, 25)
                     .accessibility(hidden: true)
@@ -1952,15 +1931,15 @@ struct NoResultsView: View {
                 Spacer()
 
                 Image(systemName: "tray.full.fill")
-                    .font(.system(.largeTitle, design: .rounded))
+                    .font(Font.satoshi(.largeTitle))
                     .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-//                    .font(.system(size: 38, weight: .regular, design: .rounded))
+//                    .font(Font.satoshi(38, weight: .regular))
                     .foregroundColor(Color.SubtitleText)
 
                 Text("No entries found.")
-                    .font(.system(.title3, design: .rounded).weight(.medium))
+                    .font(Font.satoshi(.title3, weight: .medium))
                     .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-//                    .font(.system(size: 21, weight: .medium, design: .rounded))
+//                    .font(Font.satoshi(21, weight: .medium))
                     .foregroundColor(Color.SubtitleText)
 
                 Spacer()
@@ -1973,16 +1952,16 @@ struct NoResultsView: View {
                 Spacer()
 
                 //            Text("📭️")
-                //                .font(.system(size: 45))
+                //                .font(Font.satoshi(45))
                 //                .padding(.bottom, 9)
                 //                .accessibility(hidden: true)
 
                 Image(systemName: "tray.full.fill")
-                    .font(.system(size: 38, weight: .regular, design: .rounded))
+                    .font(Font.satoshi(38, weight: .regular))
                     .foregroundColor(Color.SubtitleText)
 
                 Text("No entries found.")
-                    .font(.system(size: 21, weight: .medium, design: .rounded))
+                    .font(Font.satoshi(21, weight: .medium))
                     .foregroundColor(Color.SubtitleText)
 
                 Spacer()
@@ -2004,9 +1983,9 @@ struct CategoryStepperView: View {
         HStack(spacing: 8) {
             if income {
                 Image(systemName: "plus")
-                    .font(.system(.body, design: .rounded).weight(.semibold))
+                    .font(Font.satoshi(.body, weight: .semibold))
                     .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-//                    .font(.system(size: 18, weight: .semibold))
+//                    .font(Font.satoshi(18, weight: .semibold))
                     .foregroundColor(Color.IncomeGreen)
                     .padding(7)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -2028,9 +2007,9 @@ struct CategoryStepperView: View {
                     }
             } else {
                 Image(systemName: "minus")
-                    .font(.system(.body, design: .rounded).weight(.semibold))
+                    .font(Font.satoshi(.body, weight: .semibold))
                     .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-//                    .font(.system(size: 18, weight: .semibold))
+//                    .font(Font.satoshi(18, weight: .semibold))
                     .foregroundColor(Color.AlertRed)
                     .padding(7)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -2058,12 +2037,12 @@ struct CategoryStepperView: View {
                         ForEach(categories, id: \.self) { item in
                             HStack(spacing: 5) {
                                 Text(item.wrappedEmoji)
-                                    .font(.system(.footnote, design: .rounded).weight(.medium))
+                                    .font(Font.satoshi(.footnote, weight: .medium))
                                     .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-//                                    .font(.system(size: 13))
+//                                    .font(Font.satoshi(13))
                                 Text(item.wrappedName)
-//                                    .font(.system(size: 17.5, weight: .medium, design: .rounded))
-                                    .font(.system(.body, design: .rounded).weight(.medium))
+//                                    .font(Font.satoshi(17.5, weight: .medium))
+                                    .font(Font.satoshi(.body, weight: .medium))
                                     .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                             }
                             .id(item.id)
@@ -2136,8 +2115,8 @@ struct IncomeFilterToggleView: View {
     var body: some View {
         HStack(spacing: 0) {
             Text("Expense")
-//                .font(.system(size: 17, weight: .semibold, design: .rounded))
-                .font(.system(.body, design: .rounded).weight(.semibold))
+//                .font(Font.satoshi(17, weight: .semibold))
+                .font(Font.satoshi(.body, weight: .semibold))
                 .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 .foregroundColor(income == false ? Color.PrimaryText : Color.SubtitleText)
                 .padding(5.5)
@@ -2159,8 +2138,8 @@ struct IncomeFilterToggleView: View {
                 }
 
             Text("filter-picker-income")
-//                .font(.system(size: 17, weight: .semibold, design: .rounded))
-                .font(.system(.body, design: .rounded).weight(.semibold))
+//                .font(Font.satoshi(17, weight: .semibold))
+                .font(Font.satoshi(.body, weight: .semibold))
                 .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 .foregroundColor(income == true ? Color.PrimaryText : Color.SubtitleText)
                 .padding(5.5)
@@ -2222,9 +2201,9 @@ struct DateStepperView: View {
             Spacer()
 
             Text(dateString)
-                .font(.system(.title3, design: .rounded).weight(.bold))
+                .font(Font.satoshi(.title3, weight: .bold))
                 .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-//                .font(.system(size: 20, weight: .bold, design: .rounded))
+//                .font(Font.satoshi(20, weight: .bold))
                 .accessibilityLabel("showing transactions on \(dateString)")
 
             Spacer()
@@ -2305,7 +2284,7 @@ struct WeekStepperView: View {
             Spacer()
 
             Text(dateString)
-                .font(.system(.title3, design: .rounded).weight(.bold))
+                .font(Font.satoshi(.title3, weight: .bold))
                 .accessibilityLabel(accessibilityDateString)
 
             Spacer()
@@ -2381,7 +2360,7 @@ struct MonthStepperView: View {
             Spacer()
 
             Text(dateString)
-                .font(.system(.title3, design: .rounded).weight(.bold))
+                .font(Font.satoshi(.title3, weight: .bold))
                 .accessibilityLabel("showing transactions in \(dateString)")
 
             Spacer()

@@ -47,7 +47,7 @@ struct AISummaryCardView: View {
         VStack(alignment: .leading, spacing: 14) {
             // Header
             Text("Summary")
-                .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                .font(Font.satoshi(.subheadline, weight: .semibold))
                 .foregroundColor(Color(.secondaryLabel))
 
             HStack(alignment: .top) {
@@ -56,7 +56,7 @@ struct AISummaryCardView: View {
                     // Net / primary amount
                     let displayAmount = data.totalExpense > 0 ? data.totalExpense : data.totalIncome
                     Text("\(currencySymbol)\(formatAmt(displayAmount))")
-                        .font(.system(size: 26, weight: .bold, design: .rounded))
+                        .font(Font.satoshi(26, weight: .bold))
                         .foregroundColor(Color(.label))
                         .minimumScaleFactor(0.6)
                         .lineLimit(1)
@@ -65,10 +65,10 @@ struct AISummaryCardView: View {
                     if let pct = data.comparisonPct {
                         HStack(spacing: 4) {
                             Image(systemName: pct <= 0 ? "arrow.down.circle.fill" : "arrow.up.circle.fill")
-                                .font(.system(size: 12, weight: .semibold))
+                                .font(Font.satoshi(12, weight: .semibold))
                                 .foregroundColor(pct <= 0 ? Color("IncomeGreen") : Color("AlertRed"))
                             Text("\(Int(abs(pct)))% \(pct <= 0 ? "lower" : "higher") than last \(periodUnit(data.period))")
-                                .font(.system(.caption, design: .rounded).weight(.medium))
+                                .font(Font.satoshi(.caption, weight: .medium))
                                 .foregroundColor(pct <= 0 ? Color("IncomeGreen") : Color("AlertRed"))
                         }
                     }
@@ -77,10 +77,10 @@ struct AISummaryCardView: View {
                     if data.totalExpense > 0 && data.totalIncome > 0 {
                         HStack(spacing: 10) {
                             Label("\(currencySymbol)\(formatAmt(data.totalIncome))", systemImage: "arrow.down.circle.fill")
-                                .font(.system(.caption, design: .rounded).weight(.medium))
+                                .font(Font.satoshi(.caption, weight: .medium))
                                 .foregroundColor(Color("IncomeGreen"))
                             Label("\(currencySymbol)\(formatAmt(data.totalExpense))", systemImage: "arrow.up.circle.fill")
-                                .font(.system(.caption, design: .rounded).weight(.medium))
+                                .font(Font.satoshi(.caption, weight: .medium))
                                 .foregroundColor(Color("AlertRed"))
                         }
                     }
@@ -99,7 +99,7 @@ struct AISummaryCardView: View {
 
             // Period pill
             Text(data.period.capitalized)
-                .font(.system(.caption2, design: .rounded).weight(.semibold))
+                .font(Font.satoshi(.caption2, weight: .semibold))
                 .foregroundColor(Color(.secondaryLabel))
                 .padding(.horizontal, 8)
                 .padding(.vertical, 3)
@@ -146,7 +146,7 @@ private struct DonutChart: View {
                 .trim(from: 0, to: expenseFraction)
                 .stroke(
                     AngularGradient(
-                        colors: [Color(hex: "4ECDC4"), Color(hex: "9BAAF8"), Color(hex: "4ECDC4")],
+                        colors: [Color(hex: "4A5240"), Color(hex: "C8B94A"), Color(hex: "4A5240")],
                         center: .center
                     ),
                     style: StrokeStyle(lineWidth: 11, lineCap: .round)
@@ -165,10 +165,10 @@ private struct DonutChart: View {
             // Center text
             VStack(spacing: 1) {
                 Text("\(count)")
-                    .font(.system(.body, design: .rounded).weight(.bold))
+                    .font(Font.satoshi(.body, weight: .bold))
                     .foregroundColor(Color(.label))
                 Text("Transactions")
-                    .font(.system(size: 7.5, design: .rounded).weight(.medium))
+                    .font(Font.satoshi(7.5, weight: .medium))
                     .foregroundColor(Color(.secondaryLabel))
                     .multilineTextAlignment(.center)
             }
@@ -198,23 +198,23 @@ struct AITransactionsLoggedCardView: View {
                     Circle()
                         .fill(
                             LinearGradient(
-                                colors: [Color(hex: "4ECDC4").opacity(0.18), Color(hex: "9BAAF8").opacity(0.22)],
+                                colors: [Color(hex: "4A5240").opacity(0.18), Color(hex: "C8B94A").opacity(0.22)],
                                 startPoint: .topLeading, endPoint: .bottomTrailing
                             )
                         )
                         .frame(width: 28, height: 28)
                     Image(systemName: "checkmark")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(Font.satoshi(12, weight: .bold))
                         .foregroundStyle(
                             LinearGradient(
-                                colors: [Color(hex: "4ECDC4"), Color(hex: "9BAAF8")],
+                                colors: [Color(hex: "4A5240"), Color(hex: "C8B94A")],
                                 startPoint: .leading, endPoint: .trailing
                             )
                         )
                 }
 
                 Text("\(actions.count) transaction\(actions.count == 1 ? "" : "s") logged")
-                    .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                    .font(Font.satoshi(.subheadline, weight: .semibold))
                     .foregroundColor(Color(.label))
 
                 Spacer()
@@ -224,12 +224,12 @@ struct AITransactionsLoggedCardView: View {
                     VStack(alignment: .trailing, spacing: 1) {
                         if totalExpense > 0 {
                             Text("-\(currencySymbol)\(formatAmt(totalExpense))")
-                                .font(.system(.caption, design: .rounded).weight(.semibold))
+                                .font(Font.satoshi(.caption, weight: .semibold))
                                 .foregroundColor(Color("AlertRed"))
                         }
                         if totalIncome > 0 {
                             Text("+\(currencySymbol)\(formatAmt(totalIncome))")
-                                .font(.system(.caption, design: .rounded).weight(.semibold))
+                                .font(Font.satoshi(.caption, weight: .semibold))
                                 .foregroundColor(Color("IncomeGreen"))
                         }
                     }
@@ -304,37 +304,37 @@ private struct TransactionLogRow: View {
                     .fill(
                         action.income
                             ? Color("IncomeGreen").opacity(0.15)
-                            : Color(hex: "4ECDC4").opacity(0.12)
+                            : Color(hex: "4A5240").opacity(0.12)
                     )
                     .frame(width: 34, height: 34)
                 Text(String(action.note.prefix(1)).uppercased())
-                    .font(.system(.subheadline, design: .rounded).weight(.bold))
-                    .foregroundColor(action.income ? Color("IncomeGreen") : Color(hex: "4ECDC4"))
+                    .font(Font.satoshi(.subheadline, weight: .bold))
+                    .foregroundColor(action.income ? Color("IncomeGreen") : Color(hex: "4A5240"))
             }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(action.note)
-                    .font(.system(.subheadline, design: .rounded).weight(.medium))
+                    .font(Font.satoshi(.subheadline, weight: .medium))
                     .foregroundColor(Color(.label))
                     .lineLimit(1)
                 HStack(spacing: 4) {
                     Text(action.categoryName)
-                        .font(.system(.caption2, design: .rounded).weight(.medium))
+                        .font(Font.satoshi(.caption2, weight: .medium))
                         .foregroundColor(Color(.secondaryLabel))
                     Text("·")
                         .foregroundColor(Color(.tertiaryLabel))
                     Text(dateStr)
-                        .font(.system(.caption2, design: .rounded))
+                        .font(Font.satoshi(.caption2))
                         .foregroundColor(Color(.secondaryLabel))
                     Text(timeStr)
-                        .font(.system(.caption2, design: .rounded))
+                        .font(Font.satoshi(.caption2))
                         .foregroundColor(Color(.tertiaryLabel))
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
             Text(amtStr)
-                .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                .font(Font.satoshi(.subheadline, weight: .semibold))
                 .foregroundColor(action.income ? Color("IncomeGreen") : Color(.label))
                 .lineLimit(1)
                 .layoutPriority(1)
@@ -363,13 +363,13 @@ struct AIRecurringCardView: View {
             HStack {
                 ZStack {
                     Circle()
-                        .fill(Color(hex: "9BAAF8").opacity(0.15))
+                        .fill(Color(hex: "C8B94A").opacity(0.15))
                         .frame(width: 28, height: 28)
                     Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(Font.satoshi(12, weight: .bold))
                         .foregroundStyle(
                             LinearGradient(
-                                colors: [Color(hex: "4ECDC4"), Color(hex: "9BAAF8")],
+                                colors: [Color(hex: "4A5240"), Color(hex: "C8B94A")],
                                 startPoint: .leading, endPoint: .trailing
                             )
                         )
@@ -377,11 +377,11 @@ struct AIRecurringCardView: View {
 
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Recurring detected")
-                        .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                        .font(Font.satoshi(.subheadline, weight: .semibold))
                         .foregroundColor(Color(.label))
                     if monthlyExpense > 0 {
                         Text("\(currencySymbol)\(formatAmt(monthlyExpense))/mo in subscriptions")
-                            .font(.system(.caption, design: .rounded))
+                            .font(Font.satoshi(.caption))
                             .foregroundColor(Color(.secondaryLabel))
                     }
                 }
@@ -455,27 +455,27 @@ private struct RecurringRow: View {
                     .fill(
                         item.income
                             ? Color("IncomeGreen").opacity(0.12)
-                            : Color(hex: "9BAAF8").opacity(0.14)
+                            : Color(hex: "C8B94A").opacity(0.14)
                     )
                     .frame(width: 34, height: 34)
                 Image(systemName: item.income ? "arrow.down" : "arrow.clockwise")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(item.income ? Color("IncomeGreen") : Color(hex: "9BAAF8"))
+                    .font(Font.satoshi(13, weight: .semibold))
+                    .foregroundColor(item.income ? Color("IncomeGreen") : Color(hex: "C8B94A"))
             }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.name)
-                    .font(.system(.subheadline, design: .rounded).weight(.medium))
+                    .font(Font.satoshi(.subheadline, weight: .medium))
                     .foregroundColor(Color(.label))
                     .lineLimit(1)
                 Text(frequencyLabel)
-                    .font(.system(.caption2, design: .rounded).weight(.medium))
+                    .font(Font.satoshi(.caption2, weight: .medium))
                     .foregroundColor(Color(.secondaryLabel))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
             Text(amtStr)
-                .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                .font(Font.satoshi(.subheadline, weight: .semibold))
                 .foregroundColor(item.income ? Color("IncomeGreen") : Color(.label))
                 .lineLimit(1)
                 .layoutPriority(1)

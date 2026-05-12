@@ -44,11 +44,11 @@ struct WelcomeSheetView: View {
                             .padding(.bottom, 20)
 
                         Text("dime_name")
-                            .font(.system(size: 30, weight: .medium, design: .rounded))
+                            .font(Font.satoshi(30, weight: .medium))
                             .foregroundColor(Color.PrimaryText)
 
                         Text("Version \(UIApplication.appVersion ?? "") (\(UIApplication.buildNumber ?? ""))")
-                            .font(.system(size: 14, weight: .medium, design: .rounded))
+                            .font(Font.satoshi(14, weight: .medium))
                             .foregroundColor(Color.SubtitleText)
                             .padding(.bottom, 15)
                     }
@@ -60,18 +60,18 @@ struct WelcomeSheetView: View {
                             if rowIndex < visibleLines {
                                 HStack(alignment: .top, spacing: 15) {
                                     Image(systemName: welcomeFeatures[rowIndex].icon)
-                                        .font(.system(size: 25, weight: .regular))
+                                        .font(Font.satoshi(25, weight: .regular))
                                         .foregroundColor(Color.SubtitleText)
                                         .frame(width: 40, alignment: .leading)
                                         .offset(y: 2)
 
                                     VStack(alignment: .leading, spacing: 5) {
                                         Text(LocalizedStringKey(welcomeFeatures[rowIndex].header))
-                                            .font(.system(size: 18, weight: .medium, design: .rounded))
+                                            .font(Font.satoshi(18, weight: .medium))
                                             .foregroundColor(Color.PrimaryText)
 
                                         Text(LocalizedStringKey(welcomeFeatures[rowIndex].subtitle))
-                                            .font(.system(size: 16, weight: .regular, design: .rounded))
+                                            .font(Font.satoshi(16, weight: .regular))
                                             .fixedSize(horizontal: false, vertical: true)
                                             .foregroundColor(Color.SubtitleText)
                                     }
@@ -98,7 +98,7 @@ struct WelcomeSheetView: View {
                         }
                     } label: {
                         Text("Get Started")
-                            .font(.system(size: 20, weight: .semibold, design: .rounded))
+                            .font(Font.satoshi(20, weight: .semibold))
                             .foregroundColor(Color.LightIcon)
                             .padding(.vertical, 12)
                             .frame(maxWidth: .infinity)

@@ -36,7 +36,7 @@ struct SettingsNumberEntryView: View {
   var body: some View {
     VStack(spacing: 10) {
       Text("Number Entry Method")
-        .font(.system(.title3, design: .rounded).weight(.semibold))
+        .font(Font.satoshi(.title3, weight: .semibold))
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         .foregroundColor(Color.PrimaryText)
         .frame(maxWidth: .infinity)
@@ -51,7 +51,7 @@ struct SettingsNumberEntryView: View {
       HStack(spacing: 0) {
         ForEach(options.indices, id: \.self) { option in
           Text(LocalizedStringKey(options[option]))
-            .font(.system(.body, design: .rounded).weight(.semibold))
+            .font(Font.satoshi(.body, weight: .semibold))
             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
             .foregroundColor(
               numberEntryType == (option + 1) ? Color.PrimaryText : Color.SubtitleText
@@ -89,23 +89,23 @@ struct SettingsNumberEntryView: View {
       VStack(spacing: 10) {
         if numberEntryType == 1 {
           Text("\"Pre-dotted\"")
-            .font(.system(.title2, design: .rounded).weight(.semibold))
+            .font(Font.satoshi(.title2, weight: .semibold))
             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
             .foregroundColor(Color.PrimaryText)
 
           Text("If you're too lazy to add a decimal point, I gotchu covered.")
-            .font(.system(.subheadline, design: .rounded).weight(.medium))
+            .font(Font.satoshi(.subheadline, weight: .medium))
             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
             .multilineTextAlignment(.center)
             .foregroundColor(Color.SubtitleText)
         } else {
           Text("\"Cent-less\"")
-            .font(.system(.title2, design: .rounded).weight(.semibold))
+            .font(Font.satoshi(.title2, weight: .semibold))
             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
             .foregroundColor(Color.PrimaryText)
 
           Text("If your transactions usually amount to whole numbers - this one is for you.")
-            .font(.system(.subheadline, design: .rounded).weight(.medium))
+            .font(Font.satoshi(.subheadline, weight: .medium))
             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
             .multilineTextAlignment(.center)
             .foregroundColor(Color.SubtitleText)

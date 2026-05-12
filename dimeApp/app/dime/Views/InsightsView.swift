@@ -52,14 +52,14 @@ struct InsightsView: View {
                     .padding(.bottom, 20)
 
                 Text("Analyse Your Expenditure")
-                    .font(.system(.title2, design: .rounded).weight(.medium))
-//                    .font(.system(size: 23.5, weight: .medium, design: .rounded))
+                    .font(Font.satoshi(.title2, weight: .medium))
+//                    .font(Font.satoshi(23.5, weight: .medium))
                     .foregroundColor(Color.PrimaryText.opacity(0.8))
                     .multilineTextAlignment(.center)
 
                 Text("As transactions start piling up")
-                    .font(.system(.body, design: .rounded).weight(.medium))
-//                    .font(.system(size: 18, weight: .medium, design: .rounded))
+                    .font(Font.satoshi(.body, weight: .medium))
+//                    .font(Font.satoshi(18, weight: .medium))
                     .foregroundColor(Color.SubtitleText.opacity(0.7))
                     .multilineTextAlignment(.center)
             }
@@ -90,7 +90,7 @@ struct InsightsView: View {
             VStack(spacing: 5) {
                 HStack {
                     Text("Insights")
-                        .font(.system(.title, design: .rounded).weight(.semibold))
+                        .font(Font.satoshi(.title, weight: .semibold))
                         .accessibility(addTraits: .isHeader)
                     Spacer()
 
@@ -99,10 +99,10 @@ struct InsightsView: View {
                     } label: {
                         HStack(spacing: 4.5) {
                             Text(chartTypeString)
-                                .font(.system(.body, design: .rounded).weight(.medium))
+                                .font(Font.satoshi(.body, weight: .medium))
 
                             Image(systemName: "chevron.up.chevron.down")
-                                .font(.system(.caption, design: .rounded).weight(.medium))
+                                .font(Font.satoshi(.caption, weight: .medium))
                         }
                         .padding(3)
                         .padding(.horizontal, 6)
@@ -318,7 +318,7 @@ struct HorizontalPieChartView: View {
             VStack(alignment: .leading, spacing: 10) {
                 if !categoryFilterMode {
                     Text("Categories")
-                        .font(.system(.callout, design: .rounded).weight(.semibold))
+                        .font(Font.satoshi(.callout, weight: .semibold))
                         .foregroundColor(Color.SubtitleText)
 
                     GeometryReader { proxy in
@@ -369,12 +369,12 @@ struct HorizontalPieChartView: View {
                                 HStack(spacing: 10) {
 
                                     Text(category.category.fullName)
-                                        .font(.system(.title3, design: .rounded).weight(.semibold))
+                                        .font(Font.satoshi(.title3, weight: .semibold))
                                         .foregroundColor(Color.PrimaryText)
                                         .frame(maxWidth: .infinity, alignment: .leading)
 
                                     Text("\(currencySymbol)\(category.amount, specifier: (showCents && category.amount < 100) ? "%.2f" : "%.0f")")
-                                        .font(.system(categoryFilterMode && categoryFilter == category.category ? .title3 : .body, design: .rounded).weight(.medium))
+                                        .font(Font.satoshi(categoryFilterMode && categoryFilter == category.category ? .title3 : .body, weight: .medium))
                                         .foregroundColor(Color.SubtitleText)
                                         .lineLimit(1)
                                         .layoutPriority(1)
@@ -388,7 +388,7 @@ struct HorizontalPieChartView: View {
                                             }
                                         } label: {
                                             Image(systemName: "xmark")
-                                                .font(.system(.footnote, design: .rounded).weight(.bold))
+                                                .font(Font.satoshi(.footnote, weight: .bold))
                                                 .foregroundColor(Color.SubtitleText)
                                                 .padding(5)
                                                 .background(Color.SecondaryBackground, in: Circle())
@@ -397,7 +397,7 @@ struct HorizontalPieChartView: View {
                                     } else {
 
                                         Text("\(category.percent * 100, specifier: "%.0f")%")
-                                            .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                                            .font(Font.satoshi(.subheadline, weight: .semibold))
                                             .foregroundColor(boxColor)
                                             .padding(.vertical, 3)
                                             .frame(width: percentWidth)
@@ -855,7 +855,7 @@ struct SingleGraphView: View {
                 VStack(alignment: .leading, spacing: 1.3) {
                     Text(dateString)
                         .lineLimit(1)
-                        .font(.system(.callout, design: .rounded).weight(.semibold))
+                        .font(Font.satoshi(.callout, weight: .semibold))
                         .foregroundColor(Color.SubtitleText)
                         .layoutPriority(1)
 
@@ -865,7 +865,7 @@ struct SingleGraphView: View {
 
                         if showPercentage {
                             Text(percentageDifference)
-                                .font(.system(.footnote, design: .rounded).weight(.medium))
+                                .font(Font.satoshi(.footnote, weight: .medium))
                                 .foregroundColor(currentNet < lastNet ? Color.AlertRed : Color.IncomeGreen)
                                 .padding(3)
                                 .padding(.horizontal, 3)
@@ -881,8 +881,8 @@ struct SingleGraphView: View {
                     VStack(alignment: .trailing, spacing: 1.3) {
                         Text(selectedCategoryName)
                             .lineLimit(1)
-                            .font(.system(.callout, design: .rounded).weight(.semibold))
-//                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                            .font(Font.satoshi(.callout, weight: .semibold))
+//                            .font(Font.satoshi(14, weight: .semibold))
                             .foregroundColor(Color.SubtitleText)
 
                         InsightsDollarView(amount: selectedCategoryAmount, currencySymbol: currencySymbol, showCents: showCents)
@@ -892,7 +892,7 @@ struct SingleGraphView: View {
                     VStack(alignment: .trailing, spacing: 1.3) {
                         Text(selectedDateString)
                             .lineLimit(1)
-                            .font(.system(.callout, design: .rounded).weight(.semibold))
+                            .font(Font.satoshi(.callout, weight: .semibold))
                             .foregroundColor(Color.SubtitleText)
                         InsightsDollarView(amount: selectedDateAmount, currencySymbol: currencySymbol, showCents: showCents)
                             .layoutPriority(1)
@@ -901,7 +901,7 @@ struct SingleGraphView: View {
                     VStack(alignment: .trailing, spacing: 1.3) {
                         Text(type == 3 ? (income ? "Income/Mth" : "Spent/Mth") : (income ? "Income/Day" : "Spent/Day"))
                             .lineLimit(1)
-                            .font(.system(.callout, design: .rounded).weight(.semibold))
+                            .font(Font.satoshi(.callout, weight: .semibold))
                             .foregroundColor(Color.SubtitleText)
                         InsightsDollarView(amount: incomeAverage, currencySymbol: currencySymbol, showCents: showCents)
                             .layoutPriority(1)
@@ -910,7 +910,7 @@ struct SingleGraphView: View {
                     VStack(alignment: .trailing, spacing: 1.3) {
                         Text(type == 3 ? "AVG/MTH" : "AVG/DAY")
                             .lineLimit(1)
-                            .font(.system(.callout, design: .rounded).weight(.semibold))
+                            .font(Font.satoshi(.callout, weight: .semibold))
                             .foregroundColor(Color.SubtitleText)
                         InsightsDollarView(amount: average, currencySymbol: currencySymbol, showCents: showCents, net: netPositive)
                             .layoutPriority(1)
@@ -1604,13 +1604,13 @@ struct SingleWeekBarGraphView: View {
                 // axes
                 VStack(alignment: .leading) {
                     Text(getMaxText(maxi: getMax))
-                        .font(.system(size: 12, weight: .regular, design: .rounded))
+                        .font(Font.satoshi(12, weight: .regular))
                         .foregroundColor(Color.SubtitleText)
 
                     Spacer()
 
                     Text("0")
-                        .font(.system(size: 12, weight: .regular, design: .rounded))
+                        .font(Font.satoshi(12, weight: .regular))
                         .foregroundColor(Color.SubtitleText)
                 }
                 .frame(height: barHeight)
@@ -1631,7 +1631,7 @@ struct SingleWeekBarGraphView: View {
                             }
 
                             Text(getWeekday(day: day).prefix(1))
-                                .font(.system(size: 12, weight: .bold, design: .rounded))
+                                .font(Font.satoshi(12, weight: .bold))
                                 .foregroundColor(Color.SubtitleText)
                         }
                         .opacity(day > Date.now ? 0.3 : 1)
@@ -1986,13 +1986,13 @@ struct SingleMonthBarGraphView: View {
                 // axes
                 VStack(alignment: .leading) {
                     Text(getMaxText(maxi: getMax))
-                        .font(.system(size: 12, weight: .regular, design: .rounded))
+                        .font(Font.satoshi(12, weight: .regular))
                         .foregroundColor(Color.SubtitleText)
 
                     Spacer()
 
                     Text("0")
-                        .font(.system(size: 12, weight: .regular, design: .rounded))
+                        .font(Font.satoshi(12, weight: .regular))
                         .foregroundColor(Color.SubtitleText)
 
                 }
@@ -2015,7 +2015,7 @@ struct SingleMonthBarGraphView: View {
                                 .overlay(alignment: .bottom) {
                                     if numberArray.contains(((daysOfMonth.firstIndex(of: day) ?? -1) + 1)) && firstDayOfMonth == 1 {
                                         Text("\((daysOfMonth.firstIndex(of: day) ?? -1) + 1)")
-                                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                                            .font(Font.satoshi(12, weight: .bold))
                                             .foregroundColor(Color.SubtitleText)
                                             .frame(width: 20, alignment: .center)
                                             .offset(y: 20)
@@ -2097,13 +2097,13 @@ struct SingleRollingDaysBarGraphView: View {
             HStack(alignment: .top, spacing: 3) {
                 VStack(alignment: .leading) {
                     Text(getMaxText(maxi: getMax))
-                        .font(.system(size: 12, weight: .regular, design: .rounded))
+                        .font(Font.satoshi(12, weight: .regular))
                         .foregroundColor(Color.SubtitleText)
 
                     Spacer()
 
                     Text("0")
-                        .font(.system(size: 12, weight: .regular, design: .rounded))
+                        .font(Font.satoshi(12, weight: .regular))
                         .foregroundColor(Color.SubtitleText)
                 }
                 .frame(height: barHeight)
@@ -2124,7 +2124,7 @@ struct SingleRollingDaysBarGraphView: View {
                                 .overlay(alignment: .bottom) {
                                     if numberArray.contains(((days.firstIndex(of: day) ?? -1) + 1)) {
                                         Text(dayFormatter.string(from: day))
-                                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                                            .font(Font.satoshi(12, weight: .bold))
                                             .foregroundColor(Color.SubtitleText)
                                             .frame(width: 20, alignment: .center)
                                             .offset(y: 20)
@@ -2202,13 +2202,13 @@ struct SingleRollingMonthsBarGraphView: View {
             HStack(alignment: .top, spacing: 3) {
                 VStack(alignment: .leading) {
                     Text(getMaxText(maxi: getMax))
-                        .font(.system(size: 12, weight: .regular, design: .rounded))
+                        .font(Font.satoshi(12, weight: .regular))
                         .foregroundColor(Color.SubtitleText)
 
                     Spacer()
 
                     Text("0")
-                        .font(.system(size: 12, weight: .regular, design: .rounded))
+                        .font(Font.satoshi(12, weight: .regular))
                         .foregroundColor(Color.SubtitleText)
                 }
                 .frame(height: barHeight)
@@ -2229,7 +2229,7 @@ struct SingleRollingMonthsBarGraphView: View {
                                 .overlay(alignment: .bottom) {
                                     if labelIndexes.contains((months.firstIndex(of: month) ?? -1) + 1) {
                                         Text(monthFormatter.string(from: month))
-                                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                                            .font(Font.satoshi(12, weight: .bold))
                                             .foregroundColor(Color.SubtitleText)
                                             .frame(width: 30)
                                             .offset(y: 20)
@@ -2563,13 +2563,13 @@ struct SingleYearBarGraphView: View {
                 // axes
                 VStack(alignment: .leading) {
                     Text(getMaxText(maxi: getMax))
-                        .font(.system(size: 12, weight: .regular, design: .rounded))
+                        .font(Font.satoshi(12, weight: .regular))
                         .foregroundColor(Color.SubtitleText)
 
                     Spacer()
 
                     Text("0")
-                        .font(.system(size: 12, weight: .regular, design: .rounded))
+                        .font(Font.satoshi(12, weight: .regular))
                         .foregroundColor(Color.SubtitleText)
 
                 }
@@ -2592,7 +2592,7 @@ struct SingleYearBarGraphView: View {
                                 .overlay(alignment: .bottom) {
                                     if numberArray.contains(((monthsOfYear.firstIndex(of: month) ?? 0) + 1)) {
                                         Text(LocalizedStringKey(monthNames[((monthsOfYear.firstIndex(of: month) ?? 0) + 1)] ?? ""))
-                                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                                            .font(Font.satoshi(12, weight: .bold))
                                             .foregroundColor(Color.SubtitleText)
                                             .frame(width: 30)
                                             .offset(y: 20)
@@ -2706,11 +2706,11 @@ struct ChartTimePickerView: View {
 
                     if time == timeframe {
                         Image(systemName: "checkmark")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(Font.satoshi(14, weight: .medium))
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .font(.system(size: 18, weight: .medium, design: .rounded))
+                .font(Font.satoshi(18, weight: .medium))
                 .padding(5)
                 .background {
                     if time == timeframe {
@@ -2848,11 +2848,11 @@ struct InsightsDollarView: View {
         HStack(alignment: .lastTextBaseline, spacing: 1.3) {
             Group {
                 Text(symbol)
-                    .font(.system(.title3, design: .rounded).weight(.medium))
+                    .font(Font.satoshi(.title3, weight: .medium))
                     .foregroundColor(Color.SubtitleText) +
 
                 Text("\(amount, specifier: showCents && amount < 100 ? "%.2f" : "%.0f")")
-                    .font(.system(.title, design: .rounded).weight(.medium))
+                    .font(Font.satoshi(.title, weight: .medium))
                     .foregroundColor(Color.PrimaryText)
             }
         }
@@ -2915,14 +2915,14 @@ struct SwipeArrowView: View {
     var body: some View {
         VStack(spacing: 8) {
             Image(systemName: left ? "arrow.backward.circle.fill" : "arrow.forward.circle.fill")
-                .font(.system(.body, design: .rounded).weight(.medium))
-//                                        .font(.system(size: 18, weight: .medium))
+                .font(Font.satoshi(.body, weight: .medium))
+//                                        .font(Font.satoshi(18, weight: .medium))
                 //                                .scaleEffect(changeTime ? 1.3 : 1)
                 .foregroundColor(changeTime ? Color.PrimaryText : Color.SecondaryBackground)
 
             Text(swipeString)
-                .font(.system(.subheadline, design: .rounded).weight(.semibold))
-//                                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .font(Font.satoshi(.subheadline, weight: .semibold))
+//                                        .font(Font.satoshi(14, weight: .semibold))
                 .multilineTextAlignment(.center)
                 .foregroundColor(changeTime ? Color.PrimaryText : Color.SecondaryBackground)
         }
@@ -2936,13 +2936,13 @@ struct SwipeEndView: View {
     var body: some View {
         VStack(spacing: 8) {
             Image(systemName: left ? "eyeglasses" : "sun.haze.fill")
-                .font(.system(.title2, design: .rounded).weight(.medium))
-//                                        .font(.system(size: 22, weight: .medium))
+                .font(Font.satoshi(.title2, weight: .medium))
+//                                        .font(Font.satoshi(22, weight: .medium))
                 .foregroundColor(Color.SubtitleText)
 
             Text(left ? "That's all, buddy." : "Into the unknown.")
-                .font(.system(.subheadline, design: .rounded).weight(.semibold))
-//                                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .font(Font.satoshi(.subheadline, weight: .semibold))
+//                                        .font(Font.satoshi(14, weight: .semibold))
                 .frame(width: 90)
                 .multilineTextAlignment(.center)
                 .foregroundColor(Color.SubtitleText)

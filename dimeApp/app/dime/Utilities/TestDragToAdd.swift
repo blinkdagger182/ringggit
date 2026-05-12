@@ -229,7 +229,7 @@ struct CustomProgressView: View {
 
                 // Var 2: Filled
                 Image(systemName: "plus.circle.fill")
-                    .font(.system(size: 32 * (0.6 + progress)))
+                    .font(Font.satoshi(32 * (0.6 + progress)))
                     .foregroundColor(Color.Outline).opacity((0.6 + progress) > 1 ? 1 : (0.6 + progress))
             }
             Text("Pull to add update")

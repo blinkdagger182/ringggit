@@ -20,7 +20,7 @@ struct SettingsUpcomingView: View {
   var body: some View {
     VStack(spacing: 10) {
       Text("Upcoming Logs")
-        .font(.system(.title3, design: .rounded).weight(.semibold))
+        .font(Font.satoshi(.title3, weight: .semibold))
         .foregroundColor(Color.PrimaryText)
         .frame(maxWidth: .infinity)
         .overlay(alignment: .leading) {
@@ -35,7 +35,7 @@ struct SettingsUpcomingView: View {
       VStack(spacing: 0) {
         HStack {
           Text("Display on Log Page")
-            .font(.system(.body, design: .rounded))
+            .font(Font.satoshi(.body))
             .foregroundColor(Color.PrimaryText)
 
           Spacer()
@@ -70,7 +70,7 @@ struct SettingsUpcomingView: View {
 
         HStack {
           Text("Limit to 14-Day Outlook")
-            .font(.system(.body, design: .rounded))
+            .font(Font.satoshi(.body))
             .foregroundColor(Color.PrimaryText)
 
           Spacer()
@@ -103,7 +103,7 @@ struct SettingsUpcomingView: View {
       Text(
         "Don't worry, even if you do hide them there, you will aways be able to find all upcoming transactions right here."
       )
-      .font(.system(.caption, design: .rounded).weight(.medium))
+      .font(Font.satoshi(.caption, weight: .medium))
       .multilineTextAlignment(.leading)
       .foregroundColor(Color.SubtitleText)
       .padding(.horizontal, 15)

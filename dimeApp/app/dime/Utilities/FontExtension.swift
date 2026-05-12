@@ -2,8 +2,6 @@
 //  FontExtension.swift
 //  dime
 //
-//  Created by Rafael Soh on 29/7/22.
-//
 
 import UIKit
 import SwiftUI
@@ -32,31 +30,28 @@ extension UIFont {
     }
 
     class func rounded(ofSize size: CGFloat, weight: UIFont.Weight) -> UIFont {
-        let systemFont = UIFont.systemFont(ofSize: size, weight: weight)
-        let font: UIFont
-
-        if let descriptor = systemFont.fontDescriptor.withDesign(.rounded) {
-            font = UIFont(descriptor: descriptor, size: size)
-        } else {
-            font = systemFont
+        let name: String
+        switch weight {
+        case .black, .heavy:
+            name = "Satoshi-Black"
+        case .bold:
+            name = "Satoshi-Bold"
+        case .semibold, .medium:
+            name = "Satoshi-Medium"
+        case .light, .thin, .ultraLight:
+            name = "Satoshi-Light"
+        default:
+            name = "Satoshi-Regular"
         }
-        return font
+        return UIFont(name: name, size: size) ?? UIFont.systemFont(ofSize: size, weight: weight)
     }
 
     class func roundedSpecial(ofStyle style: UIFont.TextStyle, weight: UIFont.Weight, size: Double) -> UIFont {
-        let systemFont = UIFont.systemFont(ofSize: size, weight: weight)
-        let font: UIFont
-
-        if let descriptor = systemFont.fontDescriptor.withDesign(.rounded) {
-            font = UIFont(descriptor: descriptor, size: size)
-        } else {
-            font = systemFont
-        }
-        return UIFontMetrics(forTextStyle: style).scaledFont(for: font)
+        let base = UIFont.rounded(ofSize: size, weight: weight)
+        return UIFontMetrics(forTextStyle: style).scaledFont(for: base)
     }
 
     static func textStyleSize(_ style: UIFont.TextStyle) -> CGFloat {
         UIFont.preferredFont(forTextStyle: style).pointSize
     }
-
 }

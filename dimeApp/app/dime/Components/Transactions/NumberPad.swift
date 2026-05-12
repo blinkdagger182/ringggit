@@ -57,7 +57,7 @@ struct NumberPad: View {
                             isEditingDecimal = true
                         } label: {
                             Text(".")
-                                .font(.system(size: 34, weight: .regular, design: .rounded))
+                                .font(Font.satoshi(34, weight: .regular))
                                 .frame(width: proxy.size.width * 0.3, height: proxy.size.height * 0.22)
                                 .background(Color.SecondaryBackground)
                                 .foregroundColor(Color.PrimaryText)
@@ -74,11 +74,11 @@ struct NumberPad: View {
                         Group {
                             if #available(iOS 17.0, *) {
                                 Image(systemName: "checkmark.square.fill")
-                                    .font(.system(size: 30, weight: .medium, design: .rounded))
+                                    .font(Font.satoshi(30, weight: .medium))
                                     .symbolEffect(.bounce.up.byLayer, value: price != 0 && category != nil)
                             } else {
                                 Image(systemName: "checkmark.square.fill")
-                                    .font(.system(size: 30, weight: .medium, design: .rounded))
+                                    .font(Font.satoshi(30, weight: .medium))
                             }
                         }
                         .frame(width: proxy.size.width * 0.3, height: proxy.size.height * 0.22)
@@ -211,7 +211,7 @@ struct NumberPad: View {
             }
         } label: {
             Text("\(number)")
-                .font(.system(size: 34, weight: .regular, design: .rounded))
+                .font(Font.satoshi(34, weight: .regular))
                 .frame(width: size.width * 0.3, height: size.height * 0.22)
                 .background(Color.SecondaryBackground)
                 .foregroundColor(Color.PrimaryText)
@@ -296,18 +296,18 @@ struct NumberPadTextView: View {
         HStack(alignment: .lastTextBaseline, spacing: 0) {
             Group {
                 Text(currencySymbol)
-                    .font(.system(.largeTitle, design: .rounded))
+                    .font(Font.satoshi(.largeTitle))
                     .foregroundColor(Color.SubtitleText)
 
 //                ForEach(displayNumbers, id: \.self) { number in
 //                    Text(number)
-//                        .font(.system(size: largerFontSize, weight: .regular, design: .rounded))
+//                        .font(Font.satoshi(largerFontSize, weight: .regular))
 //                        .foregroundColor(Color.PrimaryText)
 //                        .transition(AnyTransition.opacity.combined(with: .scale).combined(with: .move(edge: .trailing)))
 //                }
 
                 + Text(amount)
-                    .font(.system(size: largerFontSize, weight: .regular, design: .rounded))
+                    .font(Font.satoshi(largerFontSize, weight: .regular))
                     .foregroundColor(Color.PrimaryText)
 
             }
@@ -330,7 +330,7 @@ struct NumberPadTextView: View {
          deleteLastDigit()
        } label: {
          Image(systemName: "delete.left.fill")
-           .font(.system(size: 16, weight: .semibold))
+           .font(Font.satoshi(16, weight: .semibold))
            .foregroundColor(Color.SubtitleText)
            .padding(7)
            .background(Color.SecondaryBackground, in: Circle())

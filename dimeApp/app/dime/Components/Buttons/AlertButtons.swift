@@ -14,7 +14,7 @@ struct DeleteButton: View {
 
     var body: some View {
         Text(text)
-            .font(.system(.title3, design: .rounded).weight(.semibold))
+            .font(Font.satoshi(.title3, weight: .semibold))
             .foregroundColor(red ? Color.white : Color.PrimaryText.opacity(0.9))
             .frame(height: 45)
             .frame(maxWidth: .infinity)

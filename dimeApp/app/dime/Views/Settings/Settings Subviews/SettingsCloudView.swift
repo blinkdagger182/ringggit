@@ -16,9 +16,9 @@ struct SettingsCloudView: View {
   var body: some View {
     VStack(spacing: 10) {
       Text("iCloud Sync")
-        .font(.system(.title3, design: .rounded).weight(.semibold))
+        .font(Font.satoshi(.title3, weight: .semibold))
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-        //                .font(.system(size: 20, weight: .semibold, design: .rounded))
+        //                .font(Font.satoshi(20, weight: .semibold))
         .foregroundColor(Color.PrimaryText)
         .frame(maxWidth: .infinity)
         .overlay(alignment: .leading) {
@@ -33,7 +33,7 @@ struct SettingsCloudView: View {
       VStack(spacing: 0) {
         HStack {
           Text("Enable Sync")
-            .font(.system(.body, design: .rounded))
+            .font(Font.satoshi(.body))
             .foregroundColor(Color.PrimaryText)
 
           Spacer()
@@ -63,7 +63,7 @@ struct SettingsCloudView: View {
       .background(Color.SettingsBackground, in: RoundedRectangle(cornerRadius: 9))
 
       Text("Close and reload app for change to take effect.")
-        .font(.system(.caption, design: .rounded).weight(.medium))
+        .font(Font.satoshi(.caption, weight: .medium))
         .multilineTextAlignment(.leading)
         .foregroundColor(Color.SubtitleText)
         .padding(.horizontal, 15)

@@ -114,7 +114,7 @@ struct ImportDataView: View {
         InstructionHeadings(title: "Assign date column", subtitle: "Select a column from your import that corresponds to the dates of your transactions."),
         InstructionHeadings(title: "Assign amount column", subtitle: "Select a column from your import that corresponds to the values of your transactions."),
         InstructionHeadings(title: "Indicate date format", subtitle: "Referencing this article, state the format of the dates in the assigned column."),
-        InstructionHeadings(title: "Link categories", subtitle: "Match values found in the 'Category' column to the corresponding categories in Dime."),
+        InstructionHeadings(title: "Link categories", subtitle: "Match values found in the 'Category' column to the corresponding categories in KIRA."),
         InstructionHeadings(title: "Processing import", subtitle: "Please wait while we process your new transactions.")
     ]
 
@@ -146,44 +146,44 @@ struct ImportDataView: View {
                             .scaleEffect(0.8)
 
                         Text("Processing Import")
-                            .font(.system(.title2, design: .rounded).weight(.medium))
+                            .font(Font.satoshi(.title2, weight: .medium))
 
-//                            .font(.system(size: 22, weight: .medium, design: .rounded))
+//                            .font(Font.satoshi(22, weight: .medium))
                             .foregroundColor(Color.SubtitleText)
                     case .success:
 
                         Image(systemName: "checkmark")
-                            .font(.system(.title2, design: .rounded).weight(.semibold))
+                            .font(Font.satoshi(.title2, weight: .semibold))
 
-//                            .font(.system(size: 21, weight: .semibold, design: .rounded))
+//                            .font(Font.satoshi(21, weight: .semibold))
                             .foregroundColor(Color.IncomeGreen)
                             .frame(width: 35, height: 35)
                             .background(Color.IncomeGreen.opacity(0.3), in: Circle())
 
                         Text("Import Successful")
-                            .font(.system(.title2, design: .rounded).weight(.medium))
+                            .font(Font.satoshi(.title2, weight: .medium))
 
-//                            .font(.system(size: 22, weight: .medium, design: .rounded))
+//                            .font(Font.satoshi(22, weight: .medium))
                             .foregroundColor(Color.IncomeGreen)
                     case .error:
                         Image(systemName: "x")
-                            .font(.system(.title2, design: .rounded).weight(.semibold))
+                            .font(Font.satoshi(.title2, weight: .semibold))
 
-//                            .font(.system(size: 21, weight: .semibold, design: .rounded))
+//                            .font(Font.satoshi(21, weight: .semibold))
                             .foregroundColor(Color.AlertRed)
                             .frame(width: 35, height: 35)
                             .background(Color.Alert.opacity(0.3), in: Circle())
 
                         Text("Import Failed")
-                            .font(.system(.title2, design: .rounded).weight(.medium))
+                            .font(Font.satoshi(.title2, weight: .medium))
 
-//                            .font(.system(size: 22, weight: .medium, design: .rounded))
+//                            .font(Font.satoshi(22, weight: .medium))
                             .foregroundColor(Color.PrimaryText)
 
                         Text(errorMessage)
-                            .font(.system(.subheadline, design: .rounded).weight(.medium))
+                            .font(Font.satoshi(.subheadline, weight: .medium))
 
-//                            .font(.system(size: 15, weight: .medium, design: .rounded))
+//                            .font(Font.satoshi(15, weight: .medium))
                             .foregroundColor(Color.SubtitleText)
                     }
                 }
@@ -216,7 +216,7 @@ struct ImportDataView: View {
                             }
                         } label: {
                             Image(systemName: progress > 1 ? "chevron.left" : "xmark")
-                                .font(.system(.callout, design: .rounded).weight(.semibold))
+                                .font(Font.satoshi(.callout, weight: .semibold))
 
                                 .foregroundColor(Color.SubtitleText)
                                 .padding(8)
@@ -234,7 +234,7 @@ struct ImportDataView: View {
                             }
                         } label: {
                             Image(systemName: progress > 1 ? "chevron.left" : "xmark")
-                                .font(.system(.callout, design: .rounded).weight(.semibold))
+                                .font(Font.satoshi(.callout, weight: .semibold))
                                 .foregroundColor(Color.SubtitleText)
                                 .padding(8)
                                 .background(Color.SecondaryBackground, in: Circle())
@@ -253,15 +253,15 @@ struct ImportDataView: View {
                     if showToast {
                         HStack(spacing: 6.5) {
                             Image(systemName: "exclamationmark.triangle.fill")
-                                .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                                .font(Font.satoshi(.subheadline, weight: .semibold))
 
-//                                .font(.system(size: 15, weight: .semibold))
+//                                .font(Font.satoshi(15, weight: .semibold))
                                 .foregroundColor(Color.AlertRed)
 
                             Text(toastMessage)
-                                .font(.system(.callout, design: .rounded).weight(.semibold))
+                                .font(Font.satoshi(.callout, weight: .semibold))
 
-//                                .font(.system(size: 16, weight: .semibold, design: .rounded))
+//                                .font(Font.satoshi(16, weight: .semibold))
                                 .foregroundColor(Color.AlertRed)
                         }
                         .padding(8)
@@ -278,9 +278,9 @@ struct ImportDataView: View {
                         HStack {
                             Text("Indicate date format")
                                 .foregroundColor(.PrimaryText)
-                                .font(.system(.title2, design: .rounded).weight(.semibold))
+                                .font(Font.satoshi(.title2, weight: .semibold))
 
-//                                .font(.system(size: 26, weight: .semibold, design: .rounded))
+//                                .font(Font.satoshi(26, weight: .semibold))
 
                             Spacer()
                         }
@@ -288,24 +288,24 @@ struct ImportDataView: View {
 
                         Text("Referencing \(makeAttributedString()), state the format of the dates in the assigned column.")
                             .foregroundColor(.SubtitleText)
-                            .font(.system(.body, design: .rounded).weight(.medium))
+                            .font(Font.satoshi(.body, weight: .medium))
 
-//                            .font(.system(size: 17, weight: .medium, design: .rounded))
+//                            .font(Font.satoshi(17, weight: .medium))
                             .frame(maxWidth: .infinity, alignment: .leading)
                     } else {
                         HStack {
                             Text(instructions[progress - 1].title)
                                 .foregroundColor(Color.PrimaryText)
-                                .font(.system(.title2, design: .rounded).weight(.semibold))
+                                .font(Font.satoshi(.title2, weight: .semibold))
 
-//                                .font(.system(size: 26, weight: .semibold, design: .rounded))
+//                                .font(Font.satoshi(26, weight: .semibold))
 
                             if progress == 7 {
                                 Button {
                                     showingCategoryView = true
                                 } label: {
                                     Image(systemName: "plus")
-                                        .font(.system(.footnote, design: .rounded).weight(.semibold))
+                                        .font(Font.satoshi(.footnote, weight: .semibold))
                                         .foregroundColor(Color.SubtitleText)
                                         .padding(4)
                                         .background(Color.SecondaryBackground, in: Circle())
@@ -319,7 +319,7 @@ struct ImportDataView: View {
 
                         Text(instructions[progress - 1].subtitle)
                             .foregroundColor(.SubtitleText)
-                            .font(.system(.body, design: .rounded).weight(.medium))
+                            .font(Font.satoshi(.body, weight: .medium))
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
@@ -329,14 +329,14 @@ struct ImportDataView: View {
                 if progress == 1 {
                     HStack(spacing: 6) {
                         Image(systemName: "info.circle.fill")
-                            .font(.system(.subheadline, design: .rounded).weight(.medium))
+                            .font(Font.satoshi(.subheadline, weight: .medium))
 
-//                            .font(.system(size: 15, weight: .semibold, design: .rounded))
+//                            .font(Font.satoshi(15, weight: .semibold))
 
                         Text("Additional Pointers")
-                            .font(.system(.body, design: .rounded).weight(.semibold))
+                            .font(Font.satoshi(.body, weight: .semibold))
 
-//                            .font(.system(size: 17, weight: .semibold, design: .rounded))
+//                            .font(Font.satoshi(17, weight: .semibold))
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .padding(12)
@@ -354,9 +354,9 @@ struct ImportDataView: View {
                 } else if progress < 6 {
                     VStack(spacing: 10) {
                         Text("Sampled Rows from Import CSV")
-                            .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                            .font(Font.satoshi(.subheadline, weight: .semibold))
 
-//                            .font(.system(size: 15, weight: .semibold, design: .rounded))
+//                            .font(Font.satoshi(15, weight: .semibold))
                             .foregroundColor(Color.SubtitleText)
 
                         ScrollView(.horizontal, showsIndicators: false) {
@@ -370,9 +370,9 @@ struct ImportDataView: View {
                                         } else {
                                             Text("\(number)")
                                                 .foregroundStyle(Color.SubtitleText)
-                                                .font(.system(.subheadline, design: .rounded).weight(.bold))
+                                                .font(Font.satoshi(.subheadline, weight: .bold))
 
-//                                                .font(.system(size: 15, weight: .bold, design: .rounded))
+//                                                .font(Font.satoshi(15, weight: .bold))
                                                 .padding(.horizontal, 8)
                                                 .frame(width: indexColumnWidth, height: 30, alignment: .leading)
                                                 .overlay(Rectangle().stroke(Color.Outline, lineWidth: 1))
@@ -389,14 +389,14 @@ struct ImportDataView: View {
                                                 if let index = selectedColumns.firstIndex(of: columnIndex) {
                                                     HStack(spacing: 4.5) {
                                                         Image(systemName: labels[index].image)
-                                                            .font(.system(.caption, design: .rounded).weight(.semibold))
+                                                            .font(Font.satoshi(.caption, weight: .semibold))
 
-//                                                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+//                                                            .font(Font.satoshi(12, weight: .semibold))
 
                                                         Text(labels[index].label)
-                                                            .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                                                            .font(Font.satoshi(.subheadline, weight: .semibold))
 
-//                                                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+//                                                            .font(Font.satoshi(14, weight: .semibold))
                                                             .frame(maxWidth: .infinity, alignment: .leading)
                                                     }
                                                     .padding(.horizontal, 10)
@@ -414,9 +414,9 @@ struct ImportDataView: View {
                                                 ForEach(displayedColumns[columnIndex], id: \.self) { value in
                                                     Text(value)
                                                         .foregroundStyle(Color.PrimaryText)
-                                                        .font(.system(.subheadline, design: .rounded).weight(.medium))
+                                                        .font(Font.satoshi(.subheadline, weight: .medium))
 
-//                                                        .font(.system(size: 15, weight: .medium, design: .rounded))
+//                                                        .font(Font.satoshi(15, weight: .medium))
                                                         .padding(.horizontal, 8)
                                                         .frame(width: columnWidth, height: 30, alignment: .leading)
                                                         .overlay(Rectangle().stroke(Color.Outline, lineWidth: 1))
@@ -440,14 +440,14 @@ struct ImportDataView: View {
                                         VStack(spacing: 0) {
                                             HStack(spacing: 4.5) {
                                                 Image(systemName: labels[progress - 2].image)
-                                                    .font(.system(.caption, design: .rounded).weight(.semibold))
+                                                    .font(Font.satoshi(.caption, weight: .semibold))
 
-//                                                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+//                                                    .font(Font.satoshi(12, weight: .semibold))
 
                                                 Text(labels[progress - 2].label)
-                                                    .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                                                    .font(Font.satoshi(.subheadline, weight: .semibold))
 
-//                                                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+//                                                    .font(Font.satoshi(14, weight: .semibold))
                                                     .frame(maxWidth: .infinity, alignment: .leading)
                                             }
                                             .padding(.horizontal, 10)
@@ -470,15 +470,15 @@ struct ImportDataView: View {
                 } else if progress == 6 {
                     VStack(spacing: 10) {
                         Text("Sample from 'Date' Column")
-                            .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                            .font(Font.satoshi(.subheadline, weight: .semibold))
 
-//                            .font(.system(size: 15, weight: .semibold, design: .rounded))
+//                            .font(Font.satoshi(15, weight: .semibold))
                             .foregroundColor(Color.SubtitleText)
 
                         Text(sampleDateString)
-                            .font(.system(.title3, design: .rounded).weight(.semibold))
+                            .font(Font.satoshi(.title3, weight: .semibold))
 
-//                            .font(.system(size: 20, weight: .semibold, design: .rounded))
+//                            .font(Font.satoshi(20, weight: .semibold))
                             .foregroundColor(Color.PrimaryText)
                             .frame(width: 300, height: 40)
                             .overlay(
@@ -489,23 +489,23 @@ struct ImportDataView: View {
 
                         HStack(spacing: 7) {
                             Image(systemName: "calendar")
-                                .font(.system(.callout, design: .rounded).weight(.semibold))
+                                .font(Font.satoshi(.callout, weight: .semibold))
 
-//                                .font(.system(size: 16, weight: .semibold))
+//                                .font(Font.satoshi(16, weight: .semibold))
                                 .foregroundColor(Color.SubtitleText)
 
                             TextField("Date Format", text: $dateFormatString)
                                 .foregroundColor(Color.PrimaryText)
-                                .font(.system(.title3, design: .rounded).weight(.semibold))
+                                .font(Font.satoshi(.title3, weight: .semibold))
 
-//                                .font(.system(size: 20, weight: .semibold, design: .rounded))
+//                                .font(Font.satoshi(20, weight: .semibold))
                                 .frame(maxWidth: .infinity)
 
                             if validDateFormatString {
                                 Image(systemName: "checkmark.circle.fill")
-                                    .font(.system(.callout, design: .rounded).weight(.semibold))
+                                    .font(Font.satoshi(.callout, weight: .semibold))
 
-//                                        .font(.system(size: 16, weight: .semibold))
+//                                        .font(Font.satoshi(16, weight: .semibold))
                                     .foregroundColor(Color.IncomeGreen)
                             } else if !validDateFormatString && dateFormatString != "" {
                                 ProgressView()
@@ -532,9 +532,9 @@ struct ImportDataView: View {
                 } else if progress == 7 {
                     VStack(spacing: 10) {
                         Text("\(numberOfLinkedCategories)/^[\(uniqueCategories.count) category](inflect: true) linked")
-                            .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                            .font(Font.satoshi(.subheadline, weight: .semibold))
 
-//                            .font(.system(size: 15, weight: .semibold, design: .rounded))
+//                            .font(Font.satoshi(15, weight: .semibold))
                             .foregroundColor(Color.SubtitleText)
 
                         TabView(selection: $pageIndex) {
@@ -542,10 +542,10 @@ struct ImportDataView: View {
                                 VStack(spacing: 20) {
                                     HStack(spacing: 8) {
                                         Text(uniqueCategories[categoryIndex].excelValue)
-                                            .font(.system(.title3, design: .rounded).weight(.semibold))
+                                            .font(Font.satoshi(.title3, weight: .semibold))
 
                                             .lineLimit(1)
-//                                            .font(.system(size: 20, weight: .semibold, design: .rounded))
+//                                            .font(Font.satoshi(20, weight: .semibold))
                                             .foregroundColor(Color.PrimaryText)
 //                                            .frame(height: 36)
                                             .padding(.vertical, 6)
@@ -560,20 +560,20 @@ struct ImportDataView: View {
                                             HStack(spacing: 8) {
                                                 Image(systemName: "triangle.fill")
                                                     .rotationEffect(Angle(degrees: 90))
-                                                    .font(.system(size: 12, weight: .regular, design: .rounded))
+                                                    .font(Font.satoshi(12, weight: .regular))
                                                     .foregroundColor(Color.SubtitleText)
 
                                                 HStack(spacing: 5) {
                                                     Text(unwrappedCategory.wrappedEmoji)
-//                                                        .font(.system(size: 15))
-                                                        .font(.system(.subheadline, design: .rounded))
+//                                                        .font(Font.satoshi(15))
+                                                        .font(Font.satoshi(.subheadline))
 
                                                     Text(unwrappedCategory.wrappedName)
-                                                        .font(.system(.title3, design: .rounded).weight(.semibold))
+                                                        .font(Font.satoshi(.title3, weight: .semibold))
 
                                                         .lineLimit(1)
 
-//                                                        .font(.system(size: 19, weight: .semibold, design: .rounded))
+//                                                        .font(Font.satoshi(19, weight: .semibold))
                                                 }
                                                 .padding(.vertical, 6)
                                                 .padding(.horizontal, 10)
@@ -596,7 +596,7 @@ struct ImportDataView: View {
                                                     .fill(Color.PrimaryBackground)
 
                                                 Image(systemName: income ? "plus" : "minus")
-                                                    .font(.system(size: 18, weight: .semibold))
+                                                    .font(Font.satoshi(18, weight: .semibold))
                                                     .foregroundColor(income ? Color.IncomeGreen : Color.AlertRed)
                                                     .frame(width: 30, height: 30)
                                                     .background(income ? Color.IncomeGreen.opacity(0.23) : Color.AlertRed.opacity(0.23), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
@@ -632,14 +632,14 @@ struct ImportDataView: View {
                         } label: {
                             HStack(spacing: 6) {
                                 Text("Import")
-                                    .font(.system(.title3, design: .rounded).weight(.semibold))
+                                    .font(Font.satoshi(.title3, weight: .semibold))
 
-//                                    .font(.system(size: 19, weight: .semibold, design: .rounded))
+//                                    .font(Font.satoshi(19, weight: .semibold))
 
                                 Image(systemName: "square.and.arrow.up.fill")
-                                    .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                                    .font(Font.satoshi(.subheadline, weight: .semibold))
 
-//                                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+//                                    .font(Font.satoshi(15, weight: .semibold))
                             }
                             .frame(height: 50)
                             .frame(maxWidth: .infinity)
@@ -653,12 +653,12 @@ struct ImportDataView: View {
                         } label: {
                             HStack(spacing: 6) {
 //                                Image(systemName: "doc.text")
-//                                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+//                                    .font(Font.satoshi(13, weight: .semibold))
                                 Text("Sample Sheet")
                                     .underline()
-                                    .font(.system(.body, design: .rounded).weight(.semibold))
+                                    .font(Font.satoshi(.body, weight: .semibold))
 
-//                                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+//                                    .font(Font.satoshi(18, weight: .semibold))
                             }
                             .foregroundColor(Color.SubtitleText)
                         }
@@ -751,9 +751,9 @@ struct ImportDataView: View {
                         }
                     } label: {
                         Text("Continue")
-                            .font(.system(.title3, design: .rounded).weight(.semibold))
+                            .font(Font.satoshi(.title3, weight: .semibold))
 
-//                            .font(.system(size: 19, weight: .semibold, design: .rounded))
+//                            .font(Font.satoshi(19, weight: .semibold))
                             .frame(height: 50)
                             .frame(maxWidth: .infinity)
                             .foregroundColor(Color.LightIcon)
@@ -970,17 +970,17 @@ struct ImportDataView: View {
                     .fill(Color.SecondaryBackground)
 
                 Text("\(number)")
-                    .font(.system(.body, design: .rounded).weight(.bold))
+                    .font(Font.satoshi(.body, weight: .bold))
 
-//                    .font(.system(size: 17, weight: .bold, design: .rounded))
+//                    .font(Font.satoshi(17, weight: .bold))
                     .foregroundColor(Color.SubtitleText)
             }
             .frame(width: 25, height: 25)
 
             Text(text)
-                .font(.system(.body, design: .rounded).weight(.medium))
+                .font(Font.satoshi(.body, weight: .medium))
 
-//                .font(.system(size: 17, weight: .medium, design: .rounded))
+//                .font(Font.satoshi(17, weight: .medium))
                 .foregroundColor(Color.PrimaryText)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -1033,16 +1033,16 @@ struct MatchCategoryStepperView: View {
             if categories.isEmpty {
                 VStack(spacing: 12) {
                     Image(systemName: "tray.full.fill")
-                        .font(.system(.title, design: .rounded))
+                        .font(Font.satoshi(.title))
 
-//                        .font(.system(size: 28, weight: .regular, design: .rounded))
+//                        .font(Font.satoshi(28, weight: .regular))
                         .foregroundColor(Color.SubtitleText.opacity(0.7))
                         .padding(.top, 20)
 
                     Text("No remaining\ncategories.")
-                        .font(.system(.callout, design: .rounded).weight(.medium))
+                        .font(Font.satoshi(.callout, weight: .medium))
 
-//                        .font(.system(size: 16, weight: .medium, design: .rounded))
+//                        .font(Font.satoshi(16, weight: .medium))
                         .multilineTextAlignment(.center)
                         .foregroundColor(Color.SubtitleText.opacity(0.7))
                         .padding(.bottom, 20)
@@ -1136,13 +1136,13 @@ struct MatchCategoryStepperView: View {
         } label: {
             HStack(spacing: 5) {
                 Text(categoryInput.wrappedEmoji)
-                    .font(.system(.footnote, design: .rounded))
+                    .font(Font.satoshi(.footnote))
 
-//                    .font(.system(size: 13))
+//                    .font(Font.satoshi(13))
                 Text(categoryInput.wrappedName)
-                    .font(.system(.body, design: .rounded).weight(.semibold))
+                    .font(Font.satoshi(.body, weight: .semibold))
 
-//                    .font(.system(size: 17, weight: .semibold, design: .rounded))
+//                    .font(Font.satoshi(17, weight: .semibold))
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 6)

@@ -26,10 +26,10 @@ struct NewCategoryPickerView: View {
                 ForEach(categories) { item in
                     HStack(spacing: 7) {
                         Text(item.wrappedEmoji)
-                            .font(.system(.subheadline, design: .rounded))
+                            .font(Font.satoshi(.subheadline))
 
                         Text(item.wrappedName)
-                            .font(.system(.body, design: .rounded).weight(.semibold))
+                            .font(Font.satoshi(.body, weight: .semibold))
                             .lineLimit(1)
                     }
                     .id(item.id)
@@ -70,9 +70,9 @@ struct NewCategoryPickerView: View {
         .overlay(alignment: .bottom) {
             HStack(spacing: 4) {
                 Image(systemName: "pencil")
-                    .font(.system(.body, design: .rounded).weight(.semibold))
+                    .font(Font.satoshi(.body, weight: .semibold))
                 Text("Edit")
-                    .font(.system(.body, design: .rounded).weight(.semibold))
+                    .font(Font.satoshi(.body, weight: .semibold))
             }
             .padding(.vertical, 9)
             .padding(.horizontal, 18)

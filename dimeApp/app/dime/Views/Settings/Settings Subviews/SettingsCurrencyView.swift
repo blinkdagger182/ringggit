@@ -21,7 +21,7 @@ struct SettingsCurrencyView: View {
   var body: some View {
     VStack(spacing: 10) {
       Text("Currencies")
-        .font(.system(.title3, design: .rounded).weight(.semibold))
+        .font(Font.satoshi(.title3, weight: .semibold))
         .foregroundColor(Color.PrimaryText)
         .frame(maxWidth: .infinity)
         .overlay(alignment: .leading) {
@@ -39,13 +39,13 @@ struct SettingsCurrencyView: View {
             ForEach(currencies, id: \.self) { currency in
               HStack(spacing: 10) {
                 Text(currency.code)
-                  .font(.system(.body, design: .rounded).weight(.semibold))
+                  .font(Font.satoshi(.body, weight: .semibold))
                   .foregroundColor(Color.SubtitleText)
                   .lineLimit(1)
                   //                                    .layoutPriority(1)
                   .frame(width: dynamicTypeSize > .xLarge ? 55 : 45, alignment: .leading)
                 Text(currency.name)
-                  .font(.system(.body, design: .rounded))
+                  .font(Font.satoshi(.body))
                   .foregroundColor(Color.PrimaryText)
                   .lineLimit(1)
 
@@ -53,7 +53,7 @@ struct SettingsCurrencyView: View {
 
                 if currency.code == currencyCode {
                   Image(systemName: "checkmark")
-                    .font(.system(.subheadline, design: .rounded))
+                    .font(Font.satoshi(.subheadline))
                     .foregroundColor(.DarkIcon.opacity(0.6))
                     .matchedGeometryEffect(id: "tick", in: animation)
                 }

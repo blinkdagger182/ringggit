@@ -167,7 +167,7 @@ enum TransactionAttachmentStore {
                 previewRelativePath: nil,
                 displayName: attachment.label.components(separatedBy: "·").first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "AI Attachment",
                 pageCount: max(attachment.pages.count, 1),
-                sourceLabel: "Added via Saku AI"
+                sourceLabel: "Added via KIRA"
             )
         } catch {
             return nil

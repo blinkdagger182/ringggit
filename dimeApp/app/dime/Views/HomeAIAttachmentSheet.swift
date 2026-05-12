@@ -42,11 +42,11 @@ struct HomeAIAttachmentSheet: View {
             // Photos header
             HStack(alignment: .firstTextBaseline) {
                 Text("Photos")
-                    .font(.system(.headline, design: .rounded).weight(.semibold))
+                    .font(Font.satoshi(.headline, weight: .semibold))
                     .foregroundColor(.primary)
                 Spacer()
                 Button("All Photos") { showFullPicker = true }
-                    .font(.system(.subheadline, design: .rounded))
+                    .font(Font.satoshi(.subheadline))
                     .foregroundColor(.blue)
             }
             .padding(.horizontal, 20)
@@ -60,7 +60,7 @@ struct HomeAIAttachmentSheet: View {
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .fill(Color(.systemGray5))
                         Image(systemName: "camera.fill")
-                            .font(.system(size: 22, weight: .medium))
+                            .font(Font.satoshi(22, weight: .medium))
                             .foregroundColor(Color(.secondaryLabel))
                     }
                     .frame(width: 90, height: 90)
@@ -81,10 +81,10 @@ struct HomeAIAttachmentSheet: View {
                                     .fill(Color(.systemGray5))
                                 VStack(spacing: 6) {
                                     Image(systemName: "photo.on.rectangle.angled")
-                                        .font(.system(size: 20))
+                                        .font(Font.satoshi(20))
                                         .foregroundColor(Color(.secondaryLabel))
                                     Text(authStatus == .denied ? "Allow Access" : "Enable Photos")
-                                        .font(.system(size: 11, design: .rounded).weight(.medium))
+                                        .font(Font.satoshi(11, weight: .medium))
                                         .foregroundColor(Color(.secondaryLabel))
                                 }
                             }
@@ -268,7 +268,7 @@ private struct AssetThumbnailCell: View {
                             .fill(Color.blue)
                             .frame(width: 22, height: 22)
                         Image(systemName: "checkmark")
-                            .font(.system(size: 11, weight: .bold))
+                            .font(Font.satoshi(11, weight: .bold))
                             .foregroundColor(.white)
                     }
                     .padding(5)
@@ -308,23 +308,23 @@ struct AttachmentActionRow: View {
                         .fill(iconColor.opacity(0.14))
                         .frame(width: 40, height: 40)
                     Image(systemName: icon)
-                        .font(.system(size: 16, weight: .medium))
+                        .font(Font.satoshi(16, weight: .medium))
                         .foregroundColor(iconColor)
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(.system(.body, design: .rounded).weight(.medium))
+                        .font(Font.satoshi(.body, weight: .medium))
                         .foregroundColor(.primary)
                     Text(subtitle)
-                        .font(.system(.footnote, design: .rounded))
+                        .font(Font.satoshi(.footnote))
                         .foregroundColor(.secondary)
                 }
 
                 Spacer()
 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(Font.satoshi(12, weight: .semibold))
                     .foregroundColor(Color(.tertiaryLabel))
             }
             .padding(.horizontal, 20)
@@ -560,14 +560,14 @@ private struct ScannedDocumentPreviewView: View {
 
                     HStack {
                         Text("\(pages.count) \(pages.count == 1 ? "page" : "pages") scanned")
-                            .font(.system(.subheadline, design: .rounded).weight(.medium))
+                            .font(Font.satoshi(.subheadline, weight: .medium))
                             .foregroundColor(.primary)
 
                         Spacer()
 
                         if pages.count > 1 {
                             Text("Page \(currentPage + 1) of \(pages.count)")
-                                .font(.system(.footnote, design: .rounded))
+                                .font(Font.satoshi(.footnote))
                                 .foregroundColor(.secondary)
                         }
                     }
@@ -576,13 +576,13 @@ private struct ScannedDocumentPreviewView: View {
 #if DEBUG
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Text extraction")
-                            .font(.system(.headline, design: .rounded).weight(.semibold))
+                            .font(Font.satoshi(.headline, weight: .semibold))
 
                         if isRecognizingText {
                             HStack(spacing: 10) {
                                 ProgressView()
                                 Text("Reading scanned text...")
-                                    .font(.system(.subheadline, design: .rounded))
+                                    .font(Font.satoshi(.subheadline))
                                     .foregroundColor(.secondary)
                             }
                         } else if let recognizedText, !recognizedText.isEmpty {
@@ -597,7 +597,7 @@ private struct ScannedDocumentPreviewView: View {
                             .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                         } else {
                             Text("No text detected. You can still attach the scan and let the AI read the images directly.")
-                                .font(.system(.subheadline, design: .rounded))
+                                .font(Font.satoshi(.subheadline))
                                 .foregroundColor(.secondary)
                         }
                     }
@@ -610,7 +610,7 @@ private struct ScannedDocumentPreviewView: View {
                         Button("Retake") {
                             dismiss()
                         }
-                        .font(.system(.body, design: .rounded).weight(.medium))
+                        .font(Font.satoshi(.body, weight: .medium))
                         .foregroundColor(.primary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
@@ -619,7 +619,7 @@ private struct ScannedDocumentPreviewView: View {
                         Button("Attach Scan") {
                             onConfirm(pages, recognizedText)
                         }
-                        .font(.system(.body, design: .rounded).weight(.semibold))
+                        .font(Font.satoshi(.body, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)

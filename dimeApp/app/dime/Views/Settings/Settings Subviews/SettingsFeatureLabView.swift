@@ -34,9 +34,9 @@ struct SettingsGoofyView: View {
   var body: some View {
     VStack(spacing: 10) {
       Text("Feature Lab")
-        .font(.system(.title3, design: .rounded).weight(.semibold))
+        .font(Font.satoshi(.title3, weight: .semibold))
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-        //                .font(.system(size: 20, weight: .semibold, design: .rounded))
+        //                .font(Font.satoshi(20, weight: .semibold))
         .foregroundColor(Color.PrimaryText)
         .frame(maxWidth: .infinity)
         .overlay(alignment: .leading) {
@@ -59,9 +59,9 @@ struct SettingsGoofyView: View {
         .background(Color.SettingsBackground, in: RoundedRectangle(cornerRadius: 9))
 
         Text("Experimental features - proceed with caution.")
-          .font(.system(.caption, design: .rounded).weight(.medium))
+          .font(Font.satoshi(.caption, weight: .medium))
           .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-          //                    .font(.system(size: 12, weight: .medium, design: .rounded))
+          //                    .font(Font.satoshi(12, weight: .medium))
           .foregroundColor(Color.SubtitleText)
           .padding(.horizontal, 15)
           .frame(maxWidth: .infinity, alignment: .leading)
@@ -73,9 +73,9 @@ struct SettingsGoofyView: View {
         Text(
           "Swaps the time label of each transaction with its category name. However, if you do not manually input a note for each transaction - in which case the note is the category name by default - duplicate text will appear."
         )
-        .font(.system(.caption, design: .rounded).weight(.medium))
+        .font(Font.satoshi(.caption, weight: .medium))
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-        //                    .font(.system(size: 12, weight: .medium, design: .rounded))
+        //                    .font(Font.satoshi(12, weight: .medium))
         .foregroundColor(Color.SubtitleText)
         .padding(.horizontal, 15)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -87,9 +87,9 @@ struct SettingsGoofyView: View {
         Text(
           "Displays transaction suggestions whilst you type in the 'Note' field of the new transaction page."
         )
-        .font(.system(.caption, design: .rounded).weight(.medium))
+        .font(Font.satoshi(.caption, weight: .medium))
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-        //                    .font(.system(size: 12, weight: .medium, design: .rounded))
+        //                    .font(Font.satoshi(12, weight: .medium))
         .foregroundColor(Color.SubtitleText)
         .padding(.horizontal, 15)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -100,7 +100,7 @@ struct SettingsGoofyView: View {
       //            .background(Color.SettingsBackground, in: RoundedRectangle(cornerRadius: 9))
       //
       //            Text("Enables a chromatic abberation effect on the 'New Transaction' page when a future date is set.")
-      //                .font(.system(size: 12, weight: .medium, design: .rounded))
+      //                .font(Font.satoshi(12, weight: .medium))
       //                .foregroundColor(Color.SubtitleText)
       //                .padding(.horizontal, 15)
       //                .frame(maxWidth: .infinity, alignment: .leading)
@@ -113,9 +113,9 @@ struct SettingsGoofyView: View {
   func ToggleRow(text: String, bool: Binding<Bool>, id: Int) -> some View {
     HStack {
       Text(text)
-        .font(.system(.body, design: .rounded))
+        .font(Font.satoshi(.body))
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-        //                .font(.system(size: 17, weight: .regular, design: .rounded))
+        //                .font(Font.satoshi(17, weight: .regular))
         .foregroundColor(Color.PrimaryText)
 
       Spacer()

@@ -21,7 +21,7 @@ struct InsightsSummaryBlockView: View {
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: income ? "arrow.up.right" : "arrow.down.right")
-                .font(.system(size: 18, weight: .semibold))
+                .font(Font.satoshi(18, weight: .semibold))
                 .foregroundColor(color)
                 .padding(5)
                 .frame(width: 30, height: 30)
@@ -30,12 +30,12 @@ struct InsightsSummaryBlockView: View {
 
             VStack(alignment: .leading, spacing: 0) {
                 Text(income ? "Income" : "Expenses")
-                    .font(.system(.caption, design: .rounded).weight(.semibold))
+                    .font(Font.satoshi(.caption, weight: .semibold))
                     .lineLimit(1)
                     .foregroundColor(Color.SubtitleText)
 
                 Text(amountString)
-                    .font(.system(.title3, design: .rounded).weight(.medium))
+                    .font(Font.satoshi(.title3, weight: .medium))
                     .foregroundColor(Color.PrimaryText)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)

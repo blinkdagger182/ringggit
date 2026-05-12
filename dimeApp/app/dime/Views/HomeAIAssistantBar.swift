@@ -38,7 +38,7 @@ struct HomeAIAssistantBar: View {
             switch mode {
             case .idlePill:
                 VStack(spacing: 0) {
-                    askSakuPill
+                    askKIRAPill
                         .padding(.top, max(topInset, 12) + 14)
                         .opacity(max(0, 1.0 - (progress * 0.9)))
 
@@ -76,7 +76,7 @@ struct HomeAIAssistantBar: View {
                     Spacer(minLength: min(290, 190 + pullOffset * 0.65))
 
                     Text(promptText)
-                        .font(.system(.title3, design: .rounded).weight(.medium))
+                        .font(Font.satoshi(.title3, weight: .medium))
                         .foregroundColor(.white.opacity(0.92))
                         .opacity(0.9)
                         .padding(.horizontal, 24)
@@ -87,13 +87,13 @@ struct HomeAIAssistantBar: View {
     }
 
     @ViewBuilder
-    private var askSakuPill: some View {
+    private var askKIRAPill: some View {
         HStack(spacing: 10) {
             Image(systemName: "sparkles")
-                .font(.system(size: 18, weight: .semibold))
+                .font(Font.satoshi(18, weight: .semibold))
 
-            Text("Ask Saku AI")
-                .font(.system(size: 17, weight: .semibold, design: .rounded))
+            Text("Ask KIRA")
+                .font(Font.satoshi(17, weight: .semibold))
                 .tracking(-0.2)
         }
         .foregroundColor(.white.opacity(0.94))
@@ -110,8 +110,8 @@ struct HomeAIAssistantBar: View {
                     LinearGradient(
                         colors: [
                             Color.white.opacity(0.62),
-                            Color(hex: "9BAAF8").opacity(0.78),
-                            Color(hex: "4ECDC4").opacity(0.5)
+                            Color(hex: "C8B94A").opacity(0.70),
+                            Color(hex: "4A5240").opacity(0.50)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -119,7 +119,7 @@ struct HomeAIAssistantBar: View {
                     lineWidth: 1.4
                 )
         }
-        .shadow(color: Color(hex: "9BAAF8").opacity(0.26), radius: 18, x: 0, y: 8)
+        .shadow(color: Color(hex: "4A5240").opacity(0.20), radius: 18, x: 0, y: 8)
         .contentShape(Rectangle())
         .matchedGeometryEffect(id: "home-ai-surface", in: namespace)
         .onTapGesture(perform: onExpand)
@@ -130,7 +130,7 @@ struct HomeAIAssistantBar: View {
         HStack {
             Button(action: onExpand) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 18, weight: .medium))
+                    .font(Font.satoshi(18, weight: .medium))
                     .foregroundColor(.white.opacity(0.84))
                     .frame(width: 36, height: 36)
             }
@@ -141,12 +141,12 @@ struct HomeAIAssistantBar: View {
 
             HStack(spacing: 10) {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 15, weight: .semibold))
-                Text("Saku AI")
-                    .font(.system(size: 21, weight: .semibold, design: .rounded))
+                    .font(Font.satoshi(15, weight: .semibold))
+                Text("KIRA")
+                    .font(Font.satoshi(21, weight: .semibold))
 
                 Text("beta")
-                    .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                    .font(Font.satoshi(.subheadline, weight: .semibold))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
                     .overlay(
@@ -166,7 +166,7 @@ struct HomeAIAssistantBar: View {
     private var previewBody: some View {
         VStack(spacing: 18) {
             Text("How can I help you?")
-                .font(.system(size: 30, weight: .medium, design: .serif))
+                .font(Font.satoshi(30, weight: .medium))
                 .tracking(-0.4)
                 .foregroundColor(.white.opacity(0.94))
                 .multilineTextAlignment(.center)
@@ -178,17 +178,17 @@ struct HomeAIAssistantBar: View {
                 ForEach(viewModel.quickActions) { quickAction in
                     VStack(alignment: .leading, spacing: 10) {
                         Image(systemName: quickAction.systemImage)
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(Font.satoshi(14, weight: .semibold))
                             .foregroundColor(.white.opacity(0.72))
 
                         Text(quickAction.title)
-                            .font(.system(.headline, design: .rounded).weight(.medium))
+                            .font(Font.satoshi(.headline, weight: .medium))
                             .foregroundColor(.white.opacity(0.92))
                             .lineLimit(2)
                             .multilineTextAlignment(.leading)
 
                         Text(quickActionSubtitle(for: quickAction.title))
-                            .font(.system(.footnote, design: .rounded))
+                            .font(Font.satoshi(.footnote))
                             .foregroundColor(.white.opacity(0.46))
                             .lineLimit(2)
                     }
@@ -207,7 +207,7 @@ struct HomeAIAssistantBar: View {
             .padding(.horizontal, 28)
 
             Text("Try: \"How much did I spend on food this week?\"")
-                .font(.system(.subheadline, design: .rounded).weight(.medium))
+                .font(Font.satoshi(.subheadline, weight: .medium))
                 .foregroundColor(.white.opacity(0.42))
         }
     }

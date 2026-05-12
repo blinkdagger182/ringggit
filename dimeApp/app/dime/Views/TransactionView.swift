@@ -247,11 +247,11 @@ struct TransactionView: View {
                     if showToast {
                         HStack(spacing: 6.5) {
                             Image(systemName: toastImage)
-                                .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                                .font(Font.satoshi(.subheadline, weight: .semibold))
                                 .foregroundColor(Color.AlertRed)
 
                             Text(toastTitle)
-                                .font(.system(.body, design: .rounded).weight(.semibold))
+                                .font(Font.satoshi(.body, weight: .semibold))
                                 .lineLimit(1)
                                 .foregroundColor(Color.AlertRed)
                         }
@@ -271,7 +271,7 @@ struct TransactionView: View {
 
                             HStack(spacing: 0) {
                                 Text("Expense")
-                                    .font(.system(.body, design: .rounded).weight(.semibold))
+                                    .font(Font.satoshi(.body, weight: .semibold))
 
                                     .lineLimit(1)
                                     .foregroundColor(income == false ? Color.PrimaryText : Color.SubtitleText)
@@ -288,10 +288,10 @@ struct TransactionView: View {
                                     }
 
                                 Text("transaction-view-income-picker")
-                                    .font(.system(.body, design: .rounded).weight(.semibold))
+                                    .font(Font.satoshi(.body, weight: .semibold))
 
                                     .lineLimit(1)
-                                //                                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                                //                                    .font(Font.satoshi(18, weight: .semibold))
                                     .foregroundColor(income == true ? Color.PrimaryText : Color.SubtitleText)
                                     .padding(6)
                                     .frame(width: capsuleWidth)
@@ -319,8 +319,8 @@ struct TransactionView: View {
                             dismiss()
                         } label: {
                             Image(systemName: "xmark")
-                            //                                .font(.system(size: 16, weight: .semibold))
-                                .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                            //                                .font(Font.satoshi(16, weight: .semibold))
+                                .font(Font.satoshi(.subheadline, weight: .semibold))
                                 .dynamicTypeSize(...DynamicTypeSize.xxLarge)
                                 .foregroundColor(Color.SubtitleText)
                                 .padding(7)
@@ -337,8 +337,8 @@ struct TransactionView: View {
 
                             } label: {
                                 Image(systemName: "trash.fill")
-                                //                                    .font(.system(size: 16, weight: .semibold))
-                                    .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                                //                                    .font(Font.satoshi(16, weight: .semibold))
+                                    .font(Font.satoshi(.subheadline, weight: .semibold))
                                     .dynamicTypeSize(...DynamicTypeSize.xxLarge)
                                     .foregroundColor(Color.AlertRed)
                                     .padding(7)
@@ -353,12 +353,12 @@ struct TransactionView: View {
                         } label: {
                             if repeatType > 0 {
                                 Image(systemName: "repeat")
-                                    .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                                    .font(Font.satoshi(.subheadline, weight: .semibold))
                                     .dynamicTypeSize(...DynamicTypeSize.xxLarge)
-                                //                                    .font(.system(size: 16, weight: .semibold))
+                                //                                    .font(Font.satoshi(16, weight: .semibold))
                                     .overlay(alignment: .topTrailing) {
                                         Text(repeatOverlays[repeatType - 1])
-                                            .font(.system(size: 6, weight: .black, design: .rounded))
+                                            .font(Font.satoshi(6, weight: .black))
                                             .foregroundColor(Color.IncomeGreen)
                                             .frame(width: 10, alignment: .leading)
                                             .offset(x: 5.7, y: 1.5)
@@ -369,7 +369,7 @@ struct TransactionView: View {
                                     .contentShape(Circle())
                             } else {
                                 Image(systemName: "repeat")
-                                    .font(.system(size: 16, weight: .semibold))
+                                    .font(Font.satoshi(16, weight: .semibold))
                                     .foregroundColor(Color.SubtitleText)
                                     .padding(7)
                                     .background(Color.SecondaryBackground, in: Circle())
@@ -459,7 +459,7 @@ struct TransactionView: View {
                     VStack(alignment: .leading, spacing: 14) {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Amount")
-                                .font(.system(.headline, design: .rounded).weight(.medium))
+                                .font(Font.satoshi(.headline, weight: .medium))
                                 .foregroundColor(Color.SubtitleText)
 
                             NumberPadTextView(price: $price, isEditingDecimal: $isEditingDecimal, decimalValuesAssigned: $decimalValuesAssigned)
@@ -505,7 +505,7 @@ struct TransactionView: View {
                                                 Color(hex: transaction.wrappedColour).opacity(0.23),
                                                 in: RoundedRectangle(cornerRadius: 6.5, style: .continuous))
                                     }
-                                    .font(.system(.body, design: .rounded).weight(.semibold))
+                                    .font(Font.satoshi(.body, weight: .semibold))
                                     .padding(5)
                                     .background(
                                         Color.SecondaryBackground,
@@ -535,7 +535,7 @@ struct TransactionView: View {
                                 }
                             }
                             .foregroundColor(Color.SubtitleText)
-                            .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                            .font(Font.satoshi(.subheadline, weight: .semibold))
 
                             Group {
                                 if isDateToday(date: date) {
@@ -546,13 +546,13 @@ struct TransactionView: View {
                                         .lineLimit(1)
                                 }
                             }
-                            .font(.system(.body, design: .rounded).weight(.semibold))
+                            .font(Font.satoshi(.body, weight: .semibold))
 
                             if showTime {
                                 Spacer()
 
                                 Text(getTimeString(date: date))
-                                    .font(.system(.body, design: .rounded).weight(.semibold))
+                                    .font(Font.satoshi(.body, weight: .semibold))
                             }
                         }
                         .foregroundColor(Color.PrimaryText)
@@ -573,10 +573,10 @@ struct TransactionView: View {
                         if (expenseCategories.count == 0 && !income) || (incomeCategories.count == 0 && income) {
                             HStack(spacing: 4) {
                                 Image(systemName: "plus")
-                                    .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                                    .font(Font.satoshi(.subheadline, weight: .semibold))
 
                                 Text("Category")
-                                    .font(.system(.body, design: .rounded).weight(.semibold))
+                                    .font(Font.satoshi(.body, weight: .semibold))
                                     .lineLimit(1)
                             }
                             .padding(.vertical, 8.5)
@@ -604,11 +604,11 @@ struct TransactionView: View {
                                     HStack(spacing: 10) {
 
                                         Text("Close")
-                                            .font(.system(.body, design: .rounded).weight(.semibold))
+                                            .font(Font.satoshi(.body, weight: .semibold))
                                             .lineLimit(1)
 
 //                                        Image(systemName: "xmark.circle.fill")
-//                                            .font(.system(.footnote, design: .rounded).weight(.bold))
+//                                            .font(Font.satoshi(.footnote, weight: .bold))
                                     }
                                     .padding(.vertical, 8.5)
                                     .padding(.horizontal, 10)
@@ -621,10 +621,10 @@ struct TransactionView: View {
                                     if let unwrappedCategory = category {
                                         HStack(spacing: 5) {
                                             Text(unwrappedCategory.wrappedEmoji)
-                                                .font(.system(.footnote, design: .rounded).weight(.semibold))
+                                                .font(Font.satoshi(.footnote, weight: .semibold))
 
                                             Text(unwrappedCategory.wrappedName)
-                                                .font(.system(.body, design: .rounded).weight(.semibold))
+                                                .font(Font.satoshi(.body, weight: .semibold))
                                                 .lineLimit(1)
                                         }
                                         .padding(.vertical, 8.5)
@@ -659,17 +659,17 @@ struct TransactionView: View {
                                         HStack(spacing: 5.5) {
                                             if #available(iOS 17.0, *) {
                                                 Image(systemName: "circle.grid.2x2")
-                                                    .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                                                    .font(Font.satoshi(.subheadline, weight: .semibold))
                                                     .symbolEffect(
                                                         .bounce.up.byLayer, options: .repeating.speed(0.5),
                                                         value: showCategoryPicker)
                                             } else {
                                                 Image(systemName: "circle.grid.2x2")
-                                                    .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                                                    .font(Font.satoshi(.subheadline, weight: .semibold))
                                             }
 
                                             Text("Category")
-                                                .font(.system(.body, design: .rounded).weight(.semibold))
+                                                .font(Font.satoshi(.body, weight: .semibold))
                                                 .lineLimit(1)
                                         }
                                         .padding(.vertical, 8.5)
@@ -767,11 +767,11 @@ struct TransactionView: View {
 
                     VStack(alignment: .leading, spacing: 1.5) {
                         Text("Delete Expense?")
-                            .font(.system(size: 20, weight: .medium, design: .rounded))
+                            .font(Font.satoshi(20, weight: .medium))
                             .foregroundColor(.PrimaryText)
 
                         Text("This action cannot be undone.")
-                            .font(.system(size: 16, weight: .medium, design: .rounded))
+                            .font(Font.satoshi(16, weight: .medium))
                             .foregroundColor(.SubtitleText)
                             .padding(.bottom, 15)
 
@@ -789,7 +789,7 @@ struct TransactionView: View {
 
                         } label: {
                             Text("Delete")
-                                .font(.system(size: 20, weight: .semibold, design: .rounded))
+                                .font(Font.satoshi(20, weight: .semibold))
                                 .foregroundColor(.white)
                                 .frame(height: 45)
                                 .frame(maxWidth: .infinity)
@@ -806,7 +806,7 @@ struct TransactionView: View {
 
                         } label: {
                             Text("Cancel")
-                                .font(.system(size: 20, weight: .semibold, design: .rounded))
+                                .font(Font.satoshi(20, weight: .semibold))
                                 .foregroundColor(Color.PrimaryText.opacity(0.9))
                                 .frame(height: 45)
                                 .frame(maxWidth: .infinity)
@@ -1190,17 +1190,17 @@ struct TransactionView: View {
         } label: {
             HStack(spacing: 7) {
                 Image(systemName: bucket == nil ? "flag" : "flag.fill")
-                    .font(.system(.subheadline, design: .rounded).weight(.semibold))
-                    .foregroundColor(bucket == nil ? Color.SubtitleText : Color(hex: bucket?.colour ?? "7B8FF8"))
+                    .font(Font.satoshi(.subheadline, weight: .semibold))
+                    .foregroundColor(bucket == nil ? Color.SubtitleText : Color(hex: bucket?.colour ?? "4A5240"))
 
                 if let bucket {
                     Text("\(bucket.emoji ?? "🏷️") \(bucket.name ?? "Bucket")")
-                        .font(.system(.body, design: .rounded).weight(.semibold))
+                        .font(Font.satoshi(.body, weight: .semibold))
                         .lineLimit(1)
                         .foregroundColor(Color.PrimaryText)
                 } else {
                     Text("Bucket")
-                        .font(.system(.body, design: .rounded).weight(.semibold))
+                        .font(Font.satoshi(.body, weight: .semibold))
                         .lineLimit(1)
                         .foregroundColor(Color.SubtitleText)
                 }
@@ -1208,7 +1208,7 @@ struct TransactionView: View {
                 Spacer()
 
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 10, weight: .bold))
+                    .font(Font.satoshi(10, weight: .bold))
                     .foregroundColor(Color.SubtitleText)
             }
             .padding(.vertical, 8.5)
@@ -1216,11 +1216,11 @@ struct TransactionView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 11.5, style: .continuous)
-                    .fill(bucket == nil ? Color.clear : Color(hex: bucket?.colour ?? "7B8FF8").opacity(0.14))
+                    .fill(bucket == nil ? Color.clear : Color(hex: bucket?.colour ?? "4A5240").opacity(0.14))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 11.5, style: .continuous)
-                    .strokeBorder(bucket == nil ? Color.Outline : Color(hex: bucket?.colour ?? "7B8FF8").opacity(0.28), lineWidth: 1.5)
+                    .strokeBorder(bucket == nil ? Color.Outline : Color(hex: bucket?.colour ?? "4A5240").opacity(0.28), lineWidth: 1.5)
             )
         }
     }
@@ -1255,23 +1255,23 @@ struct TransactionView: View {
                 } label: {
                     HStack(spacing: 10) {
                         Image(systemName: "paperclip")
-                            .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                            .font(Font.satoshi(.subheadline, weight: .semibold))
                             .foregroundColor(Color.SubtitleText)
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Add Attachment")
-                                .font(.system(.body, design: .rounded).weight(.semibold))
+                                .font(Font.satoshi(.body, weight: .semibold))
                                 .foregroundColor(Color.PrimaryText)
 
                             Text("Receipt, reference image, or PDF")
-                                .font(.system(.footnote, design: .rounded).weight(.medium))
+                                .font(Font.satoshi(.footnote, weight: .medium))
                                 .foregroundColor(Color.SubtitleText)
                         }
 
                         Spacer()
 
                         Image(systemName: "plus")
-                            .font(.system(.caption, design: .rounded).weight(.bold))
+                            .font(Font.satoshi(.caption, weight: .bold))
                             .foregroundColor(Color.SubtitleText)
                     }
                     .padding(.horizontal, 12)
@@ -1465,9 +1465,9 @@ struct CategoryPickerView: View {
             ) {
                 HStack(spacing: 4) {
                     Image(systemName: "pencil")
-                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .font(Font.satoshi(15, weight: .bold))
                     Text("Edit")
-                        .font(.system(.body, design: .rounded).weight(.semibold))
+                        .font(Font.satoshi(.body, weight: .semibold))
                         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 }
                 .padding(.horizontal, 11)
@@ -1494,13 +1494,13 @@ struct CategoryPickerView: View {
                                 if item != initialCategory {
                                     HStack(spacing: 7) {
                                         Text(item.wrappedEmoji)
-                                            .font(.system(.footnote, design: .rounded))
+                                            .font(Font.satoshi(.footnote))
                                             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-                                        //                                                    .font(.system(size: 14))
+                                        //                                                    .font(Font.satoshi(14))
                                         Text(item.wrappedName)
-                                            .font(.system(.body, design: .rounded).weight(.semibold))
+                                            .font(Font.satoshi(.body, weight: .semibold))
                                             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-                                        //                                                    .font(.system(size: 17.5, weight: .semibold, design: .rounded))
+                                        //                                                    .font(Font.satoshi(17.5, weight: .semibold))
                                             .lineLimit(1)
                                     }
                                     .id(item.id)
@@ -1606,9 +1606,9 @@ struct NoteView: View {
     var body: some View {
         HStack(spacing: 7) {
             Image(systemName: "text.alignleft")
-                .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                .font(Font.satoshi(.subheadline, weight: .semibold))
                 .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-            //                .font(.system(size: 14, weight: .semibold))
+            //                .font(Font.satoshi(14, weight: .semibold))
                 .foregroundColor(Color.SubtitleText)
 
             ZStack(alignment: .leading) {
@@ -1622,9 +1622,9 @@ struct NoteView: View {
                         .foregroundColor(Color.SubtitleText)
                 }
             }
-            .font(.system(.body, design: .rounded).weight(.semibold))
+            .font(Font.satoshi(.body, weight: .semibold))
             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-            //            .font(.system(size: 16, weight: .semibold, design: .rounded))
+            //            .font(Font.satoshi(16, weight: .semibold))
             .frame(width: min(noteWidth, UIScreen.main.bounds.width / 1.5), alignment: .center)
         }
         .onTapGesture {
@@ -1670,32 +1670,32 @@ private struct TransactionAttachmentCard: View {
                         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 } else {
                     Image(systemName: reference?.kind == .pdf ? "doc.richtext.fill" : "photo")
-                        .font(.system(.title3, design: .rounded).weight(.semibold))
-                        .foregroundColor(reference?.kind == .pdf ? Color(hex: "F7C65B") : Color(hex: "4ECDC4"))
+                        .font(Font.satoshi(.title3, weight: .semibold))
+                        .foregroundColor(reference?.kind == .pdf ? Color(hex: "F7C65B") : Color(hex: "5B8C5A"))
                 }
             }
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(reference?.displayName ?? "Reference")
-                    .font(.system(.body, design: .rounded).weight(.semibold))
+                    .font(Font.satoshi(.body, weight: .semibold))
                     .foregroundColor(Color.PrimaryText)
                     .lineLimit(1)
 
                 if let sourceLabel = reference?.sourceLabel {
                     Text(sourceLabel)
-                        .font(.system(.footnote, design: .rounded).weight(.medium))
+                        .font(Font.satoshi(.footnote, weight: .medium))
                         .foregroundColor(Color.SubtitleText)
                         .lineLimit(1)
                 } else if let legacyReferenceText {
                     Text(legacyReferenceText)
-                        .font(.system(.footnote, design: .rounded).weight(.medium))
+                        .font(Font.satoshi(.footnote, weight: .medium))
                         .foregroundColor(Color.SubtitleText)
                         .lineLimit(2)
                 }
 
                 if let reference, reference.pageCount > 1 {
                     Text("\(reference.pageCount) pages")
-                        .font(.system(.caption, design: .rounded).weight(.medium))
+                        .font(Font.satoshi(.caption, weight: .medium))
                         .foregroundColor(Color.SubtitleText)
                 }
             }
@@ -1706,7 +1706,7 @@ private struct TransactionAttachmentCard: View {
                 onRemove()
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(Font.satoshi(11, weight: .bold))
                     .foregroundColor(Color.SubtitleText)
                     .frame(width: 24, height: 24)
                     .background(Color.PrimaryBackground.opacity(0.82), in: Circle())
@@ -1749,10 +1749,10 @@ private struct TransactionAttachmentPreviewSheet: View {
                 } else {
                     VStack(spacing: 12) {
                         Image(systemName: "exclamationmark.triangle")
-                            .font(.system(size: 28, weight: .semibold))
+                            .font(Font.satoshi(28, weight: .semibold))
                             .foregroundColor(Color.AlertRed)
                         Text("Attachment unavailable")
-                            .font(.system(.headline, design: .rounded).weight(.semibold))
+                            .font(Font.satoshi(.headline, weight: .semibold))
                             .foregroundColor(Color.PrimaryText)
                     }
                 }
@@ -1820,20 +1820,20 @@ struct RecurringPickerView: View {
             ForEach(stringArray, id: \.self) { string in
                 HStack {
                     Text(LocalizedStringKey(string))
-                        .font(.system(.body, design: .rounded).weight(.medium))
+                        .font(Font.satoshi(.body, weight: .medium))
                         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                         .lineLimit(1)
                     Spacer()
 
                     if repeatType == (stringArray.firstIndex(of: string) ?? 0) && repeatCoefficient == 1 {
                         Image(systemName: "checkmark")
-                            .font(.system(.footnote, design: .rounded).weight(.medium))
+                            .font(Font.satoshi(.footnote, weight: .medium))
                             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-                        //                            .font(.system(size: 14, weight: .medium))
+                        //                            .font(Font.satoshi(14, weight: .medium))
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                //                .font(.system(size: 18, weight: .medium, design: .rounded))
+                //                .font(Font.satoshi(18, weight: .medium))
                 .padding(5)
                 .background {
                     if repeatType == (stringArray.firstIndex(of: string) ?? 0) && repeatCoefficient == 1 {
@@ -1879,16 +1879,16 @@ struct RecurringPickerView: View {
 
                 if repeatCoefficient > 1 {
                     Image(systemName: "checkmark")
-                        .font(.system(.footnote, design: .rounded).weight(.medium))
+                        .font(Font.satoshi(.footnote, weight: .medium))
                         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-                    //                        .font(.system(size: 14, weight: .medium))
+                    //                        .font(Font.satoshi(14, weight: .medium))
                 }
             }
             .lineLimit(1)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .font(.system(.body, design: .rounded).weight(.medium))
+            .font(Font.satoshi(.body, weight: .medium))
             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-            //            .font(.system(size: 18, weight: .medium, design: .rounded))
+            //            .font(Font.satoshi(18, weight: .medium))
             .padding(5)
             .background {
                 if repeatCoefficient > 1 {
@@ -1962,9 +1962,9 @@ struct CustomRecurringView: View {
                     dismiss()
                 } label: {
                     Image(systemName: "xmark")
-                        .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                        .font(Font.satoshi(.subheadline, weight: .semibold))
                         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-                    //                        .font(.system(size: 16, weight: .semibold))
+                    //                        .font(Font.satoshi(16, weight: .semibold))
                         .foregroundColor(Color.SubtitleText)
                         .padding(7)
                         .background(Color.SecondaryBackground, in: Circle())
@@ -1974,9 +1974,9 @@ struct CustomRecurringView: View {
                 Spacer()
 
                 Text("Custom Interval")
-                    .font(.system(.body, design: .rounded).weight(.semibold))
+                    .font(Font.satoshi(.body, weight: .semibold))
                     .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-                //                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                //                    .font(Font.satoshi(18, weight: .semibold))
 
                 Spacer()
 
@@ -1990,9 +1990,9 @@ struct CustomRecurringView: View {
 
                 } label: {
                     Image(systemName: "checkmark")
-                        .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                        .font(Font.satoshi(.subheadline, weight: .semibold))
                         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-                    //                        .font(.system(size: 16, weight: .semibold))
+                    //                        .font(Font.satoshi(16, weight: .semibold))
                         .foregroundColor(Color.IncomeGreen)
                         .padding(7)
                         .background(Color.IncomeGreen.opacity(0.23), in: Circle())
@@ -2002,7 +2002,7 @@ struct CustomRecurringView: View {
 
             HStack(spacing: 10) {
                 Text("Repeats every")
-                    .font(.system(size: 23, weight: .medium, design: .rounded))
+                    .font(Font.satoshi(23, weight: .medium))
                     .foregroundColor(Color.PrimaryText)
                     .padding(.trailing, 3)
 
@@ -2011,7 +2011,7 @@ struct CustomRecurringView: View {
                         holdingCoefficient += 1
                     } label: {
                         Image(systemName: "chevron.up")
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(Font.satoshi(16, weight: .semibold))
                             .foregroundColor(Color.SubtitleText)
                             .padding(7)
                             .background(
@@ -2023,7 +2023,7 @@ struct CustomRecurringView: View {
                     .disabled(holdingCoefficient == 30)
 
                     Text("\(holdingCoefficient)")
-                        .font(.system(size: 23, weight: .medium, design: .rounded))
+                        .font(Font.satoshi(23, weight: .medium))
                         .padding(7)
                         .background {
                             RoundedRectangle(cornerRadius: 9, style: .continuous)
@@ -2035,7 +2035,7 @@ struct CustomRecurringView: View {
                         holdingCoefficient -= 1
                     } label: {
                         Image(systemName: "chevron.down")
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(Font.satoshi(16, weight: .semibold))
                             .foregroundColor(Color.SubtitleText)
                             .padding(7)
                             .background(
@@ -2052,7 +2052,7 @@ struct CustomRecurringView: View {
                         holdingType -= 1
                     } label: {
                         Image(systemName: "chevron.up")
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(Font.satoshi(16, weight: .semibold))
                             .foregroundColor(Color.SubtitleText)
                             .padding(7)
                             .background(
@@ -2072,7 +2072,7 @@ struct CustomRecurringView: View {
                             Text("\(holdingCoefficient) months")
                         }
                     }
-                    .font(.system(size: 23, weight: .medium, design: .rounded))
+                    .font(Font.satoshi(23, weight: .medium))
                     .padding(7)
                     .background {
                         RoundedRectangle(cornerRadius: 9, style: .continuous)
@@ -2084,7 +2084,7 @@ struct CustomRecurringView: View {
                         holdingType += 1
                     } label: {
                         Image(systemName: "chevron.down")
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(Font.satoshi(16, weight: .semibold))
                             .foregroundColor(Color.SubtitleText)
                             .padding(7)
                             .background(
@@ -2113,7 +2113,7 @@ struct ButtonView: View {
 
     var body: some View {
         Text("\(number)")
-            .font(.system(size: 34, weight: .regular, design: .rounded))
+            .font(Font.satoshi(34, weight: .regular))
             .frame(width: size.width * 0.3, height: size.height * 0.22)
             .background(Color.SecondaryBackground)
             .foregroundColor(Color.PrimaryText)

@@ -10,7 +10,7 @@ struct Toolbar<Content>: View where Content: View {
             Spacer()
             if let title = title {
                 Text(title)
-                    .font(.system(.title3, design: .rounded).weight(.medium))
+                    .font(Font.satoshi(.title3, weight: .medium))
                     .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
             }
             Spacer()

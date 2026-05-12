@@ -61,10 +61,18 @@
 			<string>dimeapp://newExpense</string>
 		</dict>
 	</array>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Satoshi-Black.otf</string>
+		<string>Satoshi-Bold.otf</string>
+		<string>Satoshi-Medium.otf</string>
+		<string>Satoshi-Regular.otf</string>
+		<string>Satoshi-Light.otf</string>
+	</array>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Renvo AI reads your photos and receipts to automatically log transactions.</string>
+	<string>KIRA reads your photos and receipts to automatically log transactions.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Renvo AI scans receipts and documents to help you attach and extract transactions.</string>
+	<string>KIRA scans receipts and documents to help you attach and extract transactions.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

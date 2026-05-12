@@ -55,17 +55,17 @@ struct UpdateAlert: View {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack {
                         Image(systemName: "star.fill")
-                            .font(.system(.callout, design: .rounded))
-//                            .font(.system(size: 16))
+                            .font(Font.satoshi(.callout))
+//                            .font(Font.satoshi(16))
                         Text("What's New?")
-                            .font(.system(.title2, design: .rounded).weight(.medium))
-//                            .font(.system(size: 22, weight: .medium, design: .rounded))
+                            .font(Font.satoshi(.title2, weight: .medium))
+//                            .font(Font.satoshi(22, weight: .medium))
                     }
                     .foregroundColor(.PrimaryText)
 
                     Text("Version \(UIApplication.appVersion ?? "") (\(UIApplication.buildNumber ?? "")) · 18 Sep 2023")
-                        .font(.system(.subheadline, design: .rounded).weight(.medium))
-//                        .font(.system(size: 15, weight: .medium, design: .rounded))
+                        .font(Font.satoshi(.subheadline, weight: .medium))
+//                        .font(Font.satoshi(15, weight: .medium))
                         .foregroundColor(.SubtitleText)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -80,8 +80,8 @@ struct UpdateAlert: View {
                         }
                     } label: {
                         Image(systemName: "xmark")
-                            .font(.system(.subheadline, design: .rounded).weight(.semibold))
-//                            .font(.system(size: 14, weight: .semibold))
+                            .font(Font.satoshi(.subheadline, weight: .semibold))
+//                            .font(Font.satoshi(14, weight: .semibold))
                             .foregroundColor(Color.SubtitleText)
                             .padding(7)
                             .background(Color.SecondaryBackground, in: Circle())
@@ -96,21 +96,21 @@ struct UpdateAlert: View {
                         ForEach(welcomeFeatures, id: \.self) { row in
                             HStack(alignment: .top, spacing: 15) {
                                 Image(systemName: row.icon)
-                                    .font(.system(.title2, design: .rounded))
-//                                    .font(.system(size: 24, weight: .regular))
+                                    .font(Font.satoshi(.title2))
+//                                    .font(Font.satoshi(24, weight: .regular))
                                     .foregroundColor(Color.SubtitleText)
                                     .frame(width: 35, alignment: .leading)
                                     .offset(y: 2)
 
                                 VStack(alignment: .leading, spacing: 3.5) {
                                     Text(LocalizedStringKey(row.header))
-                                        .font(.system(.body, design: .rounded).weight(.medium))
-//                                        .font(.system(size: 18, weight: .medium, design: .rounded))
+                                        .font(Font.satoshi(.body, weight: .medium))
+//                                        .font(Font.satoshi(18, weight: .medium))
                                         .foregroundColor(Color.PrimaryText)
 
                                     Text(LocalizedStringKey(row.subtitle))
-                                        .font(.system(.subheadline, design: .rounded).weight(.medium))
-//                                        .font(.system(size: 16, weight: .regular, design: .rounded))
+                                        .font(Font.satoshi(.subheadline, weight: .medium))
+//                                        .font(Font.satoshi(16, weight: .regular))
 //                                            .lineSpacing(0.6)
                                         .fixedSize(horizontal: false, vertical: true)
                                         .foregroundColor(Color.SubtitleText)
@@ -123,7 +123,7 @@ struct UpdateAlert: View {
                 .frame(height: 300)
 
                 Text("Special thanks to \(makeAttributedString()) for contributing")
-                    .font(.system(.footnote, design: .rounded).weight(.medium))
+                    .font(Font.satoshi(.footnote, weight: .medium))
                     .foregroundColor(Color.SubtitleText)
                     .frame(maxWidth: .infinity)
                     .multilineTextAlignment(.center)

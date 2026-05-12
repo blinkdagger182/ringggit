@@ -152,9 +152,9 @@ struct SettingsView: View {
       VStack {
         HStack {
           Text("Settings")
-            .font(.system(.title, design: .rounded).weight(.semibold))
+            .font(Font.satoshi(.title, weight: .semibold))
 
-            //                        .font(.system(size: 25, weight: .semibold, design: .rounded))
+            //                        .font(Font.satoshi(25, weight: .semibold))
             .accessibility(addTraits: .isHeader)
           Spacer()
         }
@@ -165,9 +165,9 @@ struct SettingsView: View {
         ScrollView(showsIndicators: false) {
           VStack(spacing: 5) {
             Text("GENERAL")
-              .font(.system(.footnote, design: .rounded).weight(.semibold))
+              .font(Font.satoshi(.footnote, weight: .semibold))
 
-              //                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+              //                            .font(Font.satoshi(12, weight: .semibold))
               .foregroundColor(Color.SubtitleText)
               .padding(.horizontal, 10)
               .frame(maxWidth: .infinity, alignment: .leading)
@@ -246,9 +246,9 @@ struct SettingsView: View {
 
           VStack(spacing: 5) {
             Text("APPEARANCE")
-              .font(.system(.footnote, design: .rounded).weight(.semibold))
+              .font(Font.satoshi(.footnote, weight: .semibold))
 
-              //                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+              //                            .font(Font.satoshi(12, weight: .semibold))
               .foregroundColor(Color.SubtitleText)
               .padding(.horizontal, 10)
               .frame(maxWidth: .infinity, alignment: .leading)
@@ -308,9 +308,9 @@ struct SettingsView: View {
 
           VStack(spacing: 5) {
             Text("DATA")
-              .font(.system(.footnote, design: .rounded).weight(.semibold))
+              .font(Font.satoshi(.footnote, weight: .semibold))
 
-              //                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+              //                            .font(Font.satoshi(12, weight: .semibold))
               .foregroundColor(Color.SubtitleText)
               .padding(.horizontal, 10)
               .frame(maxWidth: .infinity, alignment: .leading)
@@ -371,9 +371,9 @@ struct SettingsView: View {
 
           VStack(spacing: 5) {
             Text("OTHERS")
-              .font(.system(.footnote, design: .rounded).weight(.semibold))
+              .font(Font.satoshi(.footnote, weight: .semibold))
 
-              //                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+              //                            .font(Font.satoshi(12, weight: .semibold))
               .foregroundColor(Color.SubtitleText)
               .padding(.horizontal, 10)
               .frame(maxWidth: .infinity, alignment: .leading)
@@ -429,7 +429,7 @@ struct SettingsView: View {
                   UIApplication.shared.open(url)
                 }
               } label: {
-                SettingsRowView(systemImage: "bird.fill", title: "Follow Dime on X", colour: 128)
+                SettingsRowView(systemImage: "bird.fill", title: "Follow KIRA on X", colour: 128)
                   .frame(maxWidth: .infinity)
               }
 
@@ -451,18 +451,18 @@ struct SettingsView: View {
           VStack(spacing: 5) {
             HStack(spacing: 3) {
               Text("Version \(UIApplication.appVersion ?? "") (\(UIApplication.buildNumber ?? ""))")
-                .font(.system(.footnote, design: .rounded).weight(.medium))
+                .font(Font.satoshi(.footnote, weight: .medium))
 
-                //                                .font(.system(size: 14, weight: .medium, design: .rounded))
+                //                                .font(Font.satoshi(14, weight: .medium))
                 .foregroundColor(Color.SubtitleText)
 
               Text("·")
-                .font(.system(.footnote, design: .rounded).weight(.medium))
+                .font(Font.satoshi(.footnote, weight: .medium))
 
                 .foregroundColor(Color.SubtitleText)
 
               Text("What's New")
-                .font(.system(.footnote, design: .rounded).weight(.medium))
+                .font(Font.satoshi(.footnote, weight: .medium))
 
                 .foregroundColor(Color.PrimaryText)
                 .onTapGesture {
@@ -471,7 +471,7 @@ struct SettingsView: View {
             }
 
             Text("Made with ❤️ by \(makeAttributedString()) from 🇸🇬")
-              .font(.system(.footnote, design: .rounded).weight(.medium))
+              .font(Font.satoshi(.footnote, weight: .medium))
 
               .foregroundColor(Color.SubtitleText)
               .multilineTextAlignment(.center)
@@ -515,7 +515,7 @@ struct SettingsView: View {
     -> some View {
     HStack(spacing: 12) {
       Image(systemName: icon)
-            .font(.system(smaller ? .subheadline : .body, design: .rounded))
+            .font(Font.satoshi(smaller ? .subheadline : .body))
         .foregroundColor(.white)
         .frame(
           width: dynamicTypeSize > .xLarge ? 40 : 30, height: dynamicTypeSize > .xLarge ? 40 : 30,
@@ -524,7 +524,7 @@ struct SettingsView: View {
         .background(Color(color), in: RoundedRectangle(cornerRadius: 6))
 
       Text(text)
-        .font(.system(.body, design: .rounded).weight(.medium))
+        .font(Font.satoshi(.body, weight: .medium))
         .lineLimit(1)
         .foregroundColor(Color.PrimaryText)
 
@@ -673,17 +673,17 @@ struct TipJarAlert: View {
         case .loading:
           ProgressView {
             Text("Loading")
-              .font(.system(.body, design: .rounded).weight(.medium))
-              //                            .font(.system(size: 18, weight: .medium, design: .rounded))
+              .font(Font.satoshi(.body, weight: .medium))
+              //                            .font(Font.satoshi(18, weight: .medium))
               .foregroundColor(Color.SubtitleText)
               .frame(maxWidth: .infinity)
               .frame(height: 200)
           }
         case .failed:
           Text("Unable to load tip options, please try again later 🥲")
-            .font(.system(.body, design: .rounded).weight(.medium))
+            .font(Font.satoshi(.body, weight: .medium))
 
-            //                        .font(.system(size: 18, weight: .medium, design: .rounded))
+            //                        .font(Font.satoshi(18, weight: .medium))
             .multilineTextAlignment(.center)
             .foregroundColor(Color.SubtitleText)
             .frame(maxWidth: .infinity)
@@ -692,13 +692,13 @@ struct TipJarAlert: View {
           VStack(alignment: .leading, spacing: 4) {
             HStack {
               Image(systemName: "heart.fill")
-                .font(.system(.callout, design: .rounded))
+                .font(Font.satoshi(.callout))
 
-              //                                .font(.system(size: 16))
+              //                                .font(Font.satoshi(16))
               Text("Tip Jar")
-                .font(.system(.title2, design: .rounded).weight(.medium))
+                .font(Font.satoshi(.title2, weight: .medium))
 
-              //                                .font(.system(size: 22, weight: .medium, design: .rounded))
+              //                                .font(Font.satoshi(22, weight: .medium))
             }
             .foregroundColor(.PrimaryText)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -713,9 +713,9 @@ struct TipJarAlert: View {
                 }
               } label: {
                 Image(systemName: "xmark")
-                  .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                  .font(Font.satoshi(.subheadline, weight: .semibold))
 
-                  //                                    .font(.system(size: 14, weight: .semibold))
+                  //                                    .font(Font.satoshi(14, weight: .semibold))
                   .foregroundColor(Color.SubtitleText)
                   .padding(7)
                   .background(Color.SecondaryBackground, in: Circle())
@@ -725,11 +725,11 @@ struct TipJarAlert: View {
             }
 
             Text(
-              "Hey! Dime was built by a solo student developer, and is intended to be completely free-of-charge, with no paywalls or ads. If you enjoy using Dime and want to support development, please consider a small tip."
+              "Hey! KIRA was built by a solo student developer, and is intended to be completely free-of-charge, with no paywalls or ads. If you enjoy using KIRA and want to support development, please consider a small tip."
             )
-            .font(.system(.callout, design: .rounded).weight(.medium))
+            .font(Font.satoshi(.callout, weight: .medium))
 
-            //                            .font(.system(size: 16, weight: .medium, design: .rounded))
+            //                            .font(Font.satoshi(16, weight: .medium))
             .foregroundColor(.SubtitleText)
             .padding(.bottom, 20)
 
@@ -741,9 +741,9 @@ struct TipJarAlert: View {
             .padding(.bottom, 20)
 
             Text(bottomCaption)
-              .font(.system(.subheadline, design: .rounded).weight(.medium))
+              .font(Font.satoshi(.subheadline, weight: .medium))
 
-              //                                .font(.system(size: 14, weight: .medium, design: .rounded))
+              //                                .font(Font.satoshi(14, weight: .medium))
               .frame(maxWidth: .infinity)
               .foregroundColor(.SubtitleText)
           }
@@ -827,9 +827,9 @@ struct ProductView: View {
       }
     }
     .foregroundColor(.PrimaryText)
-    .font(.system(.body, design: .rounded).weight(.semibold))
+    .font(Font.satoshi(.body, weight: .semibold))
     .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-    //        .font(.system(size: 18, weight: .semibold, design: .rounded))
+    //        .font(Font.satoshi(18, weight: .semibold))
   }
 
   func unlock(_ product: SKProduct) {
@@ -860,9 +860,9 @@ struct SettingsRowView: View {
   var body: some View {
     HStack(spacing: 12) {
       Image(systemName: systemImage)
-        .font(.system(.body, design: .rounded))
+        .font(Font.satoshi(.body))
 
-        //                .font(.system(size: 17))
+        //                .font(Font.satoshi(17))
         //                .padding(5)
         .foregroundColor(.white)
         .frame(
@@ -872,9 +872,9 @@ struct SettingsRowView: View {
         .background(Color("\(colour)"), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
 
       Text(LocalizedStringKey(title))
-        .font(.system(.body, design: .rounded).weight(.medium))
+        .font(Font.satoshi(.body, weight: .medium))
 
-        //                .font(.system(size: 17, weight: .medium, design: .rounded))
+        //                .font(Font.satoshi(17, weight: .medium))
         .lineLimit(1)
         .foregroundColor(Color.PrimaryText)
 
@@ -882,17 +882,17 @@ struct SettingsRowView: View {
 
       if optionalText != nil {
         Text(optionalText!)
-          .font(.system(.body, design: .rounded))
+          .font(Font.satoshi(.body))
 
-          //                    .font(.system(size: 17, weight: .regular, design: .rounded))
+          //                    .font(Font.satoshi(17, weight: .regular))
           .foregroundColor(.DarkIcon.opacity(0.6))
           .layoutPriority(1)
           .padding(.trailing, -8)
       }
 
       Image(systemName: "chevron.forward")
-        .font(.system(.subheadline, design: .rounded))
-        //                .font(.system(size: 15))
+        .font(Font.satoshi(.subheadline))
+        //                .font(Font.satoshi(15))
         .foregroundColor(.DarkIcon.opacity(0.6))
     }
     .frame(maxWidth: .infinity)

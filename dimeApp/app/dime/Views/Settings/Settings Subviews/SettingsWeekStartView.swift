@@ -49,7 +49,7 @@ struct SettingsWeekStartView: View {
   var body: some View {
     VStack(spacing: 10) {
       Text("Time Frames")
-        .font(.system(.title3, design: .rounded).weight(.semibold))
+        .font(Font.satoshi(.title3, weight: .semibold))
         .foregroundColor(Color.PrimaryText)
         .frame(maxWidth: .infinity)
         .overlay(alignment: .leading) {
@@ -62,7 +62,7 @@ struct SettingsWeekStartView: View {
         .padding(.bottom, 20)
 
       Text("Start of Week")
-        .font(.system(.body, design: .rounded).weight(.medium))
+        .font(Font.satoshi(.body, weight: .medium))
         .foregroundColor(Color.SubtitleText)
         .padding(.horizontal, 15)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -71,14 +71,14 @@ struct SettingsWeekStartView: View {
         ForEach(options.indices, id: \.self) { option in
           HStack {
             Text(LocalizedStringKey(options[option]))
-              .font(.system(.body, design: .rounded))
+              .font(Font.satoshi(.body))
               .foregroundColor(Color.PrimaryText)
 
             Spacer()
 
             if firstWeekday == (option + 1) {
               Image(systemName: "checkmark")
-                .font(.system(.subheadline, design: .rounded).weight(.medium))
+                .font(Font.satoshi(.subheadline, weight: .medium))
                 .foregroundColor(.DarkIcon.opacity(0.6))
                 .matchedGeometryEffect(id: "tick", in: animation)
             }
@@ -109,7 +109,7 @@ struct SettingsWeekStartView: View {
       .padding(.bottom, 30)
 
       Text("Start of Month")
-        .font(.system(.body, design: .rounded).weight(.medium))
+        .font(Font.satoshi(.body, weight: .medium))
         .foregroundColor(Color.SubtitleText)
         .padding(.horizontal, 15)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -121,14 +121,14 @@ struct SettingsWeekStartView: View {
 
               HStack {
                 Text("\(getOrdinal(day)) of month")
-                  .font(.system(.body, design: .rounded))
+                  .font(Font.satoshi(.body))
                   .foregroundColor(Color.PrimaryText)
 
                 Spacer()
 
                 if firstDayOfMonth == day {
                   Image(systemName: "checkmark")
-                    .font(.system(.subheadline, design: .rounded).weight(.medium))
+                    .font(Font.satoshi(.subheadline, weight: .medium))
                     .foregroundColor(.DarkIcon.opacity(0.6))
                     .matchedGeometryEffect(id: "tick2", in: animation)
                 }
@@ -166,7 +166,7 @@ struct SettingsWeekStartView: View {
       .background(Color.SettingsBackground, in: RoundedRectangle(cornerRadius: 9))
 
       Text("Close and reload app for change to take effect.")
-        .font(.system(.caption, design: .rounded).weight(.medium))
+        .font(Font.satoshi(.caption, weight: .medium))
         .foregroundColor(Color.SubtitleText)
         .padding(.horizontal, 15)
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -148,8 +148,8 @@ struct RytPeekSandboxView: View {
 
             RadialGradient(
                 colors: [
-                    Color.cyan.opacity(0.30),
-                    Color.cyan.opacity(0.10),
+                    Color(hex: "4A5240").opacity(0.30),
+                    Color(hex: "4A5240").opacity(0.10),
                     .clear
                 ],
                 center: .bottomLeading,
@@ -159,8 +159,8 @@ struct RytPeekSandboxView: View {
 
             RadialGradient(
                 colors: [
-                    Color.purple.opacity(0.22),
-                    Color.purple.opacity(0.08),
+                    Color(hex: "C8B94A").opacity(0.22),
+                    Color(hex: "C8B94A").opacity(0.08),
                     .clear
                 ],
                 center: .bottomTrailing,
@@ -170,7 +170,7 @@ struct RytPeekSandboxView: View {
 
             RadialGradient(
                 colors: [
-                    Color.cyan.opacity(0.16),
+                    Color(hex: "4A5240").opacity(0.16),
                     .clear
                 ],
                 center: .topLeading,
@@ -189,8 +189,8 @@ struct RytPeekSandboxView: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color(red: 0.36, green: 0.83, blue: 0.91),
-                                Color(red: 0.49, green: 0.79, blue: 0.96)
+                                Color(hex: "4A5240"),
+                                Color(hex: "5B8C5A")
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -218,7 +218,7 @@ struct RytPeekSandboxView: View {
                         .font(.system(size: 22 * s, weight: .semibold))
                         .foregroundStyle(.white)
 
-                    Text("Ask Saku AI")
+                    Text("Ask KIRA")
                         .font(.system(size: 18 * s, weight: .bold, design: .rounded))
                         .foregroundStyle(.white)
                 }
@@ -247,9 +247,9 @@ struct RytPeekSandboxView: View {
                         .stroke(
                             LinearGradient(
                                 colors: [
-                                    Color.cyan.opacity(0.95),
+                                    Color(hex: "4A5240").opacity(0.95),
                                     Color.white.opacity(0.62),
-                                    Color.purple.opacity(0.65)
+                                    Color(hex: "C8B94A").opacity(0.65)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -257,8 +257,8 @@ struct RytPeekSandboxView: View {
                             lineWidth: 1.5 * s
                         )
                 }
-                .shadow(color: Color.cyan.opacity(0.24), radius: 10 * s, x: 0, y: 0)
-                .shadow(color: Color.purple.opacity(0.18), radius: 13 * s, x: 0, y: 7 * s)
+                .shadow(color: Color(hex: "4A5240").opacity(0.24), radius: 10 * s, x: 0, y: 0)
+                .shadow(color: Color(hex: "C8B94A").opacity(0.18), radius: 13 * s, x: 0, y: 7 * s)
                 .contentShape(Capsule())
             }
             .buttonStyle(.plain)
@@ -270,7 +270,7 @@ struct RytPeekSandboxView: View {
             } label: {
                 Image(systemName: "bell")
                     .font(.system(size: 22 * s, weight: .medium))
-                    .foregroundStyle(Color(red: 0.43, green: 0.36, blue: 0.90))
+                    .foregroundStyle(Color(hex: "4A5240"))
                     .frame(width: 48 * s, height: 48 * s)
                     .overlay(alignment: .topTrailing) {
                         Circle()
@@ -296,8 +296,8 @@ struct RytPeekSandboxView: View {
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    Color.cyan.opacity(0.72),
-                                    Color.cyan.opacity(0.42)
+                                    Color(hex: "4A5240").opacity(0.72),
+                                    Color(hex: "4A5240").opacity(0.42)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -319,7 +319,7 @@ struct RytPeekSandboxView: View {
                 } label: {
                     Image(systemName: "bell")
                         .font(.system(size: 23 * s, weight: .medium))
-                        .foregroundStyle(Color(red: 0.43, green: 0.35, blue: 0.92))
+                        .foregroundStyle(Color(hex: "4A5240"))
                         .frame(width: 48 * s, height: 48 * s)
                         .overlay(alignment: .topTrailing) {
                             Circle()
@@ -335,21 +335,21 @@ struct RytPeekSandboxView: View {
             HStack(spacing: 9 * s) {
                 Text("✦")
                     .font(.system(size: 29 * s, weight: .semibold))
-                    .foregroundStyle(Color.cyan.opacity(0.75))
+                    .foregroundStyle(Color(hex: "4A5240").opacity(0.75))
 
-                Text("Saku AI")
+                Text("KIRA")
                     .font(.system(size: 25 * s, weight: .bold, design: .rounded))
                     .foregroundStyle(Color(red: 0.03, green: 0.10, blue: 0.25))
 
                 Text("beta")
                     .font(.system(size: 16 * s, weight: .medium, design: .rounded))
-                    .foregroundStyle(Color(red: 0.44, green: 0.34, blue: 0.92))
+                    .foregroundStyle(Color(hex: "4A5240"))
                     .padding(.horizontal, 12 * s)
                     .padding(.vertical, 5 * s)
                     .background(.white.opacity(0.38), in: Capsule())
                     .overlay(
                         Capsule()
-                            .stroke(Color.purple.opacity(0.22), lineWidth: 1.1)
+                            .stroke(Color(hex: "C8B94A").opacity(0.22), lineWidth: 1.1)
                     )
             }
         }
@@ -364,11 +364,11 @@ struct RytPeekSandboxView: View {
             Image(systemName: "chevron.down")
                 .font(.system(size: 13 * s, weight: .bold))
         }
-        .foregroundStyle(Color(red: 0.05, green: 0.62, blue: 0.88))
+        .foregroundStyle(Color(hex: "4A5240"))
         .padding(.horizontal, 22 * s)
         .frame(height: 43 * s)
         .background(.white.opacity(0.68), in: Capsule())
-        .overlay(Capsule().stroke(Color.cyan.opacity(0.22), lineWidth: 1))
+        .overlay(Capsule().stroke(Color(hex: "4A5240").opacity(0.22), lineWidth: 1))
     }
 
     private func heroCopy(scale s: CGFloat) -> some View {
@@ -380,8 +380,8 @@ struct RytPeekSandboxView: View {
                 .foregroundStyle(
                     LinearGradient(
                         colors: [
-                            Color(red: 0.07, green: 0.60, blue: 0.92),
-                            Color(red: 0.46, green: 0.28, blue: 0.88)
+                            Color(hex: "4A5240"),
+                            Color(hex: "C8B94A")
                         ],
                         startPoint: .leading,
                         endPoint: .trailing
@@ -399,7 +399,7 @@ struct RytPeekSandboxView: View {
     private func glowOrb(scale s: CGFloat) -> some View {
         ZStack {
             Ellipse()
-                .fill(Color.purple.opacity(isOrbBreathing ? 0.12 : 0.06))
+                .fill(Color(hex: "C8B94A").opacity(isOrbBreathing ? 0.12 : 0.06))
                 .frame(
                     width: isOrbBreathing ? 170 * s : 140 * s,
                     height: isOrbBreathing ? 28 * s : 20 * s
@@ -412,8 +412,8 @@ struct RytPeekSandboxView: View {
                     RadialGradient(
                         colors: [
                             Color.white.opacity(0.90),
-                            Color.cyan.opacity(isOrbBreathing ? 0.64 : 0.48),
-                            Color.purple.opacity(isOrbBreathing ? 0.78 : 0.58),
+                            Color(hex: "4A5240").opacity(isOrbBreathing ? 0.64 : 0.48),
+                            Color(hex: "C8B94A").opacity(isOrbBreathing ? 0.78 : 0.58),
                             Color.clear
                         ],
                         center: .center,
@@ -428,13 +428,13 @@ struct RytPeekSandboxView: View {
                 .blur(radius: isOrbBreathing ? 5 * s : 3 * s)
                 .scaleEffect(isOrbBreathing ? 1.06 : 0.96)
                 .shadow(
-                    color: Color.cyan.opacity(isOrbBreathing ? 0.28 : 0.14),
+                    color: Color(hex: "4A5240").opacity(isOrbBreathing ? 0.28 : 0.14),
                     radius: isOrbBreathing ? 24 * s : 12 * s,
                     x: 0,
                     y: 0
                 )
                 .shadow(
-                    color: Color.purple.opacity(isOrbBreathing ? 0.32 : 0.16),
+                    color: Color(hex: "C8B94A").opacity(isOrbBreathing ? 0.32 : 0.16),
                     radius: isOrbBreathing ? 30 * s : 14 * s,
                     x: 0,
                     y: 8 * s
@@ -454,7 +454,7 @@ struct RytPeekSandboxView: View {
 
     private func sakuComposer(scale s: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 28 * s) {
-            Text("Ask Saku anything...")
+            Text("Ask KIRA anything...")
                 .font(.system(size: 18 * s, weight: .medium, design: .rounded))
                 .foregroundStyle(Color(red: 0.45, green: 0.47, blue: 0.60))
 
@@ -482,8 +482,8 @@ struct RytPeekSandboxView: View {
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    Color.cyan.opacity(0.75),
-                                    Color.purple
+                                    Color(hex: "4A5240").opacity(0.75),
+                                    Color(hex: "4A5240")
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -495,12 +495,12 @@ struct RytPeekSandboxView: View {
                                 .font(.system(size: 24 * s, weight: .semibold))
                                 .foregroundStyle(.white)
                         )
-                        .shadow(color: Color.purple.opacity(0.22), radius: 13 * s, x: 0, y: 7 * s)
+                        .shadow(color: Color(hex: "C8B94A").opacity(0.22), radius: 13 * s, x: 0, y: 7 * s)
                 }
                 .buttonStyle(.plain)
             }
             .font(.system(size: 23 * s, weight: .medium))
-            .foregroundStyle(Color(red: 0.42, green: 0.41, blue: 0.92))
+            .foregroundStyle(Color(hex: "4A5240"))
         }
         .padding(.horizontal, 26 * s)
         .padding(.top, 27 * s)
@@ -509,23 +509,23 @@ struct RytPeekSandboxView: View {
         .background(.white.opacity(0.78), in: RoundedRectangle(cornerRadius: 27 * s, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 27 * s, style: .continuous)
-                .stroke(Color.cyan.opacity(0.34), lineWidth: 1)
+                .stroke(Color(hex: "4A5240").opacity(0.34), lineWidth: 1)
         )
-        .shadow(color: Color.cyan.opacity(0.10), radius: 22 * s, x: 0, y: 11 * s)
+        .shadow(color: Color(hex: "4A5240").opacity(0.10), radius: 22 * s, x: 0, y: 11 * s)
     }
 
     private func suggestionsList(scale s: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 11 * s) {
             Text("Suggested for you")
                 .font(.system(size: 16 * s, weight: .medium, design: .rounded))
-                .foregroundStyle(Color(red: 0.45, green: 0.48, blue: 0.60))
+                .foregroundStyle(Color(hex: "6B6B66"))
                 .padding(.leading, 4 * s)
                 .padding(.bottom, 4 * s)
 
-            suggestionRow(icon: "chart.line.uptrend.xyaxis", title: "Why did I overspend this week?", tint: Color.purple, scale: s)
-            suggestionRow(icon: "viewfinder", title: "Scan a receipt", tint: Color.cyan, scale: s)
-            suggestionRow(icon: "folder", title: "Create a food budget", tint: Color.indigo, scale: s)
-            suggestionRow(icon: "arrow.triangle.2.circlepath", title: "Show my subscriptions", tint: Color.purple, scale: s)
+            suggestionRow(icon: "chart.line.uptrend.xyaxis", title: "Why did I overspend this week?", tint: Color(hex: "4A5240"), scale: s)
+            suggestionRow(icon: "viewfinder", title: "Scan a receipt", tint: Color(hex: "C8B94A"), scale: s)
+            suggestionRow(icon: "folder", title: "Create a food budget", tint: Color(hex: "5B8C5A"), scale: s)
+            suggestionRow(icon: "arrow.triangle.2.circlepath", title: "Show my subscriptions", tint: Color(hex: "4A5240"), scale: s)
         }
     }
 
@@ -553,12 +553,12 @@ struct RytPeekSandboxView: View {
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 15 * s, weight: .semibold))
-                    .foregroundStyle(Color.purple.opacity(0.60))
+                    .foregroundStyle(Color(hex: "C8B94A").opacity(0.60))
             }
             .padding(.horizontal, 17 * s)
             .frame(height: 58 * s)
             .background(.white.opacity(0.82), in: Capsule())
-            .shadow(color: Color.purple.opacity(0.035), radius: 13 * s, x: 0, y: 7 * s)
+            .shadow(color: Color(hex: "C8B94A").opacity(0.035), radius: 13 * s, x: 0, y: 7 * s)
         }
         .buttonStyle(.plain)
     }
@@ -596,7 +596,7 @@ struct RytPeekSandboxView: View {
                     .overlay(
                         Image(systemName: icon)
                             .font(.system(size: 15 * s, weight: .semibold))
-                            .foregroundStyle(Color(red: 0.42, green: 0.41, blue: 0.92))
+                            .foregroundStyle(Color(hex: "4A5240"))
                     )
 
                 Text(title)
@@ -645,7 +645,7 @@ struct RytPeekSandboxView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(red: 0.965, green: 0.97, blue: 0.975))
+        .background(Color(hex: "F5F2ED"))
         .clipShape(RoundedRectangle(cornerRadius: homeCornerRadius, style: .continuous))
         .shadow(color: .black.opacity(0.12), radius: 18, x: 0, y: -5)
         .ignoresSafeArea(edges: .bottom)

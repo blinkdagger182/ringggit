@@ -10,12 +10,12 @@ struct Toast: View {
         if showToast {
             HStack(spacing: 6.5) {
                 Image(systemName: toastImage)
-                    .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                    .font(Font.satoshi(.subheadline, weight: .semibold))
                     .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     .foregroundColor(toastColor)
 
                 Text(toastTitle)
-                    .font(.system(.body, design: .rounded).weight(.semibold))
+                    .font(Font.satoshi(.body, weight: .semibold))
                     .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     .lineLimit(1)
                     .foregroundColor(toastColor)

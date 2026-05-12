@@ -170,7 +170,7 @@ struct BrandNewBudgetView: View {
                         }
                     } label: {
                         Image(systemName: showBackButton ? "chevron.left" : "xmark")
-                            .font(.system(.callout, design: .rounded).weight(.semibold))
+                            .font(Font.satoshi(.callout, weight: .semibold))
 
                             .foregroundColor(Color.SubtitleText)
                             .padding(8)
@@ -194,7 +194,7 @@ struct BrandNewBudgetView: View {
                         }
                     } label: {
                         Image(systemName: showBackButton ? "chevron.left" : "xmark")
-                            .font(.system(.callout, design: .rounded).weight(.semibold))
+                            .font(Font.satoshi(.callout, weight: .semibold))
                             .foregroundColor(Color.SubtitleText)
                             .padding(8)
                             .background(Color.SecondaryBackground, in: Circle())
@@ -212,11 +212,11 @@ struct BrandNewBudgetView: View {
                 if showToast {
                     HStack(spacing: 6.5) {
                         Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                            .font(Font.satoshi(.subheadline, weight: .semibold))
                             .foregroundColor(Color.AlertRed)
 
                         Text(toastMessage)
-                            .font(.system(.callout, design: .rounded).weight(.semibold))
+                            .font(Font.satoshi(.callout, weight: .semibold))
                             .foregroundColor(Color.AlertRed)
                     }
                     .padding(8)
@@ -232,14 +232,14 @@ struct BrandNewBudgetView: View {
                 HStack {
                     Text(instructions[progress - 1].title)
                         .foregroundColor(.PrimaryText)
-                        .font(.system(.title2, design: .rounded).weight(.semibold))
+                        .font(Font.satoshi(.title2, weight: .semibold))
 
                     if progress == 2 {
                         Button {
                             showingCategoryView = true
                         } label: {
                             Image(systemName: "plus")
-                                .font(.system(.footnote, design: .rounded).weight(.semibold))
+                                .font(Font.satoshi(.footnote, weight: .semibold))
                                 .foregroundColor(Color.SubtitleText)
                                 .padding(4)
                                 .background(Color.SecondaryBackground, in: Circle())
@@ -253,7 +253,7 @@ struct BrandNewBudgetView: View {
 
                 Text(instructions[progress - 1].subtitle)
                     .foregroundColor(.SubtitleText)
-                    .font(.system(.body, design: .rounded).weight(.medium))
+                    .font(Font.satoshi(.body, weight: .medium))
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             .frame(height: labelHeight, alignment: .top)
@@ -271,8 +271,8 @@ struct BrandNewBudgetView: View {
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .foregroundColor(Color.PrimaryText)
-                        .font(.system(.title3, design: .rounded).weight(.medium))
-//                        .font(.system(size: 20, weight: .medium, design: .rounded))
+                        .font(Font.satoshi(.title3, weight: .medium))
+//                        .font(Font.satoshi(20, weight: .medium))
                         .padding(8)
                         .background {
                             if !categoryBudget {
@@ -299,7 +299,7 @@ struct BrandNewBudgetView: View {
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .foregroundColor(Color.PrimaryText)
-                        .font(.system(.title3, design: .rounded).weight(.medium))
+                        .font(Font.satoshi(.title3, weight: .medium))
                         .padding(8)
 //                        .frame(height: 40)
                         .background {
@@ -326,14 +326,14 @@ struct BrandNewBudgetView: View {
                     if categories.isEmpty {
                         VStack(spacing: 12) {
                             Image(systemName: "tray.full.fill")
-                                .font(.system(.largeTitle, design: .rounded))
-//                                .font(.system(size: 38, weight: .regular, design: .rounded))
+                                .font(Font.satoshi(.largeTitle))
+//                                .font(Font.satoshi(38, weight: .regular))
                                 .foregroundColor(Color.SubtitleText.opacity(0.7))
                                 .padding(.top, 20)
 
                             Text("No remaining\ncategories.")
-                                .font(.system(.title3, design: .rounded).weight(.medium))
-//                                .font(.system(size: 21, weight: .medium, design: .rounded))
+                                .font(Font.satoshi(.title3, weight: .medium))
+//                                .font(Font.satoshi(21, weight: .medium))
                                 .multilineTextAlignment(.center)
                                 .foregroundColor(Color.SubtitleText.opacity(0.7))
                                 .padding(.bottom, 20)
@@ -379,8 +379,8 @@ struct BrandNewBudgetView: View {
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .foregroundColor(Color.PrimaryText)
-                            .font(.system(.title3, design: .rounded).weight(.medium))
-//                            .font(.system(size: 20, weight: .medium, design: .rounded))
+                            .font(Font.satoshi(.title3, weight: .medium))
+//                            .font(Font.satoshi(20, weight: .medium))
                             .padding(8)
 //                            .frame(height: 40)
                             .background {
@@ -423,8 +423,8 @@ struct BrandNewBudgetView: View {
                                         }
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                         .foregroundColor(Color.PrimaryText)
-                                        .font(.system(.title3, design: .rounded).weight(.medium))
-//                                        .font(.system(size: 20, weight: .medium, design: .rounded))
+                                        .font(Font.satoshi(.title3, weight: .medium))
+//                                        .font(Font.satoshi(20, weight: .medium))
                                         .padding(8)
 //                                        .frame(height: 40)
                                         .background {
@@ -470,7 +470,7 @@ struct BrandNewBudgetView: View {
                                         }
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                         .foregroundColor(Color.PrimaryText)
-                                        .font(.system(.title3, design: .rounded).weight(.medium))
+                                        .font(Font.satoshi(.title3, weight: .medium))
                                         .padding(8)
                                         .background {
                                             if chosenDayMonth == day {
@@ -517,8 +517,8 @@ struct BrandNewBudgetView: View {
 
                     if budgetTimeFrame != .day && price > 0 {
                         Text(amountPerDayString)
-                            .font(.system(.subheadline, design: .rounded).weight(.semibold))
-//                            .font(.system(size: 15, weight: .semibold, design: .rounded))
+                            .font(Font.satoshi(.subheadline, weight: .semibold))
+//                            .font(Font.satoshi(15, weight: .semibold))
                             .foregroundColor(Color.SubtitleText)
                             .padding(4)
                             .padding(.horizontal, 7)
@@ -571,8 +571,8 @@ struct BrandNewBudgetView: View {
                     }
                 } label: {
                     Text("Continue")
-                        .font(.system(.title3, design: .rounded).weight(.semibold))
-//                        .font(.system(size: 19, weight: .semibold, design: .rounded))
+                        .font(Font.satoshi(.title3, weight: .semibold))
+//                        .font(Font.satoshi(19, weight: .semibold))
 
                         .padding(.vertical, 12)
                         .frame(maxWidth: .infinity)
@@ -709,7 +709,7 @@ struct BrandNewBudgetView: View {
     @ViewBuilder
     func Checkmark() -> some View {
         Image(systemName: "checkmark")
-            .font(.system(.callout, design: .rounded).weight(.medium))
+            .font(Font.satoshi(.callout, weight: .medium))
     }
 
     func submit() {
@@ -869,11 +869,11 @@ struct BrandNewBudgetView: View {
         } label: {
             HStack(spacing: 5) {
                 Text(category.wrappedEmoji)
-                    .font(.system(.subheadline, design: .rounded))
-                    .font(.system(size: 15))
+                    .font(Font.satoshi(.subheadline))
+                    .font(Font.satoshi(15))
                 Text(category.wrappedName)
-                    .font(.system(.title3, design: .rounded).weight(.semibold))
-//                    .font(.system(size: 19, weight: .semibold, design: .rounded))
+                    .font(Font.satoshi(.title3, weight: .semibold))
+//                    .font(Font.satoshi(19, weight: .semibold))
             }
             .padding(.horizontal, 11)
             .padding(.vertical, 7)

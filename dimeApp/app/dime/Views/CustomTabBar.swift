@@ -34,7 +34,7 @@ struct CustomTabBar: View {
     }
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 0) {
             TabButton(image: "Log", zoomed: isZoomed, currentTab: $currentTab)
 
             TabButton(image: "Insights", zoomed: isZoomed, currentTab: $currentTab)
@@ -53,9 +53,7 @@ struct CustomTabBar: View {
                 Button {
                     let impactMed = UIImpactFeedbackGenerator(style: .light)
                     impactMed.impactOccurred()
-
                     addTransaction = true
-
                 } label: {
                     Image(systemName: "plus")
                 }
@@ -75,8 +73,18 @@ struct CustomTabBar: View {
 
             TabButton(image: "Settings", zoomed: isZoomed, currentTab: $currentTab)
         }
-        .padding(.horizontal, 15)
-        .padding(.bottom, bottomEdge - 10)
+        .padding(.horizontal, 8)
+        .padding(.bottom, max(bottomEdge - 10, 0))
+        .padding(.top, 10)
+        .background(
+            Color.PrimaryBackground
+                .ignoresSafeArea(edges: .bottom)
+                .overlay(alignment: .top) {
+                    Rectangle()
+                        .fill(Color.Outline)
+                        .frame(height: 0.5)
+                }
+        )
         .frame(maxWidth: .infinity)
         .fullScreenCover(isPresented: $addTransaction, onDismiss: {
             if confetti {
@@ -123,7 +131,7 @@ struct CustomTabBar: View {
 struct MyButtonStyle: ButtonStyle {
     func makeBody(configuration: Self.Configuration) -> some View {
         configuration.label
-            .font(.system(size: 20, weight: .bold))
+            .font(Font.satoshi(20, weight: .bold))
             .foregroundColor(Color.LightIcon)
             .frame(width: 65, height: 38)
             .background(configuration.isPressed ? Color.SubtitleText : Color.DarkBackground, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
@@ -147,21 +155,32 @@ struct TabButton: View {
     var zoomed: Bool
     @Binding var currentTab: String
 
+    private var sfSymbol: (inactive: String, active: String) {
+        switch image {
+        case "Log":      return ("clock", "clock.fill")
+        case "Insights": return ("chart.bar", "chart.bar.fill")
+        case "Budget":   return ("wallet.pass", "wallet.pass.fill")
+        case "Settings": return ("person.circle", "person.circle.fill")
+        default:         return ("circle", "circle.fill")
+        }
+    }
+
     var body: some View {
         Button {
             DispatchQueue.main.async {
                 currentTab = image
             }
         } label: {
-            Image(image)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(maxWidth: 28, maxHeight: 28)
-                .animation(.easeInOut(duration: 0.3), value: currentTab)
-                .frame(maxWidth: .infinity)
-                .foregroundColor(currentTab == image ? Color.DarkIcon : Color.GreyIcon)
+            VStack(spacing: 4) {
+                Image(systemName: currentTab == image ? sfSymbol.active : sfSymbol.inactive)
+                    .font(Font.satoshi(22, weight: currentTab == image ? .medium : .regular))
+                    .foregroundColor(currentTab == image ? Color.DarkIcon : Color.GreyIcon)
+                    .animation(.easeInOut(duration: 0.2), value: currentTab)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 44)
         }
-        .buttonStyle(BouncyButton(duration: 0.3, scale: 0.6))
+        .buttonStyle(BouncyButton(duration: 0.3, scale: 0.75))
         .accessibilityLabel("\(image) tab")
         .accessibilityAddTraits(
             currentTab == image

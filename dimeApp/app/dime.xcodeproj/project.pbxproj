@@ -8,7 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		04A8E059AA45012A1B4DE5A7 /* HomeAIAttachmentSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44B152FB18238AB615708622 /* HomeAIAttachmentSheet.swift */; };
+		0567133628DA33315DAC9DF6 /* Satoshi-Medium.otf in Resources */ = {isa = PBXBuildFile; fileRef = 75C40ECC4B5691DE975C9F96 /* Satoshi-Medium.otf */; };
+		0CCE11AED2D75697C7511294 /* Satoshi-Bold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 4A24558D9748F66F5CDD07E7 /* Satoshi-Bold.otf */; };
 		1D1E777C707D5144EFFF83B1 /* AIConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C58E9A9574F6F65BFAAD177 /* AIConfig.swift */; };
+		34596E9AB10C3FF6A221FC44 /* Satoshi-Black.otf in Resources */ = {isa = PBXBuildFile; fileRef = 47F5DDF794EFBCAAEE499A30 /* Satoshi-Black.otf */; };
 		37DF5605B4BEA2CBC2061303 /* AIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D798336B86A8F793296E0DBD /* AIService.swift */; };
 		530C89D62A793B6C00B5028D /* ShortcutsEntities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 530C89D52A793B6C00B5028D /* ShortcutsEntities.swift */; };
 		530C9DFD28ACE14A0038535F /* BudgetWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 530C9DFC28ACE14A0038535F /* BudgetWidget.swift */; };
@@ -158,8 +161,9 @@
 		5EA1A0072E0A000100ABCD01 /* HomeAIAssistantBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA1A0062E0A000100ABCD01 /* HomeAIAssistantBar.swift */; };
 		5EA1A0092E0A000100ABCD01 /* HomeAIAssistantOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA1A0082E0A000100ABCD01 /* HomeAIAssistantOverlay.swift */; };
 		5EA1A00B2E0A000100ABCD01 /* HomeAIVisualCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA1A00A2E0A000100ABCD01 /* HomeAIVisualCards.swift */; };
-		7A4F10012E3C200100ABCD01 /* TransactionAttachmentReference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A4F10002E3C200100ABCD01 /* TransactionAttachmentReference.swift */; };
 		6A1F4A012E3B100100ABC001 /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 6A1F4A032E3B100100ABC001 /* MarkdownUI */; };
+		7A4F10012E3C200100ABCD01 /* TransactionAttachmentReference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A4F10002E3C200100ABCD01 /* TransactionAttachmentReference.swift */; };
+		ABC52249106203D5530AA079 /* Satoshi-Regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = 8C3B458DD92ECF50A3F7F145 /* Satoshi-Regular.otf */; };
 		AE5B3D792AEE99E000AB364E /* NumberPad.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE5B3D782AEE99E000AB364E /* NumberPad.swift */; };
 		AEADEF6F2AE94DA3006EB614 /* Toast.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEADEF6E2AE94DA3006EB614 /* Toast.swift */; };
 		AEADEF712AE94DA8006EB614 /* BackButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEADEF702AE94DA8006EB614 /* BackButton.swift */; };
@@ -170,6 +174,8 @@
 		D63B204B2D8728C300CAFB20 /* Localizable.stringsdict in Resources */ = {isa = PBXBuildFile; fileRef = D63B20482D8728C300CAFB20 /* Localizable.stringsdict */; };
 		D6A4DE202D61744400F7F751 /* SwiftUIIntrospect in Frameworks */ = {isa = PBXBuildFile; productRef = D6A4DE1F2D61744400F7F751 /* SwiftUIIntrospect */; };
 		D6A4DE242D61744400F7F751 /* SwiftUIIntrospect-Static in Frameworks */ = {isa = PBXBuildFile; productRef = D6A4DE232D61744400F7F751 /* SwiftUIIntrospect-Static */; };
+		DF6DDDC29EB8D84CD6E4E601 /* Satoshi-Light.otf in Resources */ = {isa = PBXBuildFile; fileRef = 16D65D0C8F08E2A6F033622F /* Satoshi-Light.otf */; };
+		FA7D206D7B5E561D07437403 /* Font+Satoshi.swift in Sources */ = {isa = PBXBuildFile; fileRef = 420003BC1DCA12AB4E7B45E5 /* Font+Satoshi.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -223,7 +229,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		16D65D0C8F08E2A6F033622F /* Satoshi-Light.otf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "Satoshi-Light.otf"; sourceTree = "<group>"; };
+		420003BC1DCA12AB4E7B45E5 /* Font+Satoshi.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "Font+Satoshi.swift"; sourceTree = "<group>"; };
 		44B152FB18238AB615708622 /* HomeAIAttachmentSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeAIAttachmentSheet.swift; sourceTree = "<group>"; };
+		47F5DDF794EFBCAAEE499A30 /* Satoshi-Black.otf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "Satoshi-Black.otf"; sourceTree = "<group>"; };
+		4A24558D9748F66F5CDD07E7 /* Satoshi-Bold.otf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "Satoshi-Bold.otf"; sourceTree = "<group>"; };
 		530C89D52A793B6C00B5028D /* ShortcutsEntities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutsEntities.swift; sourceTree = "<group>"; };
 		530C9DFC28ACE14A0038535F /* BudgetWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetWidget.swift; sourceTree = "<group>"; };
 		5311A22E29F04EF300A5BE20 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.intentdefinition; name = Base; path = Base.lproj/WidgetConfiguration.intentdefinition; sourceTree = "<group>"; };
@@ -345,7 +355,9 @@
 		5EA1A0062E0A000100ABCD01 /* HomeAIAssistantBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeAIAssistantBar.swift; sourceTree = "<group>"; };
 		5EA1A0082E0A000100ABCD01 /* HomeAIAssistantOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeAIAssistantOverlay.swift; sourceTree = "<group>"; };
 		5EA1A00A2E0A000100ABCD01 /* HomeAIVisualCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeAIVisualCards.swift; sourceTree = "<group>"; };
+		75C40ECC4B5691DE975C9F96 /* Satoshi-Medium.otf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "Satoshi-Medium.otf"; sourceTree = "<group>"; };
 		7A4F10002E3C200100ABCD01 /* TransactionAttachmentReference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionAttachmentReference.swift; sourceTree = "<group>"; };
+		8C3B458DD92ECF50A3F7F145 /* Satoshi-Regular.otf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "Satoshi-Regular.otf"; sourceTree = "<group>"; };
 		8C58E9A9574F6F65BFAAD177 /* AIConfig.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AIConfig.swift; sourceTree = "<group>"; };
 		AE5B3D782AEE99E000AB364E /* NumberPad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NumberPad.swift; sourceTree = "<group>"; };
 		AEADEF6E2AE94DA3006EB614 /* Toast.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Toast.swift; sourceTree = "<group>"; };
@@ -482,6 +494,7 @@
 				5E9B2C4D2D6A000100ABCD01 /* Import */,
 				5327D28C287C697C00F76ADF /* Preview Content */,
 				AE30A1522AE7D95200E516B3 /* Components */,
+				973A01BE203DD972BE94EE89 /* Fonts */,
 			);
 			path = dime;
 			sourceTree = "<group>";
@@ -516,6 +529,7 @@
 				536A2A142A59C47400D81E02 /* Wiggle.swift */,
 				536A2A162A5A7C5D00D81E02 /* OffsetHelper.swift */,
 				533D1C3B2AE7BB6900894764 /* DynamicType.swift */,
+				420003BC1DCA12AB4E7B45E5 /* Font+Satoshi.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -678,6 +692,19 @@
 				5E9B2C4B2D6A000100ABCD01 /* MaybankStatementImporter.swift */,
 			);
 			path = Import;
+			sourceTree = "<group>";
+		};
+		973A01BE203DD972BE94EE89 /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				47F5DDF794EFBCAAEE499A30 /* Satoshi-Black.otf */,
+				4A24558D9748F66F5CDD07E7 /* Satoshi-Bold.otf */,
+				75C40ECC4B5691DE975C9F96 /* Satoshi-Medium.otf */,
+				8C3B458DD92ECF50A3F7F145 /* Satoshi-Regular.otf */,
+				16D65D0C8F08E2A6F033622F /* Satoshi-Light.otf */,
+			);
+			name = Fonts;
+			path = Fonts;
 			sourceTree = "<group>";
 		};
 		AE30A1522AE7D95200E516B3 /* Components */ = {
@@ -880,6 +907,11 @@
 				5327D295287C698900F76ADF /* Assets.xcassets in Resources */,
 				53756F632AC3C25E0065D0C2 /* sample.csv in Resources */,
 				5327D2E0287C6B7D00F76ADF /* DeviceModels.json in Resources */,
+				34596E9AB10C3FF6A221FC44 /* Satoshi-Black.otf in Resources */,
+				0CCE11AED2D75697C7511294 /* Satoshi-Bold.otf in Resources */,
+				0567133628DA33315DAC9DF6 /* Satoshi-Medium.otf in Resources */,
+				ABC52249106203D5530AA079 /* Satoshi-Regular.otf in Resources */,
+				DF6DDDC29EB8D84CD6E4E601 /* Satoshi-Light.otf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1047,6 +1079,7 @@
 				37DF5605B4BEA2CBC2061303 /* AIService.swift in Sources */,
 				04A8E059AA45012A1B4DE5A7 /* HomeAIAttachmentSheet.swift in Sources */,
 				7A4F10012E3C200100ABCD01 /* TransactionAttachmentReference.swift in Sources */,
+				FA7D206D7B5E561D07437403 /* Font+Satoshi.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1565,14 +1598,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		6A1F4A022E3B100100ABC001 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/gonzalezreal/swift-markdown-ui";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.4.1;
-			};
-		};
 		5327D2E4287C6CC300F76ADF /* XCRemoteSwiftPackageReference "Popovers" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/aheze/Popovers";
@@ -1621,6 +1646,14 @@
 				minimumVersion = 1.2.1;
 			};
 		};
+		6A1F4A022E3B100100ABC001 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/gonzalezreal/swift-markdown-ui";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.4.1;
+			};
+		};
 		D6A4DE1E2D61744400F7F751 /* XCRemoteSwiftPackageReference "SwiftUI-Introspect" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/siteline/SwiftUI-Introspect";
@@ -1632,11 +1665,6 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		6A1F4A032E3B100100ABC001 /* MarkdownUI */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 6A1F4A022E3B100100ABC001 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */;
-			productName = MarkdownUI;
-		};
 		5327D2E5287C6CC300F76ADF /* Popovers */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 5327D2E4287C6CC300F76ADF /* XCRemoteSwiftPackageReference "Popovers" */;
@@ -1666,6 +1694,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 53DCFA9F2A498FBF0063FCDE /* XCRemoteSwiftPackageReference "CloudKitSyncMonitor" */;
 			productName = CloudKitSyncMonitor;
+		};
+		6A1F4A032E3B100100ABC001 /* MarkdownUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6A1F4A022E3B100100ABC001 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */;
+			productName = MarkdownUI;
 		};
 		D6A4DE1F2D61744400F7F751 /* SwiftUIIntrospect */ = {
 			isa = XCSwiftPackageProductDependency;

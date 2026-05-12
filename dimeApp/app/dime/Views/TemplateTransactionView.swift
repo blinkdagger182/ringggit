@@ -174,11 +174,11 @@ struct TemplateTransactionView: View {
                     if showToast {
                         HStack(spacing: 6.5) {
                             Image(systemName: toastImage)
-                                .font(.system(size: 15, weight: .semibold))
+                                .font(Font.satoshi(15, weight: .semibold))
                                 .foregroundColor(Color.AlertRed)
 
                             Text(toastTitle)
-                                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                                .font(Font.satoshi(16, weight: .semibold))
                                 .foregroundColor(Color.AlertRed)
                         }
                         .padding(8)
@@ -188,7 +188,7 @@ struct TemplateTransactionView: View {
                     } else {
                         HStack(spacing: 0) {
                             Text("Expense")
-                                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                                .font(Font.satoshi(18, weight: .semibold))
                                 .foregroundColor(income == false ? Color.PrimaryText : Color.SubtitleText)
                                 .padding(6)
                                 .padding(.horizontal, 8)
@@ -210,7 +210,7 @@ struct TemplateTransactionView: View {
                                 }
 
                             Text("transaction-view-income-picker")
-                                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                                .font(Font.satoshi(18, weight: .semibold))
                                 .foregroundColor(income == true ? Color.PrimaryText : Color.SubtitleText)
                                 .padding(6)
                                 .padding(.horizontal, 8)
@@ -243,7 +243,7 @@ struct TemplateTransactionView: View {
                             dismiss()
                         } label: {
                             Image(systemName: "xmark")
-                                .font(.system(size: 16, weight: .semibold))
+                                .font(Font.satoshi(16, weight: .semibold))
                                 .foregroundColor(Color.SubtitleText)
                                 .padding(7)
                                 .background(Color.SecondaryBackground, in: Circle())
@@ -259,7 +259,7 @@ struct TemplateTransactionView: View {
 
                             } label: {
                                 Image(systemName: "trash.fill")
-                                    .font(.system(size: 16, weight: .semibold))
+                                    .font(Font.satoshi(16, weight: .semibold))
                                     .foregroundColor(Color.AlertRed)
                                     .padding(7)
                                     .background(Color.AlertRed.opacity(0.23), in: Circle())
@@ -273,10 +273,10 @@ struct TemplateTransactionView: View {
                         } label: {
                             if repeatType > 0 {
                                 Image(systemName: "repeat")
-                                    .font(.system(size: 16, weight: .semibold))
+                                    .font(Font.satoshi(16, weight: .semibold))
                                     .overlay(alignment: .topTrailing) {
                                         Text(repeatOverlays[repeatType - 1])
-                                            .font(.system(size: 6, weight: .black, design: .rounded))
+                                            .font(Font.satoshi(6, weight: .black))
                                             .foregroundColor(Color.IncomeGreen)
                                             .frame(width: 10, alignment: .leading)
                                             .offset(x: 5.7, y: 1.5)
@@ -287,7 +287,7 @@ struct TemplateTransactionView: View {
                                     .contentShape(Circle())
                             } else {
                                 Image(systemName: "repeat")
-                                    .font(.system(size: 16, weight: .semibold))
+                                    .font(Font.satoshi(16, weight: .semibold))
                                     .foregroundColor(Color.SubtitleText)
                                     .padding(7)
                                     .background(Color.SecondaryBackground, in: Circle())
@@ -320,33 +320,33 @@ struct TemplateTransactionView: View {
                     if numberEntryType == 1 {
                         HStack(alignment: .lastTextBaseline, spacing: 4) {
                             Text(currencySymbol)
-                                .font(.system(size: downsize.small, weight: .light, design: .rounded))
+                                .font(Font.satoshi(downsize.small, weight: .light))
                                 .foregroundColor(Color.SubtitleText)
                                 .baselineOffset(getDollarOffset(big: downsize.big, small: downsize.small))
                             Text("\(transactionValue, specifier: "%.2f")")
-                                .font(.system(size: downsize.big, weight: .regular, design: .rounded))
+                                .font(Font.satoshi(downsize.big, weight: .regular))
                                 .foregroundColor(Color.PrimaryText)
                         }
                     } else {
                         if numbers1.isEmpty {
                             HStack(alignment: .lastTextBaseline, spacing: 4) {
                                 Text(currencySymbol)
-                                    .font(.system(size: 32, weight: .light, design: .rounded))
+                                    .font(Font.satoshi(32, weight: .light))
                                     .foregroundColor(Color.SubtitleText)
                                     .baselineOffset(getDollarOffset(big: 56, small: 32))
                                 Text("0")
-                                    .font(.system(size: 56, weight: .regular, design: .rounded))
+                                    .font(Font.satoshi(56, weight: .regular))
                                     .foregroundColor(Color.PrimaryText)
                             }
                             .frame(maxWidth: .infinity)
                         } else {
                             HStack(alignment: .lastTextBaseline, spacing: 4) {
                                 Text(currencySymbol)
-                                    .font(.system(size: downsize.small, weight: .light, design: .rounded))
+                                    .font(Font.satoshi(downsize.small, weight: .light))
                                     .foregroundColor(Color.SubtitleText)
                                     .baselineOffset(getDollarOffset(big: downsize.big, small: downsize.small))
                                 Text(amount)
-                                    .font(.system(size: downsize.big, weight: .regular, design: .rounded))
+                                    .font(Font.satoshi(downsize.big, weight: .regular))
                                     .foregroundColor(Color.PrimaryText)
                             }
                             .frame(maxWidth: .infinity)
@@ -406,7 +406,7 @@ struct TemplateTransactionView: View {
                                     }
                                 } label: {
                                     Text(".")
-                                        .font(.system(size: 34, weight: .regular, design: .rounded))
+                                        .font(Font.satoshi(34, weight: .regular))
                                         .frame(width: proxy.size.width * 0.3, height: proxy.size.height * 0.22)
                                         .background(Color.SecondaryBackground)
                                         .foregroundColor(Color.PrimaryText)
@@ -425,12 +425,12 @@ struct TemplateTransactionView: View {
                                 Group {
                                     if #available(iOS 17.0, *) {
                                         Image(systemName: "checkmark.square.fill")
-                                            .font(.system(size: 30, weight: .medium, design: .rounded))
+                                            .font(Font.satoshi(30, weight: .medium))
                                             .symbolEffect(.bounce.up.byLayer, value: transactionValue != 0 && category != nil)
 //                                            .symbolEffectsRemoved()
                                     } else {
                                         Image(systemName: "checkmark.square.fill")
-                                            .font(.system(size: 30, weight: .medium, design: .rounded))
+                                            .font(Font.satoshi(30, weight: .medium))
                                     }
                                 }
                                 .frame(width: proxy.size.width * 0.3, height: proxy.size.height * 0.22)
@@ -463,11 +463,11 @@ struct TemplateTransactionView: View {
 
                     VStack(alignment: .leading, spacing: 1.5) {
                         Text("Delete Expense?")
-                            .font(.system(size: 20, weight: .medium, design: .rounded))
+                            .font(Font.satoshi(20, weight: .medium))
                             .foregroundColor(.PrimaryText)
 
                         Text("This action cannot be undone.")
-                            .font(.system(size: 16, weight: .medium, design: .rounded))
+                            .font(Font.satoshi(16, weight: .medium))
                             .foregroundColor(.SubtitleText)
                             .padding(.bottom, 15)
 
@@ -485,7 +485,7 @@ struct TemplateTransactionView: View {
 
                         } label: {
                             Text("Delete")
-                                .font(.system(size: 20, weight: .semibold, design: .rounded))
+                                .font(Font.satoshi(20, weight: .semibold))
                                 .foregroundColor(.white)
                                 .frame(height: 45)
                                 .frame(maxWidth: .infinity)
@@ -501,7 +501,7 @@ struct TemplateTransactionView: View {
 
                         } label: {
                             Text("Cancel")
-                                .font(.system(size: 20, weight: .semibold, design: .rounded))
+                                .font(Font.satoshi(20, weight: .semibold))
                                 .foregroundColor(Color.PrimaryText.opacity(0.9))
                                 .frame(height: 45)
                                 .frame(maxWidth: .infinity)
@@ -597,7 +597,7 @@ struct TemplateTransactionView: View {
 
         } label: {
             Image(systemName: "delete.left.fill")
-                .font(.system(size: 16, weight: .semibold))
+                .font(Font.satoshi(16, weight: .semibold))
                 .foregroundColor(Color.SubtitleText)
                 .padding(7)
                 .background(Color.SecondaryBackground, in: Circle())
@@ -633,7 +633,7 @@ struct TemplateTransactionView: View {
             }
         } label: {
             Text("\(number)")
-                .font(.system(size: 34, weight: .regular, design: .rounded))
+                .font(Font.satoshi(34, weight: .regular))
                 .frame(width: size.width * 0.3, height: size.height * 0.22)
                 .background(Color.SecondaryBackground)
                 .foregroundColor(Color.PrimaryText)
@@ -770,7 +770,7 @@ struct CategoryRowPickerView: View {
         HStack(spacing: 8) {
             if empty {
                 Text("No categories found")
-                    .font(.system(size: 17.5, weight: .medium, design: .rounded))
+                    .font(Font.satoshi(17.5, weight: .medium))
                     .padding(.horizontal, 13)
                     .foregroundStyle(Color.SubtitleText)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -789,9 +789,9 @@ struct CategoryRowPickerView: View {
                                     ForEach(income ? incomeCategories : expenseCategories, id: \.self) { item in
                                         HStack(spacing: 5) {
                                             Text(item.wrappedEmoji)
-                                                .font(.system(size: 13))
+                                                .font(Font.satoshi(13))
                                             Text(item.wrappedName)
-                                                .font(.system(size: 17.5, weight: .medium, design: .rounded))
+                                                .font(Font.satoshi(17.5, weight: .medium))
                                         }
                                         .id(item.id)
                                         .padding(.horizontal, 10)
@@ -856,16 +856,16 @@ struct CategoryRowPickerView: View {
             Group {
                 if empty {
                     Image(systemName: "plus")
-                        .font(.system(size: 16, weight: .semibold, design: .rounded))
+                        .font(Font.satoshi(16, weight: .semibold))
                         .foregroundColor(Color.SubtitleText)
                 } else {
                     Image(systemName: "pencil")
-                        .font(.system(size: 16, weight: .semibold, design: .rounded))
+                        .font(Font.satoshi(16, weight: .semibold))
                         .foregroundColor(Color.SubtitleText)
                 }
 
 //                        Text("Edit")
-//                            .font(.system(size: 17.5, weight: .semibold, design: .rounded))
+//                            .font(Font.satoshi(17.5, weight: .semibold))
 //                            .lineLimit(1)
             }
             .padding(.horizontal, 9)
@@ -917,7 +917,7 @@ struct SettingsQuickAddWidgetView: View {
     var body: some View {
         VStack(spacing: 10) {
             Text("Quick Add Widget")
-                .font(.system(size: 20, weight: .semibold, design: .rounded))
+                .font(Font.satoshi(20, weight: .semibold))
                 .foregroundColor(Color.PrimaryText)
                 .frame(maxWidth: .infinity)
                 .overlay(alignment: .leading) {
@@ -929,7 +929,7 @@ struct SettingsQuickAddWidgetView: View {
                             .frame(width: 30, height: 30)
                             .overlay {
                                 Image(systemName: "chevron.left")
-                                    .font(.system(size: 16, weight: .semibold))
+                                    .font(Font.satoshi(16, weight: .semibold))
                                     .foregroundColor(Color.SubtitleText)
                             }
                     }
@@ -974,7 +974,7 @@ struct SettingsQuickAddWidgetDraggingView: View {
                 ForEach(0 ..< 4) { index in
 
                     Image(systemName: "plus")
-                        .font(.system(size: 25, weight: .semibold, design: .rounded))
+                        .font(Font.satoshi(25, weight: .semibold))
                         .foregroundStyle(Color.SubtitleText)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .background(RoundedRectangle(cornerRadius: 15).fill(Color.SecondaryBackground).shadow(color: gridData.gridItems[index].transaction == nil ? Color.gray.opacity(0.25) : Color.clear, radius: 6))
@@ -1088,25 +1088,25 @@ struct SingleTemplateButton: View {
     var body: some View {
         VStack(alignment: .leading, spacing: -2) {
             Text(transaction.wrappedEmoji)
-                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .font(Font.satoshi(14, weight: .semibold))
                 .padding(5)
                 .background(blend(over: transactionColor, withAlpha: 0.3), in: RoundedRectangle(cornerRadius: 8))
 
             Spacer()
 
             Text(transaction.wrappedNote)
-                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                .font(Font.satoshi(15, weight: .semibold))
                 .foregroundStyle(Color.PrimaryText)
                 .lineLimit(1)
 
             HStack(alignment: .lastTextBaseline, spacing: 1.3) {
                 Text(currencySymbol)
-                    .font(.system(size: downsize.small, weight: .medium, design: .rounded))
+                    .font(Font.satoshi(downsize.small, weight: .medium))
                     .foregroundColor(Color.PrimaryText)
                     .baselineOffset(getDollarOffset(big: downsize.big, small: downsize.small))
 
                 Text(downsize.amountText)
-                    .font(.system(size: downsize.big, weight: .semibold, design: .rounded))
+                    .font(Font.satoshi(downsize.big, weight: .semibold))
                     .foregroundColor(Color.PrimaryText)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
