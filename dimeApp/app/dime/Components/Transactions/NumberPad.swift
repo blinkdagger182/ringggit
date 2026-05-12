@@ -240,10 +240,13 @@ struct NumberPadTextView: View {
     @Binding var price: Double
     @Binding var isEditingDecimal: Bool
     @Binding var decimalValuesAssigned: AssignedDecimal
+    var onCurrencyTap: (() -> Void)? = nil
+    var currencyOverride: String? = nil
 
-    @AppStorage("currency", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) var currency: String = Locale.current.currencyCode!
+    @AppStorage("currency", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) var globalCurrency: String = Locale.current.currencyCode!
+    var effectiveCurrency: String { currencyOverride ?? globalCurrency }
     var currencySymbol: String {
-        return Locale.current.localizedCurrencySymbol(forCurrencyCode: currency)!
+        return Locale.current.localizedCurrencySymbol(forCurrencyCode: effectiveCurrency)!
     }
 //
 //    var displayNumbers: [String] {
@@ -294,22 +297,31 @@ struct NumberPadTextView: View {
 
     var body: some View {
         HStack(alignment: .lastTextBaseline, spacing: 0) {
-            Group {
-                Text(currencySymbol)
-                    .font(Font.satoshi(.largeTitle))
-                    .foregroundColor(Color.SubtitleText)
-
-//                ForEach(displayNumbers, id: \.self) { number in
-//                    Text(number)
-//                        .font(Font.satoshi(largerFontSize, weight: .regular))
-//                        .foregroundColor(Color.PrimaryText)
-//                        .transition(AnyTransition.opacity.combined(with: .scale).combined(with: .move(edge: .trailing)))
-//                }
-
-                + Text(amount)
+            if let onCurrencyTap {
+                Button(action: onCurrencyTap) {
+                    HStack(alignment: .lastTextBaseline, spacing: 2) {
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(Color.SubtitleText.opacity(0.6))
+                            .offset(y: -6)
+                        Text(currencySymbol)
+                            .font(Font.satoshi(.largeTitle))
+                            .foregroundColor(Color.SubtitleText)
+                    }
+                }
+                .buttonStyle(.plain)
+                Text(amount)
                     .font(Font.satoshi(largerFontSize, weight: .regular))
                     .foregroundColor(Color.PrimaryText)
-
+            } else {
+                Group {
+                    Text(currencySymbol)
+                        .font(Font.satoshi(.largeTitle))
+                        .foregroundColor(Color.SubtitleText)
+                    + Text(amount)
+                        .font(Font.satoshi(largerFontSize, weight: .regular))
+                        .foregroundColor(Color.PrimaryText)
+                }
             }
         }
         .minimumScaleFactor(0.5)

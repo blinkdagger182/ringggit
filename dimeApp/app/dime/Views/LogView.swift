@@ -1488,7 +1488,7 @@ struct SingleTransactionView: View {
     var transactionAmountString: String {
         let numberFormatter = NumberFormatter()
         numberFormatter.numberStyle = .currency
-        numberFormatter.currencyCode = currency
+        numberFormatter.currencyCode = transaction.currency ?? currency
 
         if showCents {
             numberFormatter.maximumFractionDigits = 2

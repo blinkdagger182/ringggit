@@ -409,7 +409,8 @@ final class HomeAIAssistantViewModel: ObservableObject {
                 income: candidate.income,
                 date: candidate.date,
                 repeatType: 0,
-                repeatCoefficient: 1
+                repeatCoefficient: 1,
+                currency: nil
             ))
         }
 
@@ -808,6 +809,7 @@ final class HomeAIAssistantViewModel: ObservableObject {
             {
               "type": "create_transaction",
               "signed_amount": -12.50,
+              "currency": "MYR",
               "raw_amount_text": "12.50-",
               "raw_row_text": "2026-03-04 TRANSFER FROM A/C LIM QIU SHI 700.00- 41.33",
               "raw_debit_text": "",
@@ -832,6 +834,11 @@ final class HomeAIAssistantViewModel: ObservableObject {
         - raw_previous_balance_text: the running balance before this transaction, if visible/inferable from adjacent row. Use "" if not known.
         - raw_balance_text: the running balance after this transaction, if visible. Use "" if not present.
         - The app will use these raw fields to determine income/expense deterministically. Do not omit them for statement/image extraction.
+
+        currency field rules:
+        - Detect the currency from the document (currency symbols, codes, or header text). Default to "MYR" if ambiguous.
+        - Use ISO 4217 codes: "MYR", "USD", "SGD", "EUR", "GBP", "JPY", etc.
+        - Set the same detected currency on every transaction from that document unless a row explicitly shows a different currency.
 
         signed_amount rules:
         - signed_amount is a number. Negative = expense (money out). Positive = income (money in).
@@ -956,6 +963,7 @@ final class HomeAIAssistantViewModel: ObservableObject {
                 delay: false
             )
             transaction.bucket = bucket
+            transaction.currency = action.currency
             transaction.reference = reference
         }
         dc.save()

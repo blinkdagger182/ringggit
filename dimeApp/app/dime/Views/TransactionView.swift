@@ -42,6 +42,9 @@ struct TransactionView: View {
     @State private var showRecurring = false
     @State var income = false
     @State private var recurringDetection: (type: Int, coefficient: Int)?
+    @State private var showCurrencyPicker = false
+    @State private var showBucketMenu = false
+    @State private var transactionCurrency: String = Locale.current.currencyCode ?? "MYR"
 
     var transactionTypeString: String {
         if income {
@@ -464,7 +467,14 @@ struct TransactionView: View {
                                 .font(Font.satoshi(.headline, weight: .medium))
                                 .foregroundColor(Color.SubtitleText)
 
-                            NumberPadTextView(price: $price, isEditingDecimal: $isEditingDecimal, decimalValuesAssigned: $decimalValuesAssigned)
+                            NumberPadTextView(price: $price, isEditingDecimal: $isEditingDecimal, decimalValuesAssigned: $decimalValuesAssigned, onCurrencyTap: { showCurrencyPicker = true }, currencyOverride: transactionCurrency)
+                        }
+
+                        HStack(spacing: 8) {
+                            attachmentSquareButton
+                            if !buckets.isEmpty {
+                                bucketPillButton
+                            }
                         }
 
                         NoteView(note: $note, focused: $textFieldFocused)
@@ -472,8 +482,6 @@ struct TransactionView: View {
                         if let detection = recurringDetection, repeatType == 0 {
                             recurringDetectionBanner(detection)
                         }
-
-                        transactionAttachmentBox
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 }
@@ -726,9 +734,6 @@ struct TransactionView: View {
                             }
                         }
                     }
-                        if !buckets.isEmpty {
-                            bucketPickerButton
-                        }
                     }
                     .padding(.bottom, 5)
                 }
@@ -994,6 +999,9 @@ struct TransactionView: View {
         .sheet(item: $previewAttachmentReference) { reference in
             TransactionAttachmentPreviewSheet(reference: reference)
         }
+        .sheet(isPresented: $showCurrencyPicker) {
+            CurrencyPickerSheet(currency: $transactionCurrency)
+        }
     }
 
     func isDateToday(date: Date) -> Bool {
@@ -1098,6 +1106,7 @@ struct TransactionView: View {
             }
 
             editedTransaction.bucket = bucket
+            editedTransaction.currency = transactionCurrency
             editedTransaction.reference = attachmentReference?.serializedReference ?? legacyReferenceText
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -1151,6 +1160,7 @@ struct TransactionView: View {
         }
 
         transaction.bucket = bucket
+        transaction.currency = transactionCurrency
         transaction.reference = attachmentReference?.serializedReference ?? legacyReferenceText
 
         transaction.amount = price
@@ -1232,6 +1242,53 @@ struct TransactionView: View {
                 RoundedRectangle(cornerRadius: 11.5, style: .continuous)
                     .strokeBorder(bucket == nil ? Color.Outline : Color(hex: bucket?.colour ?? "4A5240").opacity(0.28), lineWidth: 1.5)
             )
+        }
+    }
+
+    @ViewBuilder
+    private var bucketPillButton: some View {
+        Button { showBucketMenu = true } label: {
+            HStack(spacing: 7) {
+                Image(systemName: bucket == nil ? "flag" : "flag.fill")
+                    .font(Font.satoshi(.subheadline, weight: .semibold))
+                    .foregroundColor(bucket == nil ? Color.SubtitleText : Color(hex: bucket?.colour ?? "4A5240"))
+                if let bucket {
+                    Text("\(bucket.emoji ?? "🏷️") \(bucket.name ?? "Bucket")")
+                        .font(Font.satoshi(.body, weight: .semibold))
+                        .lineLimit(1)
+                        .foregroundColor(Color.PrimaryText)
+                } else {
+                    Text("Bucket")
+                        .font(Font.satoshi(.body, weight: .semibold))
+                        .foregroundColor(Color.SubtitleText)
+                }
+                Spacer()
+                Image(systemName: "chevron.down")
+                    .font(Font.satoshi(9, weight: .bold))
+                    .foregroundColor(Color.SubtitleText)
+            }
+            .padding(.vertical, 7)
+            .padding(.horizontal, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(
+                RoundedRectangle(cornerRadius: 11.5, style: .continuous)
+                    .stroke(Color.Outline, lineWidth: 1.5)
+            )
+        }
+        .buttonStyle(.plain)
+        .popover(
+            present: $showBucketMenu,
+            attributes: {
+                $0.position = .absolute(originAnchor: .bottomLeft, popoverAnchor: .topLeft)
+                $0.rubberBandingMode = .none
+                $0.sourceFrameInset = UIEdgeInsets(top: 0, left: 0, bottom: -10, right: 0)
+                $0.presentation.animation = .easeInOut(duration: 0.2)
+                $0.dismissal.animation = .easeInOut(duration: 0.3)
+            }
+        ) {
+            BucketPickerPopover(bucket: $bucket, buckets: Array(buckets), showMenu: $showBucketMenu, darkMode: darkMode)
+        } background: {
+            backgroundColor.opacity(0.6)
         }
     }
 
@@ -1386,7 +1443,100 @@ struct TransactionView: View {
         }
     }
 
+    @ViewBuilder
+    private var attachmentSquareButton: some View {
+        if let ref = attachmentReference {
+            Button { previewAttachmentReference = ref } label: {
+                HStack(spacing: 8) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(Color.SecondaryBackground)
+                        if let thumb = TransactionAttachmentStore.thumbnail(for: ref) {
+                            Image(uiImage: thumb)
+                                .resizable()
+                                .scaledToFill()
+                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        } else {
+                            Image(systemName: ref.kind == .pdf ? "doc.richtext.fill" : "photo.fill")
+                                .font(Font.satoshi(14, weight: .semibold))
+                                .foregroundColor(ref.kind == .pdf ? Color(hex: "F7C65B") : Color(hex: "5B8C5A"))
+                        }
+                    }
+                    .frame(width: 30, height: 30)
+
+                    Text(ref.displayName)
+                        .font(Font.satoshi(.footnote, weight: .medium))
+                        .foregroundColor(Color.PrimaryText)
+                        .lineLimit(1)
+
+                    Spacer()
+
+                    Button {
+                        attachmentReference = nil
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(Color.SubtitleText)
+                            .frame(width: 18, height: 18)
+                            .background(Color.SecondaryBackground, in: Circle())
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.vertical, 7)
+                .padding(.horizontal, 10)
+                .overlay(RoundedRectangle(cornerRadius: 11.5, style: .continuous).stroke(Color.Outline, lineWidth: 1.5))
+            }
+            .buttonStyle(.plain)
+        } else if let legacyText = legacyReferenceText {
+            HStack(spacing: 8) {
+                Image(systemName: "text.quote")
+                    .font(Font.satoshi(14, weight: .semibold))
+                    .foregroundColor(Color.SubtitleText)
+                    .frame(width: 30, height: 30)
+
+                Text(legacyText)
+                    .font(Font.satoshi(.footnote, weight: .medium))
+                    .foregroundColor(Color.PrimaryText)
+                    .lineLimit(1)
+
+                Spacer()
+
+                Button {
+                    legacyReferenceText = nil
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(Color.SubtitleText)
+                        .frame(width: 18, height: 18)
+                        .background(Color.SecondaryBackground, in: Circle())
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.vertical, 7)
+            .padding(.horizontal, 10)
+            .overlay(RoundedRectangle(cornerRadius: 11.5, style: .continuous).stroke(Color.Outline, lineWidth: 1.5))
+        } else {
+            Button { showingAttachmentImporter = true } label: {
+                HStack(spacing: 7) {
+                    Image(systemName: "paperclip")
+                        .font(Font.satoshi(.subheadline, weight: .semibold))
+                        .foregroundColor(Color.SubtitleText)
+                    Text("Add Attachment")
+                        .font(Font.satoshi(.body, weight: .semibold))
+                        .foregroundColor(Color.SubtitleText)
+                        .lineLimit(1)
+                }
+                .padding(.vertical, 7)
+                .padding(.horizontal, 10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .overlay(RoundedRectangle(cornerRadius: 11.5, style: .continuous).stroke(Color.Outline, lineWidth: 1.5))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
     init(toEdit: Transaction? = nil) {
+        let globalCurrency = UserDefaults(suiteName: "group.com.riskcreatives.duit")?.string(forKey: "currency") ?? Locale.current.currencyCode ?? "MYR"
         if let transaction = toEdit {
             _note = State(initialValue: transaction.wrappedNote)
 
@@ -1405,11 +1555,16 @@ struct TransactionView: View {
             }
 
             _date = State(initialValue: transaction.date ?? Date.now)
+            _transactionCurrency = State(initialValue: transaction.currency ?? globalCurrency)
+        } else {
+            _transactionCurrency = State(initialValue: globalCurrency)
         }
         self.toEdit = toEdit
     }
 
     init(category: Category? = nil) {
+        let globalCurrency = UserDefaults(suiteName: "group.com.riskcreatives.duit")?.string(forKey: "currency") ?? Locale.current.currencyCode ?? "MYR"
+        _transactionCurrency = State(initialValue: globalCurrency)
         if let unwrappedCategory = category {
             _income = State(initialValue: false)
             _category = State(initialValue: unwrappedCategory)
@@ -1723,14 +1878,14 @@ struct NoteView: View {
             }
             .font(Font.satoshi(.body, weight: .semibold))
             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-            //            .font(Font.satoshi(16, weight: .semibold))
-            .frame(width: min(noteWidth, UIScreen.main.bounds.width / 1.5), alignment: .center)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .onTapGesture {
             textFocused = true
         }
-        .padding(.vertical, 7)
+        .padding(.vertical, 14)
         .padding(.horizontal, 10)
+        .frame(maxWidth: .infinity)
         .overlay(
             RoundedRectangle(cornerRadius: 11.5, style: .continuous)
                 .stroke(Color.Outline, lineWidth: 1.5)
@@ -1882,6 +2037,139 @@ private struct TransactionPDFPreview: UIViewRepresentable {
     func updateUIView(_ uiView: PDFView, context: Context) {
         if uiView.document?.documentURL != url {
             uiView.document = PDFDocument(url: url)
+        }
+    }
+}
+
+private struct BucketPickerPopover: View {
+    @Binding var bucket: Bucket?
+    let buckets: [Bucket]
+    @Binding var showMenu: Bool
+    let darkMode: Bool
+    @Namespace var animation
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            HStack {
+                Text("No Bucket")
+                    .font(Font.satoshi(.body, weight: .medium))
+                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+                Spacer()
+                if bucket == nil {
+                    Image(systemName: "checkmark")
+                        .font(Font.satoshi(.footnote, weight: .medium))
+                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(5)
+            .background {
+                if bucket == nil {
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(darkMode ? Color("AlwaysDarkSecondaryBackground") : Color("AlwaysLightSecondaryBackground"))
+                        .matchedGeometryEffect(id: "BUCKET_SEL", in: animation)
+                }
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                withAnimation(.easeIn(duration: 0.15)) { bucket = nil }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { showMenu = false }
+            }
+
+            ForEach(buckets, id: \.self) { item in
+                HStack {
+                    Text("\(item.emoji ?? "🏷️") \(item.name ?? "Bucket")")
+                        .font(Font.satoshi(.body, weight: .medium))
+                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+                        .lineLimit(1)
+                    Spacer()
+                    if bucket == item {
+                        Image(systemName: "checkmark")
+                            .font(Font.satoshi(.footnote, weight: .medium))
+                            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(5)
+                .background {
+                    if bucket == item {
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(darkMode ? Color("AlwaysDarkSecondaryBackground") : Color("AlwaysLightSecondaryBackground"))
+                            .matchedGeometryEffect(id: "BUCKET_SEL", in: animation)
+                    }
+                }
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    withAnimation(.easeIn(duration: 0.15)) { bucket = item }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { showMenu = false }
+                }
+            }
+        }
+        .foregroundColor(darkMode ? Color("AlwaysLightBackground") : Color("AlwaysDarkBackground"))
+        .padding(4)
+        .frame(width: 180)
+        .background(
+            RoundedRectangle(cornerRadius: 9)
+                .fill(darkMode ? Color("AlwaysDarkBackground") : Color("AlwaysLightBackground"))
+                .shadow(color: darkMode ? Color.clear : Color.gray.opacity(0.25), radius: 6)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 9)
+                .stroke(darkMode ? Color.gray.opacity(0.1) : Color.clear, lineWidth: 1.3)
+        )
+    }
+}
+
+private struct CurrencyPickerSheet: View {
+    @Binding var currency: String
+    @Environment(\.dismiss) private var dismiss
+    @State private var search = ""
+
+    var filteredCodes: [String] {
+        let codes = Locale.isoCurrencyCodes.sorted()
+        guard !search.isEmpty else { return codes }
+        return codes.filter { code in
+            code.localizedCaseInsensitiveContains(search) ||
+            (Locale.current.localizedString(forCurrencyCode: code) ?? "").localizedCaseInsensitiveContains(search)
+        }
+    }
+
+    var body: some View {
+        NavigationView {
+            List(filteredCodes, id: \.self) { code in
+                Button {
+                    currency = code
+                    dismiss()
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(code)
+                                .font(Font.satoshi(.body, weight: .semibold))
+                                .foregroundColor(Color.PrimaryText)
+                            if let name = Locale.current.localizedString(forCurrencyCode: code) {
+                                Text(name)
+                                    .font(Font.satoshi(.footnote, weight: .medium))
+                                    .foregroundColor(Color.SubtitleText)
+                            }
+                        }
+                        Spacer()
+                        if code == currency {
+                            Image(systemName: "checkmark")
+                                .font(Font.satoshi(.footnote, weight: .semibold))
+                                .foregroundColor(Color.IncomeGreen)
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+            .searchable(text: $search, prompt: "Search currency")
+            .navigationTitle("Currency")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
         }
     }
 }
