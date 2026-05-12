@@ -137,6 +137,10 @@ struct HomeView: View {
                         peekHeight: peek,
                         limitToPeek: homeAIAssistantViewModel.isPresented
                     ))
+                    .onTapGesture {
+                        guard homeAIAssistantViewModel.isPresented else { return }
+                        collapseAI()
+                    }
                     .offset(y: sheetY)
                     .animation(.easeOut(duration: 0.22), value: isLogTab)
                     .simultaneousGesture(makeDragGesture(rd: rd))
@@ -156,7 +160,7 @@ struct HomeView: View {
                 // Floating collapsed header — fades out as AI reveals
                 if currentTab == "Log" {
                     collapsedHeader(onReveal: {
-                        settledProgress = 1
+                        withAnimation(settleAnimation) { settledProgress = 1 }
                         homeAIAssistantViewModel.expand()
                     })
                     .padding(.top, max(topEdge, proxy.safeAreaInsets.top) + 10)
@@ -238,7 +242,7 @@ struct HomeView: View {
             else if url.host == "aioverlay" {
                 currentTab = "Log"
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    settledProgress = 1
+                    withAnimation(settleAnimation) { settledProgress = 1 }
                     homeAIAssistantViewModel.expand()
                 }
             }
