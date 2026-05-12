@@ -42,13 +42,9 @@ struct HomeAIAssistantOverlay: View {
 
             ZStack(alignment: .bottom) {
                 ZStack {
-                    LinearGradient(
-                        colors: [Color(hex: "F5F2ED"), Color(hex: "FAF8F4"), Color(hex: "F0ECE3"), Color(hex: "EDE9DF")],
-                        startPoint: .topLeading, endPoint: .bottomTrailing
-                    )
-                    RadialGradient(colors: [Color(hex: "C8B94A").opacity(0.18), Color(hex: "C8B94A").opacity(0.06), .clear], center: .bottomLeading, startRadius: 20, endRadius: 380)
-                    RadialGradient(colors: [Color(hex: "4A5240").opacity(0.12), Color(hex: "4A5240").opacity(0.04), .clear], center: .bottomTrailing, startRadius: 20, endRadius: 420)
-                    RadialGradient(colors: [Color(hex: "5B8C5A").opacity(0.10), .clear], center: .topLeading, startRadius: 20, endRadius: 300)
+                    Color(hex: "3E4933")
+                    RadialGradient(colors: [Color(hex: "5C6B4A").opacity(0.60), .clear], center: .topLeading, startRadius: 0, endRadius: 320)
+                    RadialGradient(colors: [Color(hex: "2E3828").opacity(0.70), .clear], center: .bottomTrailing, startRadius: 0, endRadius: 400)
                 }
                 .ignoresSafeArea()
                 .opacity(revealProgress)
@@ -76,9 +72,9 @@ struct HomeAIAssistantOverlay: View {
                     .background(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(0),
-                                Color.white.opacity(0.82),
-                                Color.white.opacity(0.96)
+                                Color(hex: "3E4933").opacity(0),
+                                Color(hex: "3E4933").opacity(0.88),
+                                Color(hex: "3E4933")
                             ],
                             startPoint: .top,
                             endPoint: .bottom
@@ -137,28 +133,30 @@ struct HomeAIAssistantOverlay: View {
     }
 
     private var previewHeader: some View {
-        HStack(spacing: 7) {
-            Image(systemName: "sparkles")
-                .font(Font.satoshi(18, weight: .semibold))
-                .foregroundStyle(Color(hex: "4A5240").opacity(0.75))
+        HStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Image("kira-ai")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 32, height: 32)
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
 
-            Text(headerTitle)
-                .font(Font.satoshi(19, weight: .bold))
-                .foregroundStyle(Color(hex: "1C1C1A"))
+                Text(headerTitle + " AI")
+                    .font(Font.satoshi(17, weight: .semibold))
+                    .foregroundStyle(Color.white.opacity(0.92))
+            }
 
-            Text("beta")
-                .font(Font.satoshi(12, weight: .medium))
-                .foregroundStyle(Color(hex: "4A5240"))
-                .padding(.horizontal, 9)
-                .padding(.vertical, 4)
-                .background(Color(hex: "4A5240").opacity(0.08), in: Capsule())
-                .overlay(
-                    Capsule()
-                        .stroke(Color(hex: "4A5240").opacity(0.20), lineWidth: 1)
-                )
+            Spacer()
+
+            Button { } label: {
+                Image(systemName: "square.grid.2x2")
+                    .font(Font.satoshi(18, weight: .medium))
+                    .foregroundStyle(Color.white.opacity(0.60))
+                    .frame(width: 36, height: 36)
+            }
+            .buttonStyle(.plain)
         }
-        .frame(height: 36)
-        .frame(maxWidth: .infinity)
+        .frame(height: 40)
     }
 
     private func messageArea(keyboardOverlap: CGFloat, composerBottomPadding: CGFloat) -> some View {
@@ -237,131 +235,102 @@ struct HomeAIAssistantOverlay: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 0) {
+        VStack(alignment: .leading, spacing: 0) {
             heroCopy
-                .padding(.top, 20)
+                .padding(.top, 24)
+                .padding(.horizontal, 4)
+
+            suggestionGrid
+                .padding(.top, 28)
 
             glowOrb
-                .padding(.top, 16)
-
-            suggestionsList
-                .padding(.top, 20)
-                .padding(.horizontal, 4)
+                .padding(.top, 28)
+                .frame(maxWidth: .infinity)
         }
     }
 
     private var heroCopy: some View {
-        VStack(spacing: 10) {
-            Text("What can I\nhelp you with today?")
-                .font(Font.satoshi(26, weight: .bold))
-                .multilineTextAlignment(.center)
-                .lineSpacing(3)
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [Color(hex: "4A5240"), Color(hex: "C8B94A")],
-                        startPoint: .leading, endPoint: .trailing
-                    )
-                )
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Hi,\nI'm KIRA.")
+                .font(Font.satoshi(36, weight: .bold))
+                .lineSpacing(2)
+                .foregroundStyle(Color.white)
 
-            Text("Ask anything about your money.\nI'm here to help.")
-                .font(Font.satoshi(14, weight: .medium))
-                .multilineTextAlignment(.center)
+            Text("How can I help you\nwith your money today?")
+                .font(Font.satoshi(20, weight: .medium))
                 .lineSpacing(3)
-                .foregroundStyle(Color(hex: "6B6B66"))
+                .foregroundStyle(Color.white.opacity(0.60))
+                .padding(.top, 4)
         }
+    }
+
+    private var suggestionGrid: some View {
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
+            suggestionChip("How can I save more this month?")
+            suggestionChip("Analyse my spending habits")
+            suggestionChip("Is this a good time to invest?")
+            suggestionChip("Create a budget for my lifestyle")
+        }
+    }
+
+    private func suggestionChip(_ title: String) -> some View {
+        Button {
+            viewModel.draftMessage = title
+            viewModel.sendDraftMessage()
+        } label: {
+            Text(title)
+                .font(Font.satoshi(13, weight: .medium))
+                .foregroundStyle(Color.white.opacity(0.85))
+                .lineLimit(3)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 14)
+                .background(Color.white.opacity(0.10), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(Color.white.opacity(0.14), lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
     }
 
     private var glowOrb: some View {
         ZStack {
             Ellipse()
-                .fill(Color(hex: "4A5240").opacity(isOrbBreathing ? 0.12 : 0.06))
+                .fill(Color(hex: "E8A090").opacity(isOrbBreathing ? 0.22 : 0.12))
                 .frame(
-                    width: isOrbBreathing ? 130 : 108,
-                    height: isOrbBreathing ? 22 : 16
+                    width: isOrbBreathing ? 160 : 130,
+                    height: isOrbBreathing ? 28 : 20
                 )
-                .blur(radius: isOrbBreathing ? 10 : 6)
-                .offset(y: 26)
+                .blur(radius: isOrbBreathing ? 14 : 8)
+                .offset(y: 40)
 
             Circle()
                 .fill(
                     RadialGradient(
                         colors: [
-                            Color.white.opacity(0.90),
-                            Color(hex: "C8B94A").opacity(isOrbBreathing ? 0.64 : 0.48),
-                            Color(hex: "4A5240").opacity(isOrbBreathing ? 0.78 : 0.58),
+                            Color.white.opacity(0.96),
+                            Color(hex: "F5C5B0").opacity(isOrbBreathing ? 0.88 : 0.72),
+                            Color(hex: "E07B6A").opacity(isOrbBreathing ? 0.70 : 0.52),
                             Color.clear
                         ],
                         center: .center,
                         startRadius: 0,
-                        endRadius: isOrbBreathing ? 44 : 36
+                        endRadius: isOrbBreathing ? 52 : 42
                     )
                 )
                 .frame(
-                    width: isOrbBreathing ? 68 : 58,
-                    height: isOrbBreathing ? 68 : 58
+                    width: isOrbBreathing ? 90 : 76,
+                    height: isOrbBreathing ? 90 : 76
                 )
-                .blur(radius: isOrbBreathing ? 4 : 2.5)
+                .blur(radius: isOrbBreathing ? 5 : 3)
                 .scaleEffect(isOrbBreathing ? 1.06 : 0.96)
-                .shadow(color: Color(hex: "C8B94A").opacity(isOrbBreathing ? 0.28 : 0.14), radius: isOrbBreathing ? 20 : 10, x: 0, y: 0)
-                .shadow(color: Color(hex: "4A5240").opacity(isOrbBreathing ? 0.32 : 0.16), radius: isOrbBreathing ? 24 : 12, x: 0, y: 6)
-
-            Image(systemName: "sparkles")
-                .font(Font.satoshi(isOrbBreathing ? 26 : 22, weight: .semibold))
-                .foregroundStyle(Color(hex: "4A5240").opacity(isOrbBreathing ? 0.86 : 0.68))
-                .scaleEffect(isOrbBreathing ? 1.08 : 0.92)
+                .shadow(color: Color(hex: "F0A090").opacity(isOrbBreathing ? 0.38 : 0.18), radius: isOrbBreathing ? 28 : 14, x: 0, y: 0)
+                .shadow(color: Color(hex: "E07B6A").opacity(isOrbBreathing ? 0.30 : 0.14), radius: isOrbBreathing ? 36 : 18, x: 0, y: 10)
         }
-        .frame(height: 72)
-        .animation(.easeInOut(duration: 1.75).repeatForever(autoreverses: true), value: isOrbBreathing)
-    }
-
-    private var suggestionsList: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Suggested for you")
-                .font(Font.satoshi(13, weight: .medium))
-                .foregroundStyle(Color(hex: "6B6B66"))
-                .padding(.leading, 4)
-                .padding(.bottom, 2)
-
-            suggestionRow(icon: "chart.line.uptrend.xyaxis", title: "Why did I overspend this week?", tint: Color(hex: "4A5240"))
-            suggestionRow(icon: "viewfinder", title: "Scan a receipt", tint: Color(hex: "5B8C5A"))
-            suggestionRow(icon: "folder", title: "Create a food budget", tint: Color(hex: "C8B94A"))
-            suggestionRow(icon: "arrow.triangle.2.circlepath", title: "Show my subscriptions", tint: Color(hex: "4A5240"))
-        }
-    }
-
-    private func suggestionRow(icon: String, title: String, tint: Color) -> some View {
-        Button {
-            viewModel.draftMessage = title
-            viewModel.sendDraftMessage()
-        } label: {
-            HStack(spacing: 13) {
-                Circle()
-                    .fill(tint.opacity(0.16))
-                    .frame(width: 36, height: 36)
-                    .overlay(
-                        Image(systemName: icon)
-                            .font(Font.satoshi(15, weight: .semibold))
-                            .foregroundStyle(tint.opacity(0.78))
-                    )
-
-                Text(title)
-                    .font(Font.satoshi(14, weight: .medium))
-                    .foregroundStyle(Color(hex: "1C1C1A"))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.86)
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(Font.satoshi(13, weight: .semibold))
-                    .foregroundStyle(Color(hex: "4A5240").opacity(0.45))
-            }
-            .padding(.horizontal, 14)
-            .frame(height: 48)
-            .background(.white.opacity(0.82), in: Capsule())
-            .shadow(color: Color(hex: "4A5240").opacity(0.06), radius: 10, x: 0, y: 5)
-        }
-        .buttonStyle(.plain)
+        .frame(height: 100)
+        .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: isOrbBreathing)
     }
 
     private func messageBubble(_ message: HomeAIMessage) -> some View {
@@ -371,18 +340,18 @@ struct HomeAIAssistantOverlay: View {
                     HStack(alignment: .top, spacing: 10) {
                         ZStack {
                             Circle()
-                                .fill(Color(hex: "4A5240").opacity(0.12))
+                                .fill(Color.white.opacity(0.14))
                                 .frame(width: 30, height: 30)
                             Image(systemName: "sparkles")
                                 .font(Font.satoshi(13, weight: .semibold))
-                                .foregroundStyle(Color(hex: "4A5240"))
+                                .foregroundStyle(Color.white.opacity(0.80))
                         }
                         .padding(.top, 2)
 
                         VStack(alignment: .leading, spacing: 8) {
                             Text("KIRA")
                                 .font(Font.satoshi(.subheadline, weight: .semibold))
-                                .foregroundStyle(Color(hex: "4A5240"))
+                                .foregroundStyle(Color.white.opacity(0.60))
 
                             // ThinkingDisclosure commented out
                             // if let thinking = message.thinking {
@@ -395,7 +364,7 @@ struct HomeAIAssistantOverlay: View {
                                 HStack(spacing: 8) {
                                     Text(viewModel.statusText.isEmpty ? "Thinking" : viewModel.statusText)
                                         .font(Font.satoshi(.body))
-                                        .foregroundColor(Color(.secondaryLabel))
+                                        .foregroundColor(Color.white.opacity(0.50))
                                         .lineSpacing(5)
                                     AIThinkingDots()
                                 }
@@ -518,13 +487,13 @@ struct HomeAIAssistantOverlay: View {
                                 .font(Font.satoshi(.footnote, weight: .medium))
                                 .lineLimit(1)
                         }
-                        .foregroundColor(Color(hex: "1C1C1A"))
+                        .foregroundColor(Color.white.opacity(0.85))
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
-                        .background(Color.white.opacity(0.78), in: Capsule(style: .continuous))
+                        .background(Color.white.opacity(0.12), in: Capsule(style: .continuous))
                         .overlay(
                             Capsule(style: .continuous)
-                                .stroke(Color(hex: "4A5240").opacity(0.18), lineWidth: 1)
+                                .stroke(Color.white.opacity(0.16), lineWidth: 1)
                         )
                     }
                     .buttonStyle(.plain)
@@ -562,10 +531,10 @@ struct HomeAIAssistantOverlay: View {
                         text: $viewModel.draftMessage,
                         isFocused: composerFocusBinding,
                         focusRequestID: composerFocusRequestID,
-                        placeholder: "Ask KIRA",
+                        placeholder: "Ask KIRA anything...",
                         onSubmit: sendComposerMessage,
-                        textColor: .label,
-                        placeholderColor: .secondaryLabel
+                        textColor: UIColor.white,
+                        placeholderColor: UIColor.white.withAlphaComponent(0.42)
                     )
                     .frame(maxWidth: .infinity, minHeight: 24, maxHeight: 24, alignment: .leading)
 
@@ -573,9 +542,13 @@ struct HomeAIAssistantOverlay: View {
                         Button { sendComposerMessage() } label: {
                             Image(systemName: "arrow.up.circle.fill")
                                 .font(Font.satoshi(26, weight: .semibold))
-                                .foregroundStyle(Color(hex: "4A5240"))
+                                .foregroundStyle(Color.white)
                         }
                         .buttonStyle(.plain)
+                    } else {
+                        Image(systemName: "mic")
+                            .font(Font.satoshi(18, weight: .medium))
+                            .foregroundStyle(Color.white.opacity(0.55))
                     }
                 }
                 .frame(height: 24)
@@ -584,14 +557,14 @@ struct HomeAIAssistantOverlay: View {
                     Button { showAttachmentSheet = true } label: {
                         Image(systemName: "paperclip")
                             .font(Font.satoshi(18, weight: .medium))
-                            .foregroundColor(Color(hex: "4A5240").opacity(0.70))
+                            .foregroundColor(Color.white.opacity(0.55))
                     }
                     .buttonStyle(.plain)
 
                     Button { showAttachmentSheet = true } label: {
                         Image(systemName: "camera")
                             .font(Font.satoshi(18, weight: .medium))
-                            .foregroundColor(Color(hex: "4A5240").opacity(0.70))
+                            .foregroundColor(Color.white.opacity(0.55))
                     }
                     .buttonStyle(.plain)
 
@@ -601,7 +574,7 @@ struct HomeAIAssistantOverlay: View {
                     } label: {
                         Image(systemName: "at")
                             .font(Font.satoshi(18, weight: .medium))
-                            .foregroundColor(Color(hex: "4A5240").opacity(0.70))
+                            .foregroundColor(Color.white.opacity(0.55))
                     }
                     .buttonStyle(.plain)
 
@@ -613,7 +586,7 @@ struct HomeAIAssistantOverlay: View {
                     } label: {
                         Image(systemName: "sparkles")
                             .font(Font.satoshi(18, weight: .medium))
-                            .foregroundColor(Color(hex: "4A5240").opacity(0.70))
+                            .foregroundColor(Color.white.opacity(0.55))
                     }
                     .buttonStyle(.plain)
 
@@ -628,12 +601,12 @@ struct HomeAIAssistantOverlay: View {
         .onTapGesture { focusComposer() }
         .background(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Color.white.opacity(0.82))
+                .fill(Color.white.opacity(composerFocused ? 0.14 : 0.10))
                 .overlay(
                     RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(composerFocused ? Color(hex: "4A5240").opacity(0.40) : Color(hex: "4A5240").opacity(0.18), lineWidth: 1)
+                        .stroke(Color.white.opacity(composerFocused ? 0.28 : 0.14), lineWidth: 1)
                 )
-                .shadow(color: Color(hex: "4A5240").opacity(composerFocused ? 0.10 : 0.05), radius: composerFocused ? 22 : 12, y: 8)
+                .shadow(color: Color.black.opacity(composerFocused ? 0.22 : 0.10), radius: composerFocused ? 24 : 12, y: 8)
         )
         .simultaneousGesture(
             DragGesture(minimumDistance: 4)
@@ -960,7 +933,7 @@ private struct HomeAIMarkdownText: View {
         .markdownTheme(.gitHub)
         .markdownTextStyle(\.text) {
             FontSize(.em(1.0))
-            ForegroundColor(Color(.label))
+            ForegroundColor(Color.white.opacity(0.90))
             BackgroundColor(nil)
         }
         .markdownTextStyle(\.strong) {

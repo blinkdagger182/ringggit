@@ -383,19 +383,9 @@ struct HomeView: View {
 
     private var aiBackdrop: some View {
         ZStack {
-            LinearGradient(
-                colors: [
-                    Color(hex: "F5F2ED"),
-                    Color(hex: "FAF8F4"),
-                    Color(hex: "F0ECE3"),
-                    Color(hex: "EDE9DF")
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            RadialGradient(colors: [Color(hex: "C8B94A").opacity(0.18), Color(hex: "C8B94A").opacity(0.06), .clear], center: .bottomLeading, startRadius: 20, endRadius: 380)
-            RadialGradient(colors: [Color(hex: "4A5240").opacity(0.12), Color(hex: "4A5240").opacity(0.04), .clear], center: .bottomTrailing, startRadius: 20, endRadius: 420)
-            RadialGradient(colors: [Color(hex: "5B8C5A").opacity(0.10), .clear], center: .topLeading, startRadius: 20, endRadius: 300)
+            Color(hex: "3E4933")
+            RadialGradient(colors: [Color(hex: "5C6B4A").opacity(0.60), .clear], center: .topLeading, startRadius: 0, endRadius: 320)
+            RadialGradient(colors: [Color(hex: "2E3828").opacity(0.70), .clear], center: .bottomTrailing, startRadius: 0, endRadius: 400)
         }
     }
 
@@ -413,19 +403,42 @@ struct HomeView: View {
             Spacer(minLength: 0)
 
             Button { onReveal() } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "sparkles")
-                        .font(Font.satoshi(16, weight: .semibold))
-                        .foregroundStyle(Color(hex: "4A5240"))
-                    Text("Ask KIRA").font(Font.satoshi(17, weight: .semibold)).foregroundStyle(Color(hex: "4A5240"))
+                HStack(spacing: 9) {
+                    Image("kira-ai")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 22, height: 22)
+                        .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                    Text("Ask KIRA")
+                        .font(Font.satoshi(17, weight: .semibold))
+                        .foregroundStyle(.white)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 18)
                 .frame(height: 46)
-                .background(Capsule().fill(Color(hex: "F5F2ED")))
+                .background(Capsule().fill(Color.white.opacity(0.10)))
+                .background(Capsule().fill(
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.18), Color.white.opacity(0.05), Color(hex: "3E4933").opacity(0.06)],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    )
+                ))
                 .overlay {
-                    Capsule().stroke(Color(hex: "4A5240").opacity(0.25), lineWidth: 1.2)
+                    Capsule().stroke(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.90),
+                                Color(hex: "C8B94A").opacity(0.72),
+                                Color(hex: "5B8C5A").opacity(0.55),
+                                Color.white.opacity(0.40)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1.4
+                    )
                 }
-                .shadow(color: Color(hex: "4A5240").opacity(0.10), radius: 8, x: 0, y: 3)
+                .shadow(color: Color.white.opacity(0.14), radius: 12, x: 0, y: 0)
+                .shadow(color: Color(hex: "C8B94A").opacity(0.20), radius: 16, x: 0, y: 6)
                 .contentShape(Capsule())
             }
             .buttonStyle(.plain)
