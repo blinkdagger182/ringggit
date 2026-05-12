@@ -77,7 +77,7 @@ struct HomeView: View {
     private var collapsedTopInset: CGFloat { topEdge + 68 }
 
     private func peekHeight(for h: CGFloat) -> CGFloat {
-        max(156, min(184, h * 0.19))
+        max(72, min(88, h * 0.10))
     }
 
     private var revealDistance: CGFloat {
@@ -285,9 +285,10 @@ struct HomeView: View {
             .allowsHitTesting(showPopup ? false : !homeAIAssistantViewModel.isPresented)
             .environmentObject(toastPresenter)
             .environmentObject(transactionManager)
+            .opacity(max(0, 1.0 - Double(liveProgress) * 3.0))
 
         }
-        .background(Color.PrimaryBackground)
+        .background(liveProgress > 0.01 ? Color.white : Color.PrimaryBackground)
     }
 
     // MARK: - Gestures
