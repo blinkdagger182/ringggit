@@ -12,11 +12,6 @@ import UniformTypeIdentifiers
 import VisionKit
 
 struct HomeAIAttachmentSheet: View {
-    private struct ScannedDocumentDraft: Identifiable {
-        let id = UUID()
-        let pages: [UIImage]
-    }
-
     @Binding var attachments: [AttachmentItem]
     let onQuickPrompt: (String) -> Void
     @Environment(\.dismiss) private var dismiss
@@ -27,7 +22,7 @@ struct HomeAIAttachmentSheet: View {
     @State private var showFullPicker = false
     @State private var showDocumentPicker = false
     @State private var showDocumentScanner = false
-    @State private var scannedDocumentDraft: ScannedDocumentDraft?
+    @StateObject private var redactionVM = RedactionFlowViewModel()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -164,21 +159,24 @@ struct HomeAIAttachmentSheet: View {
         .sheet(isPresented: $showDocumentPicker) {
             PDFDocumentPickerView { pages, filename, sourceText in
                 guard !pages.isEmpty else { return }
-                attachments.append(AttachmentItem(pdfPages: pages, filename: filename, sourceText: sourceText))
-                dismiss()
+                redactionVM.startRedaction(pages: pages, filename: filename, sourceText: sourceText)
             }
         }
         .fullScreenCover(isPresented: $showDocumentScanner) {
             DocumentScannerView { pages in
                 guard !pages.isEmpty else { return }
-                scannedDocumentDraft = ScannedDocumentDraft(pages: pages)
+                let name = pages.count == 1 ? "Scanned Receipt" : "Scanned Document"
+                redactionVM.startRedaction(pages: pages, filename: name, sourceText: nil)
             }
             .ignoresSafeArea()
         }
-        .fullScreenCover(item: $scannedDocumentDraft) { draft in
-            ScannedDocumentPreviewView(pages: draft.pages) { pages, sourceText in
-                let filename = pages.count == 1 ? "Scanned Receipt" : "Scanned Document"
-                attachments.append(AttachmentItem(pdfPages: pages, filename: filename, sourceText: sourceText))
+        .fullScreenCover(isPresented: $redactionVM.showFlow) {
+            RedactionPreviewView(viewModel: redactionVM) { redactedPages in
+                attachments.append(AttachmentItem(
+                    pdfPages: redactedPages,
+                    filename: redactionVM.filename,
+                    sourceText: redactionVM.sourceText ?? redactionVM.ocrText
+                ))
                 dismiss()
             }
         }
@@ -513,137 +511,6 @@ struct DocumentScannerView: UIViewControllerRepresentable {
             }
             dismiss()
             onComplete(pages)
-        }
-    }
-}
-
-// MARK: - Scan Preview
-
-private struct ScannedDocumentPreviewView: View {
-    let pages: [UIImage]
-    let onConfirm: ([UIImage], String?) -> Void
-
-    @Environment(\.dismiss) private var dismiss
-    @State private var currentPage = 0
-    @State private var recognizedText: String?
-    @State private var isRecognizingText = false
-
-    var body: some View {
-        NavigationView {
-            ZStack {
-                Color.PrimaryBackground
-                    .ignoresSafeArea()
-
-                VStack(spacing: 16) {
-                    TabView(selection: $currentPage) {
-                        ForEach(Array(pages.enumerated()), id: \.offset) { index, image in
-                            GeometryReader { proxy in
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                        .fill(Color(.secondarySystemBackground))
-
-                                    Image(uiImage: image)
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(
-                                            width: proxy.size.width - 24,
-                                            height: proxy.size.height - 24
-                                        )
-                                }
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 4)
-                            }
-                            .tag(index)
-                        }
-                    }
-                    .tabViewStyle(.page(indexDisplayMode: .never))
-                    .frame(height: 360)
-
-                    HStack {
-                        Text("\(pages.count) \(pages.count == 1 ? "page" : "pages") scanned")
-                            .font(Font.satoshi(.subheadline, weight: .medium))
-                            .foregroundColor(.primary)
-
-                        Spacer()
-
-                        if pages.count > 1 {
-                            Text("Page \(currentPage + 1) of \(pages.count)")
-                                .font(Font.satoshi(.footnote))
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    .padding(.horizontal, 20)
-
-#if DEBUG
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Text extraction")
-                            .font(Font.satoshi(.headline, weight: .semibold))
-
-                        if isRecognizingText {
-                            HStack(spacing: 10) {
-                                ProgressView()
-                                Text("Reading scanned text...")
-                                    .font(Font.satoshi(.subheadline))
-                                    .foregroundColor(.secondary)
-                            }
-                        } else if let recognizedText, !recognizedText.isEmpty {
-                            ScrollView {
-                                Text(recognizedText)
-                                    .font(.system(.footnote, design: .monospaced))
-                                    .foregroundColor(.secondary)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                            .frame(maxHeight: 140)
-                            .padding(12)
-                            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        } else {
-                            Text("No text detected. You can still attach the scan and let the AI read the images directly.")
-                                .font(Font.satoshi(.subheadline))
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    .padding(.horizontal, 20)
-#endif
-
-                    Spacer(minLength: 0)
-
-                    HStack(spacing: 12) {
-                        Button("Retake") {
-                            dismiss()
-                        }
-                        .font(Font.satoshi(.body, weight: .medium))
-                        .foregroundColor(.primary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-
-                        Button("Attach Scan") {
-                            onConfirm(pages, recognizedText)
-                        }
-                        .font(Font.satoshi(.body, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 8)
-                }
-            }
-            .navigationTitle("Preview Scan")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") { dismiss() }
-                }
-            }
-        }
-        .navigationViewStyle(.stack)
-        .task {
-            guard recognizedText == nil, !isRecognizingText else { return }
-            isRecognizingText = true
-            recognizedText = await ScannedDocumentOCR.extractText(from: pages)
-            isRecognizingText = false
         }
     }
 }

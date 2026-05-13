@@ -8,6 +8,11 @@
 
 /* Begin PBXBuildFile section */
 		04A8E059AA45012A1B4DE5A7 /* HomeAIAttachmentSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44B152FB18238AB615708622 /* HomeAIAttachmentSheet.swift */; };
+		D2E3F4A5B6C7D8E9F0A1B2C3 /* RedactionItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D2E3F4A5B6C7D8E9F0A1B2 /* RedactionItem.swift */; };
+		F4A5B6C7D8E9F0A1B2C3D4E5 /* RedactionFlowViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3F4A5B6C7D8E9F0A1B2C3D4 /* RedactionFlowViewModel.swift */; };
+		B6C7D8E9F0A1B2C3D4E5F6A7 /* PIIRedactionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5B6C7D8E9F0A1B2C3D4E5F6 /* PIIRedactionService.swift */; };
+		D8E9F0A1B2C3D4E5F6A7B8C9 /* PrivateRedactionIntroSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7D8E9F0A1B2C3D4E5F6A7B8 /* PrivateRedactionIntroSheet.swift */; };
+		F0A1B2C3D4E5F6A7B8C9D0E1 /* RedactionPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9F0A1B2C3D4E5F6A7B8C9D0 /* RedactionPreviewView.swift */; };
 		0567133628DA33315DAC9DF6 /* Satoshi-Medium.otf in Resources */ = {isa = PBXBuildFile; fileRef = 75C40ECC4B5691DE975C9F96 /* Satoshi-Medium.otf */; };
 		0CCE11AED2D75697C7511294 /* Satoshi-Bold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 4A24558D9748F66F5CDD07E7 /* Satoshi-Bold.otf */; };
 		D89333C1A5D9452AA2167B29 /* Geist-Regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = F716FDC1AE6549A3B82173B9 /* Geist-Regular.otf */; };
@@ -63,6 +68,7 @@
 		5327D2DD287C6B5F00F76ADF /* InsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5327D2D4287C6B5E00F76ADF /* InsightsView.swift */; };
 		5327D2DE287C6B5F00F76ADF /* CustomTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5327D2D5287C6B5E00F76ADF /* CustomTabBar.swift */; };
 		5327D2E0287C6B7D00F76ADF /* DeviceModels.json in Resources */ = {isa = PBXBuildFile; fileRef = 5327D2DF287C6B7C00F76ADF /* DeviceModels.json */; };
+		B1C0D9F8E7A6B5C4D3F2E1A0 /* scan document.gif in Resources */ = {isa = PBXBuildFile; fileRef = A0E1F2D3C4B5A6E7F8D9C0B1 /* scan document.gif */; };
 		5327D2E6287C6CC300F76ADF /* Popovers in Frameworks */ = {isa = PBXBuildFile; productRef = 5327D2E5287C6CC300F76ADF /* Popovers */; };
 		532C58BC2A629C3900DA2C81 /* NewBudgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 532C58BB2A629C3900DA2C81 /* NewBudgetView.swift */; };
 		533182D328A0D61D00DEBFA3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5327D294287C698900F76ADF /* Assets.xcassets */; };
@@ -242,6 +248,11 @@
 		420003BC1DCA12AB4E7B45E5 /* Font+Satoshi.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "Font+Satoshi.swift"; sourceTree = "<group>"; };
 		FCCE47B5563A4D6A9369DC3F /* Font+Geist.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "Font+Geist.swift"; sourceTree = "<group>"; };
 		44B152FB18238AB615708622 /* HomeAIAttachmentSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeAIAttachmentSheet.swift; sourceTree = "<group>"; };
+		C1D2E3F4A5B6C7D8E9F0A1B2 /* RedactionItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RedactionItem.swift; sourceTree = "<group>"; };
+		E3F4A5B6C7D8E9F0A1B2C3D4 /* RedactionFlowViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RedactionFlowViewModel.swift; sourceTree = "<group>"; };
+		A5B6C7D8E9F0A1B2C3D4E5F6 /* PIIRedactionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PIIRedactionService.swift; sourceTree = "<group>"; };
+		C7D8E9F0A1B2C3D4E5F6A7B8 /* PrivateRedactionIntroSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateRedactionIntroSheet.swift; sourceTree = "<group>"; };
+		E9F0A1B2C3D4E5F6A7B8C9D0 /* RedactionPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RedactionPreviewView.swift; sourceTree = "<group>"; };
 		47F5DDF794EFBCAAEE499A30 /* Satoshi-Black.otf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "Satoshi-Black.otf"; sourceTree = "<group>"; };
 		4A24558D9748F66F5CDD07E7 /* Satoshi-Bold.otf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "Satoshi-Bold.otf"; sourceTree = "<group>"; };
 		530C89D52A793B6C00B5028D /* ShortcutsEntities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutsEntities.swift; sourceTree = "<group>"; };
@@ -286,6 +297,7 @@
 		5327D2D4287C6B5E00F76ADF /* InsightsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; wrapsLines = 0; };
 		5327D2D5287C6B5E00F76ADF /* CustomTabBar.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomTabBar.swift; sourceTree = "<group>"; };
 		5327D2DF287C6B7C00F76ADF /* DeviceModels.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = DeviceModels.json; sourceTree = "<group>"; };
+		A0E1F2D3C4B5A6E7F8D9C0B1 /* scan document.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = "scan document.gif"; sourceTree = "<group>"; };
 		5327D2E7287C6DC200F76ADF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		5327D2E8287C6DF700F76ADF /* dime.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = dime.entitlements; sourceTree = "<group>"; };
 		532C58BB2A629C3900DA2C81 /* NewBudgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewBudgetView.swift; sourceTree = "<group>"; };
@@ -495,6 +507,7 @@
 				53A4147A28B66265008C30E7 /* SceneDelegate.swift */,
 				5327D286287C697400F76ADF /* dimeApp.swift */,
 				5327D2DF287C6B7C00F76ADF /* DeviceModels.json */,
+				A0E1F2D3C4B5A6E7F8D9C0B1 /* scan document.gif */,
 				5327D2CA287C6B4700F76ADF /* ContentView.swift */,
 				5327D294287C698900F76ADF /* Assets.xcassets */,
 				530C89D42A793B4400B5028D /* Shortcuts */,
@@ -542,6 +555,7 @@
 				533D1C3B2AE7BB6900894764 /* DynamicType.swift */,
 				420003BC1DCA12AB4E7B45E5 /* Font+Satoshi.swift */,
 				FCCE47B5563A4D6A9369DC3F /* Font+Geist.swift */,
+				A5B6C7D8E9F0A1B2C3D4E5F6 /* PIIRedactionService.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -580,6 +594,8 @@
 				5327D2D5287C6B5E00F76ADF /* CustomTabBar.swift */,
 				5358E9162AC86DA1003E8CA9 /* SingleTransactionPhotoView.swift */,
 				44B152FB18238AB615708622 /* HomeAIAttachmentSheet.swift */,
+				C7D8E9F0A1B2C3D4E5F6A7B8 /* PrivateRedactionIntroSheet.swift */,
+				E9F0A1B2C3D4E5F6A7B8C9D0 /* RedactionPreviewView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -590,6 +606,8 @@
 				5EA1A0002E0A000100ABCD01 /* HomeAIMessage.swift */,
 				5EA1A0022E0A000100ABCD01 /* HomeAIQuickAction.swift */,
 				5EA1A0042E0A000100ABCD01 /* HomeAIAssistantViewModel.swift */,
+				C1D2E3F4A5B6C7D8E9F0A1B2 /* RedactionItem.swift */,
+				E3F4A5B6C7D8E9F0A1B2C3D4 /* RedactionFlowViewModel.swift */,
 				5327D2BE287C6B2500F76ADF /* TimeFrame.swift */,
 				5321E1DB291FE02B00D5A931 /* CategoryCreationErrors.swift */,
 				5327D2C1287C6B2500F76ADF /* FilterType.swift */,
@@ -923,6 +941,7 @@
 				5327D295287C698900F76ADF /* Assets.xcassets in Resources */,
 				53756F632AC3C25E0065D0C2 /* sample.csv in Resources */,
 				5327D2E0287C6B7D00F76ADF /* DeviceModels.json in Resources */,
+				B1C0D9F8E7A6B5C4D3F2E1A0 /* scan document.gif in Resources */,
 				34596E9AB10C3FF6A221FC44 /* Satoshi-Black.otf in Resources */,
 				0CCE11AED2D75697C7511294 /* Satoshi-Bold.otf in Resources */,
 				0567133628DA33315DAC9DF6 /* Satoshi-Medium.otf in Resources */,
@@ -1098,6 +1117,11 @@
 				1D1E777C707D5144EFFF83B1 /* AIConfig.swift in Sources */,
 				37DF5605B4BEA2CBC2061303 /* AIService.swift in Sources */,
 				04A8E059AA45012A1B4DE5A7 /* HomeAIAttachmentSheet.swift in Sources */,
+				D2E3F4A5B6C7D8E9F0A1B2C3 /* RedactionItem.swift in Sources */,
+				F4A5B6C7D8E9F0A1B2C3D4E5 /* RedactionFlowViewModel.swift in Sources */,
+				B6C7D8E9F0A1B2C3D4E5F6A7 /* PIIRedactionService.swift in Sources */,
+				D8E9F0A1B2C3D4E5F6A7B8C9 /* PrivateRedactionIntroSheet.swift in Sources */,
+				F0A1B2C3D4E5F6A7B8C9D0E1 /* RedactionPreviewView.swift in Sources */,
 				7A4F10012E3C200100ABCD01 /* TransactionAttachmentReference.swift in Sources */,
 				FA7D206D7B5E561D07437403 /* Font+Satoshi.swift in Sources */,
 				49BE316DAAA240E5B9BA0B94 /* Font+Geist.swift in Sources */,
