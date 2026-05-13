@@ -58,12 +58,12 @@ actor PIIRedactionService {
 
     // MARK: - Transaction table boundary keywords
     // A line with 2+ of these → that line is the transaction table header → zone starts here.
-    // Deliberately excludes generic words that appear in header sections too
-    // (date, amount, description, balance) to avoid false early triggering.
+    // "urusniaga" is included because Maybank's column header row reads
+    // "BUTIR URUSNIAGA | JUMLAH URUSNIAGA | BAKI PENYATA" — two hits on one line.
 
     private static let tableHeaderKeywords: Set<String> = [
         "debit", "credit", "pengeluaran", "simpanan",
-        "withdrawal", "deposit", "baki"
+        "withdrawal", "deposit", "baki", "urusniaga"
     ]
 
     // MARK: - Context word sets (header zone only)
@@ -124,11 +124,11 @@ actor PIIRedactionService {
         // Find where the transaction table starts (UIKit Y coordinate, 0 = top)
         let transactionZoneY = findTransactionZoneStart(lines: lines, lineTexts: lineTexts)
 
-        // Collect header-zone line entries only
+        // Collect header-zone line entries only (above the transaction boundary)
         var headerEntries: [(obs: [VNRecognizedTextObservation], text: String, arrayIdx: Int)] = []
         for (idx, line) in lines.enumerated() {
             let lineTopY = line.first.map { 1 - $0.boundingBox.maxY } ?? 0
-            if let tzY = transactionZoneY, lineTopY >= tzY { break }
+            if lineTopY >= transactionZoneY { break }
             headerEntries.append((line, lineTexts[idx], headerEntries.count))
         }
 
@@ -155,7 +155,14 @@ actor PIIRedactionService {
             pageIndex: pageIndex
         ))
 
-        // NLP name detection across header text
+        // Malaysian patronymic name detection (BIN/BINTI) — runs before NLP fallback
+        raw.append(contentsOf: detectMalaysianName(
+            lines: headerEntries.map(\.obs),
+            lineTexts: headerLineTexts,
+            pageIndex: pageIndex
+        ))
+
+        // NLP name detection across header text (catches non-Malay names)
         let headerObservations = headerEntries.flatMap(\.obs)
         raw.append(contentsOf: detectNames(
             in: headerLineTexts.joined(separator: "\n"),
@@ -201,25 +208,24 @@ actor PIIRedactionService {
     // MARK: - Zone Detection
 
     /// Returns the UIKit Y position (0 = top) where the transaction table begins.
-    /// Returns nil for unknown documents — entire page treated as header (conservative fallback).
+    /// Falls back to 0.30 (top 30%) so the entire page is never treated as header zone.
     private func findTransactionZoneStart(
         lines: [[VNRecognizedTextObservation]],
         lineTexts: [String]
-    ) -> CGFloat? {
+    ) -> CGFloat {
         for (idx, text) in lineTexts.enumerated() {
             guard let firstObs = lines[idx].first else { continue }
             let lineY = 1 - firstObs.boundingBox.maxY
 
-            // Transaction tables never start in the top 20% — that's always header content
+            // Transaction tables never start in the top 20%
             guard lineY > 0.20 else { continue }
 
             let lower = text.lowercased()
             let hits = Self.tableHeaderKeywords.filter { lower.contains($0) }.count
-            if hits >= 2 {
-                return lineY
-            }
+            if hits >= 2 { return lineY }
         }
-        return nil
+        // No table header found — conservative fallback: treat top 30% as header zone
+        return 0.30
     }
 
     // MARK: - Format Exclusion
@@ -307,9 +313,11 @@ actor PIIRedactionService {
 
     private func detectAccountNumber(text: String, context: String, candidate: VNRecognizedText, pageIndex: Int) -> [RedactionItem] {
         guard containsAny(context, in: Self.accountLabelWords) else { return [] }
-        let pattern = #"(?<!\d)\d{8,16}(?!\d)"#
+        // Match straight digits OR hyphenated format (e.g. 162367-010552, 1234-5678-9012)
+        let pattern = #"(?<!\d)\d{3,8}(?:-\d{2,8})+(?!\d)|(?<!\d)\d{8,16}(?!\d)"#
         return matchItems(pattern: pattern, in: text, candidate: candidate, pageIndex: pageIndex) { matched in
-            guard (8...16).contains(PIIRedactionValidators.digitsOnly(matched).count) else { return nil }
+            let digits = PIIRedactionValidators.digitsOnly(matched)
+            guard (8...18).contains(digits.count) else { return nil }
             return (type: .accountNumber, confidence: 0.88, reason: "Account number near account label")
         }
     }
@@ -323,6 +331,10 @@ actor PIIRedactionService {
     ) -> [RedactionItem] {
         var items: [RedactionItem] = []
         for (idx, text) in lineTexts.enumerated() {
+            // Skip the very top of the page — that's the bank's letterhead, not the customer's address
+            let lineY = lines[idx].first.map { 1 - $0.boundingBox.maxY } ?? 0
+            guard lineY > 0.10 else { continue }
+
             let lower = text.lowercased()
             let hits = Self.addressKeywords.filter { lower.contains($0) }.count
             guard hits >= 2 else { continue }
@@ -343,6 +355,41 @@ actor PIIRedactionService {
         return items
     }
 
+    // MARK: - Malaysian patronymic name (BIN / BINTI)
+
+    private static let binPattern = try! NSRegularExpression(
+        pattern: #"\b(BIN|BINTI)\b"#, options: .caseInsensitive
+    )
+
+    private func detectMalaysianName(
+        lines: [[VNRecognizedTextObservation]],
+        lineTexts: [String],
+        pageIndex: Int
+    ) -> [RedactionItem] {
+        var items: [RedactionItem] = []
+        for (idx, text) in lineTexts.enumerated() {
+            let lineY = lines[idx].first.map { 1 - $0.boundingBox.maxY } ?? 0
+            guard lineY > 0.10 else { continue }
+
+            let nsRange = NSRange(text.startIndex..., in: text)
+            guard Self.binPattern.firstMatch(in: text, range: nsRange) != nil else { continue }
+
+            let allBoxes = lines[idx].compactMap { o -> CGRect? in
+                let vb = o.boundingBox
+                return CGRect(x: vb.minX, y: 1 - vb.maxY, width: vb.width, height: vb.height)
+            }
+            guard let merged = allBoxes.reduce(nil as CGRect?, { $0?.union($1) ?? $1 }) else { continue }
+            items.append(RedactionItem(
+                redactionType: .name,
+                pageIndex: pageIndex,
+                boundingBox: merged.insetBy(dx: -0.005, dy: -0.004).clamped,
+                confidenceScore: 0.92,
+                detectionReason: "Malaysian name (BIN/BINTI)"
+            ))
+        }
+        return items
+    }
+
     // MARK: - NLP Names
 
     private func detectNames(
@@ -351,14 +398,18 @@ actor PIIRedactionService {
         observations: [VNRecognizedTextObservation],
         pageIndex: Int
     ) -> [RedactionItem] {
+        // Title-case so the NLP tagger recognises ALL-CAPS bank statement names.
+        // Matching back to observations uses .caseInsensitive so originals are found.
+        let normalized = text.capitalized
+
         let tagger = NLTagger(tagSchemes: [.nameType])
-        tagger.string = text
+        tagger.string = normalized
 
         var detectedNames: [String] = []
-        tagger.enumerateTags(in: text.startIndex..<text.endIndex, unit: .word, scheme: .nameType) { tag, range in
+        tagger.enumerateTags(in: normalized.startIndex..<normalized.endIndex, unit: .word, scheme: .nameType) { tag, range in
             if tag == .personalName {
-                let token = String(text[range])
-                if token.count >= 4, token != token.uppercased(), token.first?.isLetter == true {
+                let token = String(normalized[range])
+                if token.count >= 4, token.first?.isLetter == true {
                     detectedNames.append(token)
                 }
             }
@@ -402,7 +453,7 @@ actor PIIRedactionService {
 
         for obs in sorted {
             let y = 1 - obs.boundingBox.maxY
-            if lastY < 0 || abs(y - lastY) < 0.025 {
+            if lastY < 0 || abs(y - lastY) < 0.008 {
                 current.append(obs)
             } else {
                 if !current.isEmpty {

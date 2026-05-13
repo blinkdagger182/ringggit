@@ -13,9 +13,15 @@ struct RedactionPreviewView: View {
     @State private var currentPage  = 0
     @State private var isGenerating = false
 
-    // Draw-to-redact gesture state
+    // Draw-to-redact
+    @State private var isDrawMode  = false
     @State private var drawStart:   CGPoint? = nil
     @State private var drawCurrent: CGPoint? = nil
+
+    // Multi-page apply dialog
+    @State private var pendingBox:     CGRect? = nil
+    @State private var pendingBoxPage: Int     = 0
+    @State private var showApplyDialog         = false
 
     var body: some View {
         NavigationView {
@@ -41,6 +47,23 @@ struct RedactionPreviewView: View {
             }
         }
         .navigationViewStyle(.stack)
+        .confirmationDialog("Apply redaction to", isPresented: $showApplyDialog, titleVisibility: .visible) {
+            Button("This page only") {
+                if let box = pendingBox {
+                    viewModel.addManualBox(box, pageIndex: pendingBoxPage)
+                }
+                pendingBox = nil
+            }
+            Button("All pages") {
+                if let box = pendingBox {
+                    for i in 0..<viewModel.sourcePages.count {
+                        viewModel.addManualBox(box, pageIndex: i)
+                    }
+                }
+                pendingBox = nil
+            }
+            Button("Cancel", role: .cancel) { pendingBox = nil }
+        }
         .sheet(isPresented: $viewModel.showIntro) {
             PrivateRedactionIntroSheet(
                 onContinue: { viewModel.markIntroSeen() },
@@ -121,16 +144,65 @@ struct RedactionPreviewView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Private details protected")
                     .font(Font.satoshi(.headline, weight: .semibold))
-                Text("Kira prepared a safer copy for analysis. Drag on the document above to hide more.")
+                Text(isDrawMode
+                     ? "Drag on the document to hide an area. Tap × on a box to remove it."
+                     : "Header info is protected. Tap \"Redact more\" to hide additional areas.")
                     .font(Font.satoshi(.footnote))
                     .foregroundStyle(.secondary)
             }
 
-            if viewModel.hasManualBoxes {
-                Button { viewModel.removeLastManualBox() } label: {
-                    Label("Undo last redaction", systemImage: "arrow.uturn.backward")
-                        .font(Font.satoshi(.subheadline))
-                        .foregroundStyle(Color.accentColor)
+            HStack(spacing: 12) {
+                // Draw mode toggle
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) { isDrawMode.toggle() }
+                    if !isDrawMode { drawStart = nil; drawCurrent = nil }
+                } label: {
+                    Label(isDrawMode ? "Done" : "Redact more",
+                          systemImage: isDrawMode ? "checkmark" : "hand.draw")
+                        .font(Font.satoshi(.subheadline, weight: .medium))
+                        .foregroundStyle(isDrawMode ? Color.white : Color.accentColor)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(
+                            isDrawMode ? Color.accentColor : Color.accentColor.opacity(0.1),
+                            in: Capsule()
+                        )
+                }
+
+                // Multi-page indicator when in draw mode
+                if isDrawMode && viewModel.sourcePages.count > 1 {
+                    HStack(spacing: 6) {
+                        Button {
+                            if currentPage > 0 { currentPage -= 1 }
+                        } label: {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 13, weight: .medium))
+                        }
+                        .disabled(currentPage == 0)
+
+                        Text("Page \(currentPage + 1) of \(viewModel.sourcePages.count)")
+                            .font(Font.satoshi(.caption))
+                            .foregroundStyle(.secondary)
+
+                        Button {
+                            if currentPage < viewModel.sourcePages.count - 1 { currentPage += 1 }
+                        } label: {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 13, weight: .medium))
+                        }
+                        .disabled(currentPage == viewModel.sourcePages.count - 1)
+                    }
+                    .foregroundStyle(Color.primary)
+                }
+
+                Spacer()
+
+                if viewModel.hasManualBoxes {
+                    Button { viewModel.removeLastManualBox() } label: {
+                        Image(systemName: "arrow.uturn.backward")
+                            .font(.system(size: 14))
+                            .foregroundStyle(Color.secondary)
+                    }
                 }
             }
 
@@ -172,22 +244,24 @@ struct RedactionPreviewView: View {
     private var documentSection: some View {
         let pages = viewModel.sourcePages
         return Group {
-            if pages.count > 1 {
+            // In draw mode (or single page) show a static view so the drag gesture
+            // doesn't compete with TabView's horizontal swipe.
+            if pages.count > 1 && !isDrawMode {
                 TabView(selection: $currentPage) {
                     ForEach(Array(pages.enumerated()), id: \.offset) { index, image in
-                        documentPage(image: image, pageIndex: index).tag(index)
+                        documentPage(image: image, pageIndex: index, drawEnabled: false).tag(index)
                     }
                 }
                 .tabViewStyle(.page(indexDisplayMode: .automatic))
-            } else if let first = pages.first {
-                documentPage(image: first, pageIndex: 0)
+            } else if let image = pages.indices.contains(currentPage) ? pages[currentPage] : pages.first {
+                documentPage(image: image, pageIndex: currentPage, drawEnabled: true)
             }
         }
     }
 
-    // MARK: - Single page with overlays + draw gesture
+    // MARK: - Single page with overlays + optional draw gesture
 
-    private func documentPage(image: UIImage, pageIndex: Int) -> some View {
+    private func documentPage(image: UIImage, pageIndex: Int, drawEnabled: Bool) -> some View {
         let autoItems   = viewModel.redactionItems.filter { $0.pageIndex == pageIndex }
         let manualItems = viewModel.manualBoxes.filter    { $0.pageIndex == pageIndex }
         let ratio = image.size.height > 0 ? image.size.width / image.size.height : 1.0
@@ -258,32 +332,39 @@ struct RedactionPreviewView: View {
                                     .allowsHitTesting(false)
                             }
                         }
-                        // Drag gesture captures geo.size at the time the gesture ends
+                        // Draw gesture — only attached when drawEnabled to avoid
+                        // conflicting with TabView's horizontal page swipe.
                         .contentShape(Rectangle())
-                        .gesture(
-                            DragGesture(minimumDistance: 8)
-                                .onChanged { value in
-                                    if drawStart == nil { drawStart = value.startLocation }
-                                    drawCurrent = value.location
-                                }
-                                .onEnded { value in
-                                    defer { drawStart = nil; drawCurrent = nil }
-                                    guard let start = drawStart,
-                                          geo.size.width > 0, geo.size.height > 0 else { return }
-                                    let end = value.location
+                        .if(drawEnabled) { content in
+                            content.gesture(
+                                DragGesture(minimumDistance: 8)
+                                    .onChanged { value in
+                                        if drawStart == nil { drawStart = value.startLocation }
+                                        drawCurrent = value.location
+                                    }
+                                    .onEnded { value in
+                                        defer { drawStart = nil; drawCurrent = nil }
+                                        guard let start = drawStart,
+                                              geo.size.width > 0, geo.size.height > 0 else { return }
+                                        let end = value.location
 
-                                    let nx = max(0, min(1, min(start.x, end.x) / geo.size.width))
-                                    let ny = max(0, min(1, min(start.y, end.y) / geo.size.height))
-                                    let nw = max(0, min(1 - nx, abs(end.x - start.x) / geo.size.width))
-                                    let nh = max(0, min(1 - ny, abs(end.y - start.y) / geo.size.height))
+                                        let nx = max(0, min(1, min(start.x, end.x) / geo.size.width))
+                                        let ny = max(0, min(1, min(start.y, end.y) / geo.size.height))
+                                        let nw = max(0, min(1 - nx, abs(end.x - start.x) / geo.size.width))
+                                        let nh = max(0, min(1 - ny, abs(end.y - start.y) / geo.size.height))
 
-                                    guard nw > 0.02, nh > 0.005 else { return }
-                                    viewModel.addManualBox(
-                                        CGRect(x: nx, y: ny, width: nw, height: nh),
-                                        pageIndex: pageIndex
-                                    )
-                                }
-                        )
+                                        guard nw > 0.02, nh > 0.005 else { return }
+                                        let rect = CGRect(x: nx, y: ny, width: nw, height: nh)
+                                        if viewModel.sourcePages.count > 1 {
+                                            pendingBox      = rect
+                                            pendingBoxPage  = pageIndex
+                                            showApplyDialog = true
+                                        } else {
+                                            viewModel.addManualBox(rect, pageIndex: pageIndex)
+                                        }
+                                    }
+                            )
+                        }
                     }
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -292,7 +373,7 @@ struct RedactionPreviewView: View {
     }
 }
 
-// MARK: - iOS version-safe sheet modifier
+// MARK: - View helpers
 
 private extension View {
     @ViewBuilder
@@ -304,5 +385,10 @@ private extension View {
         } else {
             self
         }
+    }
+
+    @ViewBuilder
+    func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+        if condition { transform(self) } else { self }
     }
 }
