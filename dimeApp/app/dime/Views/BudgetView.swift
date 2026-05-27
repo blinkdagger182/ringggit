@@ -103,8 +103,8 @@ struct ActualBudgetView: View {
             VStack(spacing: 0) {
                 HStack(alignment: .center) {
                     Text("BUDGETS")
-                        .font(Font.geist(64, weight: .bold))
-                        .tracking(0.6)
+                        .font(.system(size: 36, weight: .black))
+                        .tracking(1.5)
                         .foregroundColor(Color.PrimaryText)
                         .accessibility(addTraits: .isHeader)
 
@@ -114,16 +114,16 @@ struct ActualBudgetView: View {
                         newBudget = true
                     } label: {
                         Image(systemName: "plus")
-                            .font(Font.geist(24, weight: .medium))
+                            .font(Font.satoshi(16, weight: .semibold))
                             .foregroundColor(Color.PrimaryText)
-                            .frame(width: 62, height: 62)
-                            .background(Color.SecondaryBackground.opacity(0.95), in: Circle())
+                            .frame(width: 40, height: 40)
+                            .background(Color.SecondaryBackground, in: Circle())
                     }
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.top, 26)
+                .padding(.top, 20)
                 .padding(.horizontal, 20)
-                .padding(.bottom, 18)
+                .padding(.bottom, 16)
 
                 if !budgets.isEmpty || !mainBudget.isEmpty || !buckets.isEmpty {
                     ScrollView(showsIndicators: false) {
@@ -144,12 +144,12 @@ struct ActualBudgetView: View {
                                 ) {
                                     if budgets.count == 0 {
                                         MainBudgetView(budget: first, solo: true)
-                                            .padding(.horizontal, 20)
+                                            .padding(.horizontal, 25)
                                             .padding(.bottom, 15)
                                             .id(refreshID)
                                     } else {
                                         MainBudgetView(budget: first, solo: false)
-                                            .padding(.horizontal, 20)
+                                            .padding(.horizontal, 25)
                                             .padding(.bottom, 15)
                                             .id(refreshID)
                                     }
@@ -197,7 +197,7 @@ struct ActualBudgetView: View {
                                         }
                                     }
                                 }
-                                .padding(.horizontal, 20)
+                                .padding(.horizontal, 25)
                                 .padding(5)
                             }
 
@@ -214,9 +214,9 @@ struct ActualBudgetView: View {
                                         newBucket = true
                                     } label: {
                                         Image(systemName: "plus")
-                                            .font(Font.geist(20, weight: .medium))
+                                            .font(Font.satoshi(14, weight: .semibold))
                                             .foregroundColor(Color.PrimaryText)
-                                            .frame(width: 40, height: 40)
+                                            .frame(width: 32, height: 32)
                                             .background(Color.SecondaryBackground, in: Circle())
                                     }
                                 }
@@ -229,7 +229,7 @@ struct ActualBudgetView: View {
                                         .foregroundColor(Color.SubtitleText)
                                         .padding(.horizontal, 20)
                                 } else {
-                                    VStack(spacing: 0) {
+                                    VStack(spacing: 10) {
                                         ForEach(buckets, id: \.self) { bucket in
                                             NavigationLink(destination: DetailedBucketView(bucket: bucket)) {
                                                 BucketSummaryRow(bucket: bucket, onEdit: {
@@ -371,24 +371,20 @@ struct BucketSummaryRow: View {
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: 14) {
-            ZStack {
-                Rectangle()
-                    .fill(Color.SecondaryBackground)
-                Image(systemName: bucketIconName)
-                    .font(.system(size: 20, weight: .regular))
-                    .foregroundColor(Color.PrimaryText)
-            }
-            .frame(width: 56, height: 56)
+        HStack(alignment: .top, spacing: 12) {
+            Text(bucket.emoji ?? "🏷️")
+                .font(Font.satoshi(24))
+                .frame(width: 42, height: 42)
+                .background(Color(hex: bucket.colour ?? "4A5240").opacity(0.15), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(bucket.name ?? "Untitled Bucket")
-                    .font(Font.geist(36 > 0 ? .body : .body, weight: .medium))
+                    .font(Font.satoshi(.body, weight: .semibold))
                     .foregroundColor(Color.PrimaryText)
 
                 HStack(spacing: 6) {
                     Text("\(transactions.count) \(transactions.count == 1 ? "transaction" : "transactions")")
-                        .font(Font.geist(.title3, weight: .regular))
+                        .font(Font.satoshi(.caption, weight: .medium))
                         .foregroundColor(Color.SubtitleText)
                         .lineLimit(1)
                         .fixedSize(horizontal: true, vertical: false)
@@ -399,7 +395,7 @@ struct BucketSummaryRow: View {
                             .frame(width: 3, height: 3)
 
                         Text(timeframeSummary)
-                            .font(Font.geist(.title3, weight: .regular))
+                            .font(Font.satoshi(.caption, weight: .medium))
                             .foregroundColor(Color.SubtitleText)
                             .lineLimit(1)
                     }
@@ -409,19 +405,12 @@ struct BucketSummaryRow: View {
             Spacer()
 
             Text(String(format: "RM %.2f", totalAmount))
-                .font(Font.geist(44 > 0 ? .title2 : .title2, weight: .medium))
+                .font(Font.satoshi(.title3, weight: .semibold))
                 .foregroundColor(Color.PrimaryText)
-
-            Image(systemName: "chevron.right")
-                .font(.system(size: 22, weight: .medium))
-                .foregroundColor(Color.SubtitleText)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 16)
-        .overlay(
-            Rectangle()
-                .stroke(Color.Outline.opacity(0.8), lineWidth: 1)
-        )
+        .padding(.horizontal, 14)
+        .padding(.vertical, 14)
+        .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .contextMenu {
             Button {
                 onEdit()
@@ -435,14 +424,6 @@ struct BucketSummaryRow: View {
                 Label("Delete Bucket", systemImage: "trash")
             }
         }
-    }
-
-    private var bucketIconName: String {
-        let lower = (bucket.name ?? "").lowercased()
-        if lower.contains("trip") || lower.contains("travel") { return "tag" }
-        if lower.contains("family") { return "person.2" }
-        if lower.contains("school") || lower.contains("study") { return "graduationcap" }
-        return "tag"
     }
 }
 
@@ -499,31 +480,38 @@ private struct OverBudgetHorizontalBar: View {
 
     var body: some View {
         let greenWidth = totalWidth * min(max(boundaryPercent, 0), 1)
-        let overflowWidth = max(totalWidth - greenWidth, 0)
-        let solidOverflow = overflowWidth * 0.45
 
         return ZStack(alignment: .leading) {
-            Rectangle()
+            RoundedRectangle(cornerRadius: height / 2, style: .continuous)
                 .fill(fillColor)
                 .frame(width: greenWidth, height: height)
 
-            HStack(spacing: 0) {
-                Rectangle()
-                    .fill(Color.BudgetRed)
-                    .frame(width: solidOverflow)
-                HStack(spacing: 4) {
-                    ForEach(0..<8, id: \.self) { _ in
-                        Rectangle()
-                            .fill(Color.BudgetRed)
-                            .frame(width: 2)
+            ZStack {
+                Color.BudgetRed
+                Canvas { context, size in
+                    let stripeW: CGFloat = 3
+                    let gap: CGFloat = 6
+                    var x: CGFloat = -size.height
+                    while x < size.width + size.height {
+                        let path = Path { p in
+                            p.move(to: CGPoint(x: x, y: 0))
+                            p.addLine(to: CGPoint(x: x + size.height, y: size.height))
+                            p.addLine(to: CGPoint(x: x + size.height + stripeW, y: size.height))
+                            p.addLine(to: CGPoint(x: x + stripeW, y: 0))
+                        }
+                        context.fill(path, with: .color(.white.opacity(0.22)))
+                        x += gap + stripeW
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .frame(width: overflowWidth, height: height)
+            .frame(width: totalWidth, height: height)
             .offset(x: redOffset)
+
+            BudgetLimitMarker(tint: fillColor)
+                .offset(x: min(max(greenWidth - 3.5, 0), max(totalWidth - 7, 0)))
         }
         .frame(width: totalWidth, height: height, alignment: .leading)
+        .clipShape(RoundedRectangle(cornerRadius: height / 2, style: .continuous))
         .onAppear {
             if !animated { redOffset = greenWidth }
             else { withAnimation(.easeInOut(duration: 0.7)) { redOffset = greenWidth } }
@@ -1310,15 +1298,13 @@ struct MainBudgetView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 4) {
                 Text(thisPeriodLabel)
-                    .font(Font.geist(15, weight: .medium))
-                    .tracking(1.2)
+                    .font(Font.satoshi(.caption, weight: .semibold))
                     .foregroundColor(Color.SubtitleText)
                 Text("•")
-                    .font(Font.geist(15, weight: .medium))
+                    .font(Font.satoshi(.caption, weight: .semibold))
                     .foregroundColor(Color.SubtitleText)
                 Text("\(percentString1) OF BUDGET")
-                    .font(Font.geist(15, weight: .medium))
-                    .tracking(1.2)
+                    .font(Font.satoshi(.caption, weight: .semibold))
                     .foregroundColor(isOverBudget ? Color("BudgetRed") : Color.SubtitleText)
                 Spacer()
             }
@@ -1331,7 +1317,7 @@ struct MainBudgetView: View {
                         boundaryPercent: overBudgetBoundaryPercent,
                         totalWidth: geo.size.width,
                         height: 8
-                    )                    
+                    )
                 } else {
                     NewBudgetSpentBar(
                         color: Color.IncomeGreen,
@@ -1345,17 +1331,16 @@ struct MainBudgetView: View {
             .padding(.bottom, 12)
 
             Text(spentPeriodLabel)
-                .font(Font.geist(14, weight: .medium))
-                .tracking(1.0)
+                .font(Font.satoshi(.caption2, weight: .semibold))
                 .foregroundColor(Color.SubtitleText)
                 .padding(.bottom, 2)
 
             HStack(alignment: .lastTextBaseline, spacing: 2) {
                 Text(currencySymbol)
-                    .font(Font.geist(56 > 0 ? 54 : 54, weight: .regular))
-                    .foregroundColor(Color.PrimaryText)
+                    .font(Font.satoshi(.subheadline, weight: .medium))
+                    .foregroundColor(Color.SubtitleText)
                 Text("\(totalSpent, specifier: "%.2f")")
-                    .font(Font.geist(80 > 0 ? 72 : 72, weight: .medium))
+                    .font(.system(size: 32, weight: .semibold, design: .default))
                     .monospacedDigit()
                     .foregroundColor(Color.PrimaryText)
             }
@@ -1363,34 +1348,28 @@ struct MainBudgetView: View {
             .lineLimit(1)
 
             Rectangle()
-                .fill(Color.Outline.opacity(0.8))
-                .frame(height: 1)
-                .padding(.vertical, 16)
+                .fill(Color.Outline.opacity(0.5))
+                .frame(height: 0.5)
+                .padding(.vertical, 12)
 
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("BUDGET")
-                        .font(Font.geist(14, weight: .medium))
-                        .tracking(1.0)
+                        .font(Font.satoshi(.caption2, weight: .semibold))
                         .foregroundColor(Color.SubtitleText)
                     Text("\(currencySymbol)\(budgetAmount, specifier: "%.2f")")
-                        .font(Font.geist(52 > 0 ? 48 : 48, weight: .medium))
+                        .font(Font.satoshi(.subheadline, weight: .semibold))
                         .foregroundColor(Color.PrimaryText)
                         .minimumScaleFactor(0.6)
                         .lineLimit(1)
                 }
                 Spacer()
-                Rectangle()
-                    .fill(Color.Outline.opacity(0.8))
-                    .frame(width: 1, height: 74)
-                    .padding(.horizontal, 12)
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(isOverBudget ? "OVER BUDGET" : "REMAINING")
-                        .font(Font.geist(14, weight: .medium))
-                        .tracking(1.0)
+                        .font(Font.satoshi(.caption2, weight: .semibold))
                         .foregroundColor(isOverBudget ? Color("BudgetRed") : Color.SubtitleText)
                     Text("\(currencySymbol)\(difference, specifier: "%.2f")")
-                        .font(Font.geist(52 > 0 ? 48 : 48, weight: .medium))
+                        .font(Font.satoshi(.subheadline, weight: .semibold))
                         .foregroundColor(isOverBudget ? Color("BudgetRed") : Color.PrimaryText)
                         .minimumScaleFactor(0.6)
                         .lineLimit(1)
@@ -1400,13 +1379,10 @@ struct MainBudgetView: View {
         .padding(20)
         .frame(maxWidth: .infinity)
         .background(
-            Rectangle()
-                .fill(colorScheme == .dark ? Color.Outline.opacity(0.2) : Color.SecondaryBackground)
-                .overlay(
-                    Rectangle().stroke(Color.Outline.opacity(0.8), lineWidth: 1)
-                )
+            colorScheme == .dark ? Color.Outline.opacity(0.2) : Color.SecondaryBackground,
+            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
         )
-        .contentShape(Rectangle())
+        .contentShape(RoundedRectangle(cornerRadius: 20))
         .contextMenu {
             Button {
                 toEdit = budget
