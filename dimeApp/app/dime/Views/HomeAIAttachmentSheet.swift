@@ -471,11 +471,17 @@ struct PDFDocumentPickerView: UIViewControllerRepresentable {
 // MARK: - Document Scanner
 
 struct DocumentScannerView: UIViewControllerRepresentable {
+    let onCancel: (() -> Void)?
     let onComplete: ([UIImage]) -> Void
     @Environment(\.dismiss) private var dismiss
 
+    init(onCancel: (() -> Void)? = nil, onComplete: @escaping ([UIImage]) -> Void) {
+        self.onCancel = onCancel
+        self.onComplete = onComplete
+    }
+
     func makeCoordinator() -> Coordinator {
-        Coordinator(dismiss: dismiss, onComplete: onComplete)
+        Coordinator(dismiss: dismiss, onCancel: onCancel, onComplete: onComplete)
     }
 
     func makeUIViewController(context: Context) -> VNDocumentCameraViewController {
@@ -489,19 +495,23 @@ struct DocumentScannerView: UIViewControllerRepresentable {
 
     final class Coordinator: NSObject, VNDocumentCameraViewControllerDelegate {
         let dismiss: DismissAction
+        let onCancel: (() -> Void)?
         let onComplete: ([UIImage]) -> Void
 
-        init(dismiss: DismissAction, onComplete: @escaping ([UIImage]) -> Void) {
+        init(dismiss: DismissAction, onCancel: (() -> Void)?, onComplete: @escaping ([UIImage]) -> Void) {
             self.dismiss = dismiss
+            self.onCancel = onCancel
             self.onComplete = onComplete
         }
 
         func documentCameraViewControllerDidCancel(_ controller: VNDocumentCameraViewController) {
             dismiss()
+            onCancel?()
         }
 
         func documentCameraViewController(_ controller: VNDocumentCameraViewController, didFailWithError error: Error) {
             dismiss()
+            onCancel?()
         }
 
         func documentCameraViewController(_ controller: VNDocumentCameraViewController, didFinishWith scan: VNDocumentCameraScan) {

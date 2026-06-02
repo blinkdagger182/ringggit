@@ -1535,6 +1535,28 @@ struct TransactionView: View {
         }
     }
 
+    init(prefill: ScannedReceiptPrefill?) {
+        let globalCurrency = UserDefaults(suiteName: "group.com.riskcreatives.duit")?.string(forKey: "currency") ?? Locale.current.currencyCode ?? "MYR"
+        _transactionCurrency = State(initialValue: globalCurrency)
+        _income = State(initialValue: false)
+
+        if let prefill {
+            if let amount = prefill.amount {
+                _price = State(initialValue: amount)
+            }
+
+            _note = State(initialValue: prefill.note)
+
+            if let date = prefill.date {
+                _date = State(initialValue: date)
+            }
+
+            _attachmentReference = State(initialValue: prefill.attachmentReference)
+        }
+
+        toEdit = nil
+    }
+
     init(toEdit: Transaction? = nil) {
         let globalCurrency = UserDefaults(suiteName: "group.com.riskcreatives.duit")?.string(forKey: "currency") ?? Locale.current.currencyCode ?? "MYR"
         if let transaction = toEdit {

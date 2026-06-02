@@ -8,6 +8,7 @@
 import ConfettiSwiftUI
 import Foundation
 import SwiftUI
+import UIKit
 
 class OverallToastPresenter: ObservableObject {
     @Published var showToast: Bool = false
@@ -22,7 +23,6 @@ enum HomeSheet: Identifiable {
     case profile
     case notifications
     case reports
-    case scanReceipt
     case plan
 
     var id: String {
@@ -30,10 +30,17 @@ enum HomeSheet: Identifiable {
         case .profile: return "profile"
         case .notifications: return "notifications"
         case .reports: return "reports"
-        case .scanReceipt: return "scanReceipt"
         case .plan: return "plan"
         }
     }
+}
+
+struct ScannedReceiptPrefill {
+    let amount: Double?
+    let note: String
+    let date: Date?
+    let attachmentReference: TransactionAttachmentReference?
+    let sourceText: String?
 }
 
 class OverallTransactionManager: ObservableObject {
@@ -79,6 +86,8 @@ struct HomeView: View {
     @State var launchSearch: Bool = false
     @State private var activeSheet: HomeSheet?
     @State private var showAddTransaction = false
+    @State private var showReceiptScanner = false
+    @State private var pendingReceiptPrefill: ScannedReceiptPrefill?
     @State private var transactionCountBeforeAdd = 0
     @State private var aiCaptionIndex = 0
 
@@ -183,7 +192,7 @@ struct HomeView: View {
                     counter: $counter,
                     launchAdd: launchAdd,
                     onAddExpense: { presentAddTransaction() },
-                    onScanReceipt: { activeSheet = .scanReceipt },
+                    onScanReceipt: { showReceiptScanner = true },
                     onAskKIRA: { revealAskKIRA() }
                 )
                 .frame(maxHeight: .infinity, alignment: .bottom)
@@ -260,22 +269,22 @@ struct HomeView: View {
                 NotificationsSheetView()
             case .reports:
                 InsightsView()
-            case .scanReceipt:
-                ScanReceiptSheetView(onAskKIRA: {
-                    activeSheet = nil
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                        openAttachmentOnAIExpand = true
-                        revealAskKIRA()
-                    }
-                })
             case .plan:
                 PlanView()
+            }
+        }
+        .fullScreenCover(isPresented: $showReceiptScanner) {
+            HomeScanReceiptFlowView { prefill in
+                showReceiptScanner = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
+                    presentAddTransaction(prefill: prefill)
+                }
             }
         }
         .fullScreenCover(isPresented: $showAddTransaction, onDismiss: {
             handleAddTransactionDismiss()
         }) {
-            TransactionView(toEdit: nil)
+            TransactionView(prefill: pendingReceiptPrefill)
         }
         .fullScreenCover(item: $transactionManager.toEdit, onDismiss: {
             transactionManager.toEdit = nil
@@ -323,7 +332,7 @@ struct HomeView: View {
                     isScrollLocked: liveProgress > 0.01,
                     onScrollStateChanged: { isAtTop, _ in isLogAtTop = isAtTop },
                     onAskKIRA: { revealAskKIRA() },
-                    onScanReceipt: { activeSheet = .scanReceipt },
+                    onScanReceipt: { showReceiptScanner = true },
                     onAddTransaction: { presentAddTransaction() },
                     onOpenPlan: { activeSheet = .plan },
                     onViewActivity: { currentTab = "Activity" },
@@ -442,7 +451,8 @@ struct HomeView: View {
         homeAIAssistantViewModel.expand()
     }
 
-    private func presentAddTransaction() {
+    private func presentAddTransaction(prefill: ScannedReceiptPrefill? = nil) {
+        pendingReceiptPrefill = prefill
         transactionCountBeforeAdd = dataController.results(for: Transaction.fetchRequest()).count
         showAddTransaction = true
     }
@@ -452,6 +462,7 @@ struct HomeView: View {
         if currentCount != transactionCountBeforeAdd {
             counter += 1
         }
+        pendingReceiptPrefill = nil
     }
 
     private func startAICaptionRotation() {
@@ -813,70 +824,180 @@ struct NotificationsSheetView: View {
     }
 }
 
-struct ScanReceiptSheetView: View {
+struct HomeScanReceiptFlowView: View {
     @Environment(\.dismiss) private var dismiss
-    var onAskKIRA: () -> Void
+    @StateObject private var redactionVM = RedactionFlowViewModel()
+    @State private var showDocumentScanner = false
+    @State private var hasOpenedScanner = false
+
+    let onComplete: (ScannedReceiptPrefill) -> Void
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Button { dismiss() } label: {
-                    Image(systemName: "xmark")
-                        .font(Font.satoshi(.callout, weight: .semibold))
-                        .foregroundColor(Color.SubtitleText)
-                        .frame(width: 42, height: 42)
-                        .background(Color.SecondaryBackground, in: Circle())
-                }
-
-                Spacer()
-
-                Text("Scan receipt")
-                    .font(Font.satoshi(.headline, weight: .semibold))
-                    .foregroundColor(Color.PrimaryText)
-
-                Spacer()
-
-                Color.clear.frame(width: 42, height: 42)
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 18)
-
-            Spacer()
-
+        NavigationView {
             VStack(spacing: 16) {
-                Image(systemName: "viewfinder")
-                    .font(Font.satoshi(40, weight: .medium))
-                    .foregroundColor(Color(hex: "4A5240"))
-                    .frame(width: 88, height: 88)
-                    .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                Spacer()
+
+                ProgressView()
+                    .tint(Color(hex: "4A5240"))
 
                 VStack(spacing: 6) {
-                    Text("Receipt scanning is moving here.")
+                    Text("Opening scanner")
                         .font(Font.satoshi(.title3, weight: .semibold))
                         .foregroundColor(Color.PrimaryText)
-                    Text("Use Ask KIRA for receipt help while the scan review flow is wired into this sheet.")
+                    Text("Scan your receipt, then KIRA will fill the expense form.")
                         .font(Font.satoshi(.subheadline, weight: .medium))
                         .foregroundColor(Color.SubtitleText)
                         .multilineTextAlignment(.center)
                 }
 
-                Button {
-                    onAskKIRA()
-                } label: {
-                    Label("Ask KIRA", systemImage: "sparkles")
-                        .font(Font.satoshi(.body, weight: .semibold))
-                        .foregroundColor(Color.LightIcon)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .background(Color.DarkBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                }
-                .padding(.top, 8)
+                Spacer()
             }
             .padding(.horizontal, 24)
-
-            Spacer()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.PrimaryBackground.ignoresSafeArea())
+            .navigationTitle("Scan receipt")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") { dismiss() }
+                        .foregroundColor(Color.PrimaryText)
+                }
+            }
         }
-        .background(Color.PrimaryBackground.ignoresSafeArea())
+        .navigationViewStyle(.stack)
+        .onAppear {
+            guard !hasOpenedScanner else { return }
+            hasOpenedScanner = true
+            DispatchQueue.main.async {
+                showDocumentScanner = true
+            }
+        }
+        .fullScreenCover(isPresented: $showDocumentScanner) {
+            DocumentScannerView(onCancel: {
+                dismiss()
+            }) { pages in
+                guard !pages.isEmpty else {
+                    dismiss()
+                    return
+                }
+                redactionVM.startRedaction(pages: pages, filename: "Scanned Receipt", sourceText: nil)
+            }
+            .ignoresSafeArea()
+        }
+        .fullScreenCover(isPresented: $redactionVM.showFlow) {
+            RedactionPreviewView(viewModel: redactionVM) { redactedPages in
+                let sourceText = redactionVM.sourceText ?? redactionVM.ocrText
+                let attachment = AttachmentItem(
+                    pdfPages: redactedPages,
+                    filename: redactionVM.filename,
+                    sourceText: sourceText
+                )
+                let reference = TransactionAttachmentStore.saveAIAttachment(attachment)
+                let prefill = ReceiptPrefillParser.makePrefill(
+                    sourceText: sourceText,
+                    attachmentReference: reference
+                )
+                onComplete(prefill)
+                dismiss()
+            }
+        }
+    }
+}
+
+private enum ReceiptPrefillParser {
+    static func makePrefill(sourceText: String?, attachmentReference: TransactionAttachmentReference?) -> ScannedReceiptPrefill {
+        let text = sourceText ?? ""
+        return ScannedReceiptPrefill(
+            amount: extractAmount(from: text),
+            note: extractMerchant(from: text) ?? "Scanned receipt",
+            date: extractDate(from: text),
+            attachmentReference: attachmentReference,
+            sourceText: sourceText
+        )
+    }
+
+    private static func extractAmount(from text: String) -> Double? {
+        let lines = normalizedLines(from: text)
+        let priorityKeywords = ["grand total", "total", "amount due", "balance due", "paid"]
+        let priorityLines = lines.filter { line in
+            priorityKeywords.contains { line.lowercased().contains($0) }
+        }
+
+        if let priorityAmount = priorityLines.compactMap({ amounts(in: $0).last }).last {
+            return priorityAmount
+        }
+
+        return lines.flatMap { amounts(in: $0) }.max()
+    }
+
+    private static func amounts(in text: String) -> [Double] {
+        let pattern = #"(?i)(?:rm|myr)?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2})|[0-9]+(?:\.[0-9]{2}))"#
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
+        let range = NSRange(text.startIndex..<text.endIndex, in: text)
+
+        return regex.matches(in: text, range: range).compactMap { match in
+            guard let amountRange = Range(match.range(at: 1), in: text) else { return nil }
+            let value = text[amountRange].replacingOccurrences(of: ",", with: "")
+            return Double(value)
+        }
+    }
+
+    private static func extractMerchant(from text: String) -> String? {
+        let ignoredFragments = [
+            "receipt", "invoice", "tax", "sst", "cashier", "total", "subtotal",
+            "amount", "date", "time", "qty", "quantity", "change", "paid"
+        ]
+
+        return normalizedLines(from: text).first { line in
+            let lowercased = line.lowercased()
+            guard line.count >= 2, line.count <= 48 else { return false }
+            guard !ignoredFragments.contains(where: { lowercased.contains($0) }) else { return false }
+            return line.rangeOfCharacter(from: .letters) != nil
+        }
+    }
+
+    private static func extractDate(from text: String) -> Date? {
+        let patterns = [
+            (#"\b\d{1,2}/\d{1,2}/\d{2,4}\b"#, ["d/M/yyyy", "dd/MM/yyyy", "d/M/yy", "dd/MM/yy"]),
+            (#"\b\d{1,2}-\d{1,2}-\d{2,4}\b"#, ["d-M-yyyy", "dd-MM-yyyy", "d-M-yy", "dd-MM-yy"]),
+            (#"\b\d{4}-\d{1,2}-\d{1,2}\b"#, ["yyyy-M-d", "yyyy-MM-dd"]),
+            (#"\b\d{1,2}\s+[A-Za-z]{3,9}\s+\d{2,4}\b"#, ["d MMM yyyy", "dd MMM yyyy", "d MMMM yyyy", "dd MMMM yyyy"])
+        ]
+
+        for (pattern, formats) in patterns {
+            guard let regex = try? NSRegularExpression(pattern: pattern) else { continue }
+            let range = NSRange(text.startIndex..<text.endIndex, in: text)
+            guard let match = regex.firstMatch(in: text, range: range),
+                  let matchRange = Range(match.range, in: text)
+            else { continue }
+
+            let candidate = String(text[matchRange])
+            if let date = parseDate(candidate, formats: formats) {
+                return date
+            }
+        }
+
+        return nil
+    }
+
+    private static func parseDate(_ value: String, formats: [String]) -> Date? {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+
+        for format in formats {
+            formatter.dateFormat = format
+            if let date = formatter.date(from: value) {
+                return date
+            }
+        }
+
+        return nil
+    }
+
+    private static func normalizedLines(from text: String) -> [String] {
+        text.components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
     }
 }
 
