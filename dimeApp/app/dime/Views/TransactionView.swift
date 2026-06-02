@@ -44,6 +44,11 @@ struct TransactionView: View {
     @State private var recurringDetection: (type: Int, coefficient: Int)?
     @State private var showCurrencyPicker = false
     @State private var showBucketMenu = false
+    @State private var showMoreDetails = false
+    @State private var showNoteSheet = false
+    @State private var calculatorExpression = ""
+    @State private var calculatorResetID = 0
+    @State private var calculatorCommitID = 0
     @State private var transactionCurrency: String = Locale.current.currencyCode ?? "MYR"
 
     var transactionTypeString: String {
@@ -52,6 +57,14 @@ struct TransactionView: View {
         } else {
             return "Expense"
         }
+    }
+
+    private var canSaveTransaction: Bool {
+        price > 0 && category != nil
+    }
+
+    private var hasAttachmentDetails: Bool {
+        attachmentReference != nil || legacyReferenceText != nil
     }
 
     @State var showCategoryPicker = false
@@ -271,44 +284,31 @@ struct TransactionView: View {
                         ZStack(alignment: .leading) {
                             Capsule()
                                 .fill(Color.SecondaryBackground)
-                                .frame(width: capsuleWidth)
-                                .offset(x: swipingOffset)
+                                .frame(width: 126, height: 40)
+                                .offset(x: income ? 50 : 0)
 
                             HStack(spacing: 0) {
-                                Text("Expense")
-                                    .font(Font.satoshi(.body, weight: .semibold))
-
-                                    .lineLimit(1)
-                                    .foregroundColor(income == false ? Color.PrimaryText : Color.SubtitleText)
-                                    .padding(6)
-                                    .frame(width: capsuleWidth)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {
-                                        DispatchQueue.main.async {
-                                            withAnimation(.easeIn(duration: 0.15)) {
-                                                income = false
-                                                swipingOffset = 0
-                                            }
-                                        }
+                                transactionTypeToggleButton(
+                                    title: "Expense",
+                                    systemImage: "arrow.up.right",
+                                    selected: !income
+                                ) {
+                                    withAnimation(.easeInOut(duration: 0.18)) {
+                                        income = false
+                                        swipingOffset = 0
                                     }
+                                }
 
-                                Text("transaction-view-income-picker")
-                                    .font(Font.satoshi(.body, weight: .semibold))
-
-                                    .lineLimit(1)
-                                //                                    .font(Font.satoshi(18, weight: .semibold))
-                                    .foregroundColor(income == true ? Color.PrimaryText : Color.SubtitleText)
-                                    .padding(6)
-                                    .frame(width: capsuleWidth)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {
-                                        DispatchQueue.main.async {
-                                            withAnimation(.easeIn(duration: 0.15)) {
-                                                income = true
-                                                swipingOffset = capsuleWidth
-                                            }
-                                        }
+                                transactionTypeToggleButton(
+                                    title: "Income",
+                                    systemImage: "arrow.down.left",
+                                    selected: income
+                                ) {
+                                    withAnimation(.easeInOut(duration: 0.18)) {
+                                        income = true
+                                        swipingOffset = capsuleWidth
                                     }
+                                }
                             }
                         }
                         .padding(3)
@@ -334,24 +334,6 @@ struct TransactionView: View {
                         }
 
                         Spacer()
-
-                        if toEdit != nil {
-                            Button {
-                                toDelete = toEdit
-                                deleteMode = true
-
-                            } label: {
-                                Image(systemName: "trash.fill")
-                                //                                    .font(Font.satoshi(16, weight: .semibold))
-                                    .font(Font.satoshi(.subheadline, weight: .semibold))
-                                    .dynamicTypeSize(...DynamicTypeSize.xxLarge)
-                                    .foregroundColor(Color.AlertRed)
-                                    .padding(7)
-                                    .background(Color.AlertRed.opacity(0.23), in: Circle())
-                                    .contentShape(Circle())
-                            }
-                            .accessibilityLabel("delete transaction")
-                        }
 
                         Button {
                             showRecurring = true
@@ -401,6 +383,23 @@ struct TransactionView: View {
                                 showMenu: $showRecurring, showPicker: $showPicker)
                         } background: {
                             backgroundColor.opacity(0.6)
+                        }
+
+                        if toEdit != nil {
+                            Button {
+                                toDelete = toEdit
+                                deleteMode = true
+
+                            } label: {
+                                Image(systemName: "trash.fill")
+                                    .font(Font.satoshi(.subheadline, weight: .semibold))
+                                    .dynamicTypeSize(...DynamicTypeSize.xxLarge)
+                                    .foregroundColor(Color.AlertRed)
+                                    .padding(7)
+                                    .background(Color.AlertRed.opacity(0.23), in: Circle())
+                                    .contentShape(Circle())
+                            }
+                            .accessibilityLabel("delete transaction")
                         }
                     }
                     .frame(maxWidth: .infinity)
@@ -467,17 +466,20 @@ struct TransactionView: View {
                                 .font(Font.satoshi(.headline, weight: .medium))
                                 .foregroundColor(Color.SubtitleText)
 
-                            NumberPadTextView(price: $price, isEditingDecimal: $isEditingDecimal, decimalValuesAssigned: $decimalValuesAssigned, onCurrencyTap: { showCurrencyPicker = true }, currencyOverride: transactionCurrency)
-                        }
+                            HStack(alignment: .center) {
+                                accountChip
 
-                        HStack(spacing: 8) {
-                            attachmentSquareButton
-                            if !buckets.isEmpty {
-                                bucketPillButton
+                                Spacer()
+
+                                currencyChip
                             }
-                        }
 
-                        NoteView(note: $note, focused: $textFieldFocused)
+                            calculationBubble
+
+                            NumberPadTextView(price: $price, isEditingDecimal: $isEditingDecimal, decimalValuesAssigned: $decimalValuesAssigned, currencyOverride: transactionCurrency, income: income, showSign: false, showCurrency: false)
+                                .scaleEffect(price > 0 ? 1 : 0.98)
+                                .animation(.easeOut(duration: 0.18), value: price)
+                        }
 
                         if let detection = recurringDetection, repeatType == 0 {
                             recurringDetectionBanner(detection)
@@ -530,233 +532,47 @@ struct TransactionView: View {
                     }
                     .padding(.bottom, 5)
                 } else {
-                    VStack(spacing: 8) {
-                        HStack(spacing: 8) {
-                        HStack(spacing: 7) {
-                            Group {
-                                if date < Date.now {
-                                    Image(systemName: "calendar")
-                                } else {
-                                    if #available(iOS 17.0, *) {
-                                        Image(systemName: "rays")
-                                            .symbolEffect(
-                                                .variableColor.iterative.dimInactiveLayers.nonReversing,
-                                                options: .repeating, value: animateIcon)
-                                    } else {
-                                        Image(systemName: "slowmo")
-                                            .foregroundColor(Color.SubtitleText)
-                                    }
-                                }
-                            }
-                            .foregroundColor(Color.SubtitleText)
-                            .font(Font.satoshi(.subheadline, weight: .semibold))
-
-                            Group {
-                                if isDateToday(date: date) {
-                                    Text("Today, \(getDateString(date: date))")
-                                        .lineLimit(1)
-                                } else {
-                                    Text(getDateString(date: date))
-                                        .lineLimit(1)
-                                }
-                            }
-                            .font(Font.satoshi(.body, weight: .semibold))
-
-                            if showTime {
-                                Spacer()
-
-                                Text(getTimeString(date: date))
-                                    .font(Font.satoshi(.body, weight: .semibold))
-                            }
-                        }
-                        .foregroundColor(Color.PrimaryText)
-                        .padding(.vertical, 8.5)
-                        .padding(.horizontal, 10)
-                        .animation(.default, value: isDateToday(date: date))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 11.5, style: .continuous)
-                                .strokeBorder(Color.Outline, lineWidth: 1.5)
-                        )
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            UIApplication.shared.endEditing()
-                            showingDatePicker = true
-                        }
-
-                        if (expenseCategories.count == 0 && !income) || (incomeCategories.count == 0 && income) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "plus")
-                                    .font(Font.satoshi(.subheadline, weight: .semibold))
-
-                                Text("Category")
-                                    .font(Font.satoshi(.body, weight: .semibold))
-                                    .lineLimit(1)
-                            }
-                            .padding(.vertical, 8.5)
-                            .padding(.horizontal, 10)
-                            .foregroundColor(categoryButtonTextColor)
-                            .background(
-                                categoryButtonBackgroundColor,
-                                in: RoundedRectangle(cornerRadius: 11.5, style: .continuous)
-                            )
-                            .contentShape(Rectangle())
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 11.5, style: .continuous)
-                                    .strokeBorder(categoryButtonOutlineColor, lineWidth: 1.5)
-                            )
-                            .drawingGroup()
-                            .offset(x: shake ? -5 : 0)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                showCategorySheet = true
-                            }
-                        } else {
-
-                            Group {
-                                if showCategoryPicker {
-                                    HStack(spacing: 10) {
-
-                                        Text("Close")
-                                            .font(Font.satoshi(.body, weight: .semibold))
-                                            .lineLimit(1)
-
-//                                        Image(systemName: "xmark.circle.fill")
-//                                            .font(Font.satoshi(.footnote, weight: .bold))
-                                    }
-                                    .padding(.vertical, 8.5)
-                                    .padding(.horizontal, 10)
-                                    .frame(width: widthOfCategoryButton)
-                                    .foregroundColor(Color.AlertRed)
-                                    .background(Color.AlertRed.opacity(0.23),
-                                        in: RoundedRectangle(cornerRadius: 11.5, style: .continuous)
-                                    )
-                                } else {
-                                    if let unwrappedCategory = category {
-                                        HStack(spacing: 5) {
-                                            Text(unwrappedCategory.wrappedEmoji)
-                                                .font(Font.satoshi(.footnote, weight: .semibold))
-
-                                            Text(unwrappedCategory.wrappedName)
-                                                .font(Font.satoshi(.body, weight: .semibold))
-                                                .lineLimit(1)
-                                        }
-                                        .padding(.vertical, 8.5)
-                                        .padding(.horizontal, 10)
-                                        .foregroundColor(Color(hex: unwrappedCategory.wrappedColour))
-                                        .background(
-                                            Color(hex: unwrappedCategory.wrappedColour).opacity(0.35),
-                                            in: RoundedRectangle(cornerRadius: 11.5, style: .continuous)
-                                        )
-    //                                    .popover(
-    //                                        present: $showCategoryPicker,
-    //                                        attributes: {
-    //                                            $0.position = .absolute(
-    //                                                originAnchor: .topRight,
-    //                                                popoverAnchor: .bottomRight
-    //                                            )
-    //                                            $0.rubberBandingMode = .none
-    //                                            $0.sourceFrameInset = UIEdgeInsets(top: -10, left: 0, bottom: 0, right: 0)
-    //                                            $0.presentation.animation = .easeInOut(duration: 0.2)
-    //                                            $0.dismissal.animation = .easeInOut(duration: 0.3)
-    //                                        }
-    //                                    ) {
-    //                                        CategoryPickerView(
-    //                                            category: $category, showPicker: $showCategoryPicker,
-    //                                            showSheet: $showCategorySheet, income: income, darkMode: darkMode
-    //                                        )
-    //                                        .environment(\.managedObjectContext, self.moc)
-    //                                    } background: {
-    //                                        backgroundColor.opacity(0.6)
-    //                                    }
-                                    } else {
-                                        HStack(spacing: 5.5) {
-                                            if #available(iOS 17.0, *) {
-                                                Image(systemName: "circle.grid.2x2")
-                                                    .font(Font.satoshi(.subheadline, weight: .semibold))
-                                                    .symbolEffect(
-                                                        .bounce.up.byLayer, options: .repeating.speed(0.5),
-                                                        value: showCategoryPicker)
-                                            } else {
-                                                Image(systemName: "circle.grid.2x2")
-                                                    .font(Font.satoshi(.subheadline, weight: .semibold))
-                                            }
-
-                                            Text("Category")
-                                                .font(Font.satoshi(.body, weight: .semibold))
-                                                .lineLimit(1)
-                                        }
-                                        .padding(.vertical, 8.5)
-                                        .padding(.horizontal, 10)
-                                        .frame(width: widthOfCategoryButton)
-                                        .foregroundColor(categoryButtonTextColor)
-                                        .background(
-                                            categoryButtonBackgroundColor,
-                                            in: RoundedRectangle(cornerRadius: 11.5, style: .continuous)
-                                        )
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 11.5, style: .continuous)
-                                                .strokeBorder(categoryButtonOutlineColor, lineWidth: 1.5)
-                                        )
-                                        .drawingGroup()
-                                        .offset(x: shake ? -5 : 0)
-    //                                    .popover(
-    //                                        present: $showCategoryPicker,
-    //                                        attributes: {
-    //                                            $0.position = .absolute(
-    //                                                originAnchor: .topRight,
-    //                                                popoverAnchor: .bottomRight
-    //                                            )
-    //                                            $0.rubberBandingMode = .none
-    //                                            $0.sourceFrameInset = UIEdgeInsets(top: -10, left: 0, bottom: 0, right: 0)
-    //                                            $0.presentation.animation = .easeInOut(duration: 0.2)
-    //                                            $0.dismissal.animation = .easeInOut(duration: 0.3)
-    //                                        }
-    //                                    ) {
-    //                                        CategoryPickerView(
-    //                                            category: $category, showPicker: $showCategoryPicker,
-    //                                            showSheet: $showCategorySheet, income: income, darkMode: darkMode
-    //                                        )
-    //                                        .environment(\.managedObjectContext, self.moc)
-    //                                    } background: {
-    //                                        backgroundColor.opacity(0.6)
-    //                                    }
-                                    }
-                                }
-
-                            }
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                withAnimation(.easeInOut) {
-                                    showCategoryPicker.toggle()
-                                }
-
-                            }
-                        }
+                    if !showCategoryPicker, hasAttachmentDetails {
+                        moreDetailsSection
+                            .padding(.bottom, 5)
                     }
+
+                    if !showCategoryPicker {
+                        preKeypadControlRow
+                            .padding(.bottom, 5)
                     }
-                    .padding(.bottom, 5)
                 }
 
                 // date and category picker
 
-                if showCategoryPicker {
-                    NewCategoryPickerView(
-                        category: $category, showPicker: $showCategoryPicker,
-                        showSheet: $showCategorySheet, income: income
-                    )
-                    .transition(AnyTransition.move(edge: .trailing).combined(with: .opacity))
-                } else {
-                    NumberPad(
-                        price: $price,
-                        category: $category,
-                        isEditingDecimal: $isEditingDecimal,
-                        decimalValuesAssigned: $decimalValuesAssigned,
-                        showingNotePicker: showingNotePicker
-                    ) {
-                        submit()
+                VStack(spacing: 0) {
+                    if showCategoryPicker {
+                        NewCategoryPickerView(
+                            category: $category, showPicker: $showCategoryPicker,
+                            showSheet: $showCategorySheet, income: income
+                        )
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .transition(AnyTransition.move(edge: .trailing).combined(with: .opacity))
+                    } else {
+                        NumberPad(
+                            price: $price,
+                            category: $category,
+                            isEditingDecimal: $isEditingDecimal,
+                            decimalValuesAssigned: $decimalValuesAssigned,
+                            showingNotePicker: showingNotePicker,
+                            submitLabel: nil,
+                            showsSubmitButton: false,
+                            showsOperators: true,
+                            expressionPreview: $calculatorExpression,
+                            resetID: calculatorResetID,
+                            commitID: calculatorCommitID
+                        ) {
+                            attemptSubmit()
+                        }
+                        .transition(AnyTransition.move(edge: .leading).combined(with: .opacity))
+
+                        bottomActionBar
                     }
-                    .transition(AnyTransition.move(edge: .leading).combined(with: .opacity))
                 }
 
             }
@@ -1002,6 +818,10 @@ struct TransactionView: View {
         .sheet(isPresented: $showCurrencyPicker) {
             CurrencyPickerSheet(currency: $transactionCurrency)
         }
+        .sheet(isPresented: $showNoteSheet) {
+            TransactionNoteSheet(note: $note)
+                .compactNoteSheet()
+        }
     }
 
     func isDateToday(date: Date) -> Bool {
@@ -1061,6 +881,14 @@ struct TransactionView: View {
             }
         }
 
+    }
+
+    private func attemptSubmit() {
+        calculatorCommitID += 1
+
+        DispatchQueue.main.async {
+            submit()
+        }
     }
 
     func submit() {
@@ -1188,6 +1016,412 @@ struct TransactionView: View {
     }
 
     @ViewBuilder
+    private var calculationBubble: some View {
+        HStack(spacing: 8) {
+            Text(calculatorExpression.isEmpty ? " " : calculatorExpression)
+                .font(Font.satoshi(.callout, weight: .semibold))
+                .foregroundColor(Color.SubtitleText)
+                .lineLimit(1)
+
+            if !calculatorExpression.isEmpty {
+                Button {
+                    withAnimation(.easeOut(duration: 0.16)) {
+                        calculatorExpression = ""
+                        calculatorResetID += 1
+                    }
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(Font.satoshi(9, weight: .bold))
+                        .foregroundColor(Color.SubtitleText)
+                        .frame(width: 18, height: 18)
+                        .background(Color.PrimaryBackground.opacity(0.8), in: Circle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.leading, 12)
+        .padding(.trailing, calculatorExpression.isEmpty ? 12 : 7)
+        .frame(height: 32)
+        .background(Color.SecondaryBackground.opacity(calculatorExpression.isEmpty ? 0 : 0.8), in: Capsule())
+        .frame(maxWidth: .infinity, alignment: .center)
+        .opacity(calculatorExpression.isEmpty ? 0 : 1)
+        .animation(.easeOut(duration: 0.18), value: calculatorExpression.isEmpty)
+    }
+
+    @ViewBuilder
+    private var preKeypadControlRow: some View {
+        HStack(spacing: 8) {
+            HStack(spacing: 7) {
+                Group {
+                    if date < Date.now {
+                        Image(systemName: "calendar")
+                    } else if #available(iOS 17.0, *) {
+                        Image(systemName: "rays")
+                            .symbolEffect(
+                                .variableColor.iterative.dimInactiveLayers.nonReversing,
+                                options: .repeating,
+                                value: animateIcon
+                            )
+                    } else {
+                        Image(systemName: "slowmo")
+                    }
+                }
+                .foregroundColor(Color.SubtitleText)
+                .font(Font.satoshi(.subheadline, weight: .semibold))
+
+                Text(isDateToday(date: date) ? "Today, \(getDateString(date: date))" : getDateString(date: date))
+                    .font(Font.satoshi(.body, weight: .semibold))
+                    .foregroundColor(Color.PrimaryText)
+                    .lineLimit(1)
+
+                Spacer(minLength: 0)
+            }
+            .padding(.vertical, 8.5)
+            .padding(.horizontal, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(
+                RoundedRectangle(cornerRadius: 11.5, style: .continuous)
+                    .strokeBorder(Color.Outline, lineWidth: 1.5)
+            )
+            .contentShape(Rectangle())
+            .onTapGesture {
+                UIApplication.shared.endEditing()
+                showingDatePicker = true
+            }
+
+            noteIconButton
+        }
+    }
+
+    @ViewBuilder
+    private func transactionTypeToggleButton(
+        title: String,
+        systemImage: String,
+        selected: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: selected ? 7 : 0) {
+                Image(systemName: systemImage)
+                    .font(Font.satoshi(.footnote, weight: .bold))
+                    .frame(width: 22, height: 22)
+                    .background(selected ? Color.LightIcon : Color.SubtitleText.opacity(0.22), in: Circle())
+                    .foregroundColor(selected ? Color.DarkBackground : Color.SubtitleText)
+
+                if selected {
+                    Text(title)
+                        .font(Font.satoshi(.callout, weight: .semibold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.82)
+                        .transition(.opacity.combined(with: .move(edge: .trailing)))
+                }
+            }
+            .foregroundColor(selected ? Color.PrimaryText : Color.SubtitleText)
+            .padding(.horizontal, selected ? 10 : 8)
+            .frame(width: selected ? 126 : 50, height: 40)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var accountChip: some View {
+        HStack(spacing: 9) {
+            Text("R")
+                .font(Font.satoshi(.callout, weight: .bold))
+                .foregroundColor(.white)
+                .frame(width: 34, height: 34)
+                .background(Color(hex: "4A5240"), in: Circle())
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Personal")
+                    .font(Font.satoshi(.callout, weight: .semibold))
+                    .foregroundColor(Color.PrimaryText)
+                    .lineLimit(1)
+                Text("\(currencySymbol)0")
+                    .font(Font.satoshi(.footnote, weight: .medium))
+                    .foregroundColor(Color.SubtitleText)
+                    .lineLimit(1)
+            }
+        }
+        .padding(.vertical, 7)
+        .padding(.leading, 8)
+        .padding(.trailing, 14)
+        .background(Color.SecondaryBackground, in: Capsule())
+        .overlay(Capsule().stroke(Color.Outline.opacity(0.75), lineWidth: 1.2))
+    }
+
+    @ViewBuilder
+    private var currencyChip: some View {
+        Button {
+            showCurrencyPicker = true
+        } label: {
+            HStack(spacing: 7) {
+                Text(flagEmoji(for: transactionCurrency))
+                    .font(Font.satoshi(.body, weight: .semibold))
+                Text(transactionCurrency)
+                    .font(Font.satoshi(.body, weight: .bold))
+                    .foregroundColor(Color.PrimaryText)
+            }
+            .padding(.vertical, 10)
+            .padding(.horizontal, 14)
+            .background(Color.SecondaryBackground, in: Capsule())
+            .overlay(Capsule().stroke(Color.Outline.opacity(0.75), lineWidth: 1.2))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func flagEmoji(for currencyCode: String) -> String {
+        switch currencyCode.uppercased() {
+        case "MYR": return "🇲🇾"
+        case "SGD": return "🇸🇬"
+        case "USD": return "🇺🇸"
+        case "EUR": return "🇪🇺"
+        case "GBP": return "🇬🇧"
+        case "JPY": return "🇯🇵"
+        case "IDR": return "🇮🇩"
+        case "THB": return "🇹🇭"
+        default: return "💳"
+        }
+    }
+
+    @ViewBuilder
+    private var noteIconButton: some View {
+        Button {
+            showNoteSheet = true
+        } label: {
+            Image(systemName: note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "note.text" : "note.text.badge.plus")
+                .font(Font.satoshi(.body, weight: .semibold))
+                .foregroundColor(note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.SubtitleText : Color.PrimaryText)
+                .frame(width: 42, height: 42)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 11.5, style: .continuous)
+                        .strokeBorder(Color.Outline, lineWidth: 1.5)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var noteChipButton: some View {
+        Button {
+            showNoteSheet = true
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "note.text" : "note.text.badge.plus")
+                    .font(Font.satoshi(.subheadline, weight: .semibold))
+                Text(note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Note" : "Note added")
+                    .font(Font.satoshi(.body, weight: .semibold))
+                    .lineLimit(1)
+            }
+            .foregroundColor(note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.SubtitleText : Color.PrimaryText)
+            .padding(.vertical, 8.5)
+            .padding(.horizontal, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(
+                RoundedRectangle(cornerRadius: 11.5, style: .continuous)
+                    .strokeBorder(Color.Outline, lineWidth: 1.5)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var bottomActionBar: some View {
+        HStack(spacing: 12) {
+            Button {
+                if (expenseCategories.count == 0 && !income) || (incomeCategories.count == 0 && income) {
+                    showCategorySheet = true
+                } else {
+                    withAnimation(.easeInOut) {
+                        showCategoryPicker = true
+                    }
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "square.grid.2x2")
+                        .font(Font.satoshi(.body, weight: .semibold))
+                    Text(category?.wrappedName ?? "Select category")
+                        .font(Font.satoshi(.body, weight: .semibold))
+                        .lineLimit(1)
+                }
+                .foregroundColor(category.map { Color(hex: $0.wrappedColour) } ?? Color.PrimaryText)
+                .padding(.horizontal, 16)
+                .frame(height: 52)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.SecondaryBackground, in: Capsule())
+                .overlay(Capsule().stroke(Color.Outline.opacity(0.85), lineWidth: 1.2))
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                attemptSubmit()
+            } label: {
+                Text(toEdit == nil ? "Add" : "Save")
+                    .font(Font.satoshi(.body, weight: .bold))
+                    .foregroundColor(canSaveTransaction ? Color.LightIcon : Color.SubtitleText)
+                    .frame(width: 96, height: 52)
+                    .background(canSaveTransaction ? Color.DarkBackground : Color.SecondaryBackground, in: Capsule())
+                    .overlay(Capsule().stroke(Color.Outline.opacity(canSaveTransaction ? 0 : 0.85), lineWidth: 1.2))
+            }
+            .buttonStyle(.plain)
+            .disabled(!canSaveTransaction)
+        }
+        .padding(.bottom, 2)
+    }
+
+    @ViewBuilder
+    private var primaryCategoryButton: some View {
+        Button {
+            if (expenseCategories.count == 0 && !income) || (incomeCategories.count == 0 && income) {
+                showCategorySheet = true
+            } else {
+                withAnimation(.easeInOut) {
+                    showCategoryPicker.toggle()
+                }
+            }
+        } label: {
+            HStack(spacing: 10) {
+                Group {
+                    if showCategoryPicker {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(Color.AlertRed)
+                    } else if let category {
+                        Text(category.wrappedEmoji)
+                    } else {
+                        Image(systemName: "circle.grid.2x2")
+                            .foregroundColor(categoryButtonTextColor)
+                    }
+                }
+                .font(Font.satoshi(.subheadline, weight: .semibold))
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Category")
+                        .font(Font.satoshi(.footnote, weight: .medium))
+                        .foregroundColor(Color.SubtitleText)
+
+                    Text(showCategoryPicker ? "Close picker" : category?.wrappedName ?? "Choose a category")
+                        .font(Font.satoshi(.body, weight: .semibold))
+                        .foregroundColor(category.map { Color(hex: $0.wrappedColour) } ?? categoryButtonTextColor)
+                        .lineLimit(1)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(Font.satoshi(11, weight: .bold))
+                    .foregroundColor(Color.SubtitleText)
+                    .rotationEffect(.degrees(showCategoryPicker ? 90 : 0))
+            }
+            .padding(.horizontal, 12)
+            .frame(height: 54)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                category.map { Color(hex: $0.wrappedColour).opacity(0.13) } ?? categoryButtonBackgroundColor,
+                in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(category.map { Color(hex: $0.wrappedColour).opacity(0.28) } ?? categoryButtonOutlineColor, lineWidth: 1.5)
+            )
+            .offset(x: shake ? -5 : 0)
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var moreDetailsSection: some View {
+        VStack(spacing: 8) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    showMoreDetails.toggle()
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Text("More details")
+                        .font(Font.satoshi(.body, weight: .semibold))
+                        .foregroundColor(Color.PrimaryText)
+
+                    Spacer()
+
+                    Text(moreDetailsSummary)
+                        .font(Font.satoshi(.footnote, weight: .medium))
+                        .foregroundColor(Color.SubtitleText)
+                        .lineLimit(1)
+
+                    Image(systemName: "chevron.down")
+                        .font(Font.satoshi(10, weight: .bold))
+                        .foregroundColor(Color.SubtitleText)
+                        .rotationEffect(.degrees(showMoreDetails ? 180 : 0))
+                }
+                .padding(.vertical, 9)
+                .padding(.horizontal, 12)
+                .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 13, style: .continuous)
+                        .strokeBorder(Color.Outline.opacity(0.75), lineWidth: 1.2)
+                )
+            }
+            .buttonStyle(.plain)
+
+            if showMoreDetails {
+                VStack(spacing: 8) {
+                    HStack(spacing: 8) {
+                        attachmentSquareButton
+                    }
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+    }
+
+    private var moreDetailsSummary: String {
+        "Attachment"
+    }
+
+    @ViewBuilder
+    private var dateDetailButton: some View {
+        HStack(spacing: 7) {
+            Group {
+                if date < Date.now {
+                    Image(systemName: "calendar")
+                } else if #available(iOS 17.0, *) {
+                    Image(systemName: "rays")
+                        .symbolEffect(.variableColor.iterative.dimInactiveLayers.nonReversing, options: .repeating, value: animateIcon)
+                } else {
+                    Image(systemName: "slowmo")
+                        .foregroundColor(Color.SubtitleText)
+                }
+            }
+            .foregroundColor(Color.SubtitleText)
+            .font(Font.satoshi(.subheadline, weight: .semibold))
+
+            Text(isDateToday(date: date) ? "Today, \(getDateString(date: date))" : getDateString(date: date))
+                .font(Font.satoshi(.body, weight: .semibold))
+                .lineLimit(1)
+
+            Spacer()
+
+            Text(getTimeString(date: date))
+                .font(Font.satoshi(.body, weight: .semibold))
+                .foregroundColor(Color.SubtitleText)
+        }
+        .foregroundColor(Color.PrimaryText)
+        .padding(.vertical, 8.5)
+        .padding(.horizontal, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .overlay(
+            RoundedRectangle(cornerRadius: 11.5, style: .continuous)
+                .strokeBorder(Color.Outline, lineWidth: 1.5)
+        )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            UIApplication.shared.endEditing()
+            showingDatePicker = true
+        }
+    }
+
+    @ViewBuilder
     private var bucketPickerButton: some View {
         Menu {
             Button {
@@ -1243,6 +1477,7 @@ struct TransactionView: View {
                     .strokeBorder(bucket == nil ? Color.Outline : Color(hex: bucket?.colour ?? "4A5240").opacity(0.28), lineWidth: 1.5)
             )
         }
+        .buttonStyle(.plain)
     }
 
     @ViewBuilder
@@ -2192,6 +2427,92 @@ private struct CurrencyPickerSheet: View {
                     Button("Cancel") { dismiss() }
                 }
             }
+        }
+    }
+}
+
+private struct TransactionNoteSheet: View {
+    @Binding var note: String
+    @Environment(\.dismiss) private var dismiss
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 12) {
+                TextEditor(text: $note)
+                    .font(Font.satoshi(.body, weight: .medium))
+                    .foregroundColor(Color.PrimaryText)
+                    .frame(height: 118)
+                    .padding(12)
+                    .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(Color.Outline.opacity(0.75), lineWidth: 1)
+                    )
+                    .overlay(alignment: .topLeading) {
+                        if note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            Text("Add notes or tags starting with #")
+                                .font(Font.satoshi(.body, weight: .medium))
+                                .foregroundColor(Color.SubtitleText.opacity(0.55))
+                                .padding(.horizontal, 18)
+                                .padding(.top, 20)
+                                .allowsHitTesting(false)
+                        }
+                    }
+                    .focused($focused)
+
+                HStack(spacing: 8) {
+                    Image(systemName: "sparkles")
+                    Text("KIRA can use notes to explain spending later.")
+                }
+                .font(Font.satoshi(.footnote, weight: .semibold))
+                .foregroundColor(Color.SubtitleText)
+
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 12)
+            .background(Color.PrimaryBackground.ignoresSafeArea())
+            .navigationTitle("Notes and tags")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(Font.satoshi(.callout, weight: .semibold))
+                            .foregroundColor(Color.SubtitleText)
+                            .frame(width: 40, height: 40)
+                            .background(Color.SecondaryBackground, in: Circle())
+                    }
+                }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Save") {
+                        dismiss()
+                    }
+                    .font(Font.satoshi(.body, weight: .semibold))
+                    .foregroundColor(Color.PrimaryText)
+                }
+            }
+        }
+        .navigationViewStyle(.stack)
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                focused = true
+            }
+        }
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func compactNoteSheet() -> some View {
+        if #available(iOS 16.0, *) {
+            self.presentationDetents([.height(290)])
+        } else {
+            self
         }
     }
 }

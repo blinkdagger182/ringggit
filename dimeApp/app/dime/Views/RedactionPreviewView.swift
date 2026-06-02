@@ -79,16 +79,11 @@ struct RedactionPreviewView: View {
     // MARK: - Loading
 
     private var loadingView: some View {
-        VStack(spacing: 16) {
-            ProgressView().scaleEffect(1.2)
-            Text("Protecting your document")
-                .font(Font.satoshi(.headline, weight: .semibold))
-            Text("Kira is hiding private details on your iPhone before analysis.")
-                .font(Font.satoshi(.subheadline))
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
-        }
+        KiraReceiptLoadingView(
+            title: "Reading your receipt",
+            subtitle: "KIRA is protecting private details and turning the scan into an expense.",
+            status: "Processing on your iPhone"
+        )
     }
 
     // MARK: - Error

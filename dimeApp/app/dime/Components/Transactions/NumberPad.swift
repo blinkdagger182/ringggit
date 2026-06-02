@@ -12,12 +12,57 @@ enum AssignedDecimal {
     case none, first, second
 }
 
+private enum CalculatorOperator: String {
+    case add = "+"
+    case subtract = "-"
+    case multiply = "×"
+    case divide = "÷"
+
+    func apply(_ lhs: Decimal, _ rhs: Decimal) -> Decimal? {
+        switch self {
+        case .add:
+            return lhs + rhs
+        case .subtract:
+            return lhs - rhs
+        case .multiply:
+            return lhs * rhs
+        case .divide:
+            guard rhs != 0 else { return nil }
+            return lhs / rhs
+        }
+    }
+}
+
+private enum CalculatorKey: Hashable {
+    case digit(Int)
+    case decimal
+    case delete
+    case empty
+    case operation(CalculatorOperator)
+
+    var isOperation: Bool {
+        if case .operation = self { return true }
+        return false
+    }
+
+    var isEmpty: Bool {
+        if case .empty = self { return true }
+        return false
+    }
+}
+
 struct NumberPad: View {
     @Binding var price: Double
     @Binding var category: Category?
     @Binding var isEditingDecimal: Bool
     @Binding var decimalValuesAssigned: AssignedDecimal
     var showingNotePicker: Bool = false
+    var submitLabel: String?
+    var showsSubmitButton: Bool = true
+    var showsOperators: Bool = false
+    @Binding var expressionPreview: String
+    var resetID: Int = 0
+    var commitID: Int = 0
     var submit: () -> Void
 
     @AppStorage("numberEntryType", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) var numberEntryType: Int = 1
@@ -27,72 +72,344 @@ struct NumberPad: View {
     var numPadNumbers = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
 
     @State private var engine: CHHapticEngine?
+    @State private var currentInput = "0"
+    @State private var storedValue: Decimal?
+    @State private var pendingOperator: CalculatorOperator?
+
+    init(
+        price: Binding<Double>,
+        category: Binding<Category?>,
+        isEditingDecimal: Binding<Bool>,
+        decimalValuesAssigned: Binding<AssignedDecimal>,
+        showingNotePicker: Bool = false,
+        submitLabel: String? = nil,
+        showsSubmitButton: Bool = true,
+        showsOperators: Bool = false,
+        expressionPreview: Binding<String> = .constant(""),
+        resetID: Int = 0,
+        commitID: Int = 0,
+        submit: @escaping () -> Void
+    ) {
+        _price = price
+        _category = category
+        _isEditingDecimal = isEditingDecimal
+        _decimalValuesAssigned = decimalValuesAssigned
+        self.showingNotePicker = showingNotePicker
+        self.submitLabel = submitLabel
+        self.showsSubmitButton = showsSubmitButton
+        self.showsOperators = showsOperators
+        _expressionPreview = expressionPreview
+        self.resetID = resetID
+        self.commitID = commitID
+        self.submit = submit
+    }
 
     var body: some View {
         GeometryReader { proxy in
-            VStack(spacing: proxy.size.height * 0.04) {
-                ForEach(numPadNumbers, id: \.self) { array in
-                    HStack(spacing: proxy.size.width * 0.05) {
-                        ForEach(array, id: \.self) { singleNumber in
-                            NumberButton(number: singleNumber, size: proxy.size)
-                        }
-                    }
-                }
-                HStack(spacing: proxy.size.width * 0.05) {
-                    if numberEntryType == 1 {
-                        Button {
-                            deleteLastDigit()
-                        } label: {
-                            Image("tag-cross")
-                                .resizable()
-                                .frame(width: 32, height: 32)
-                                .frame(width: proxy.size.width * 0.3, height: proxy.size.height * 0.22)
-                                .background(Color.DarkBackground)
-                                .foregroundColor(Color.LightIcon)
-                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        }
-                        .buttonStyle(NumPadButton())
-                    } else {
-                        Button {
-                            isEditingDecimal = true
-                        } label: {
-                            Text(".")
-                                .font(Font.satoshi(34, weight: .regular))
-                                .frame(width: proxy.size.width * 0.3, height: proxy.size.height * 0.22)
-                                .background(Color.SecondaryBackground)
-                                .foregroundColor(Color.PrimaryText)
-                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        }
-                        .buttonStyle(NumPadButton())
-                    }
-
-                    NumberButton(number: 0, size: proxy.size)
-
-                    Button {
-                        submit()
-                    } label: {
-                        Group {
-                            if #available(iOS 17.0, *) {
-                                Image(systemName: "checkmark.square.fill")
-                                    .font(Font.satoshi(30, weight: .medium))
-                                    .symbolEffect(.bounce.up.byLayer, value: price != 0 && category != nil)
-                            } else {
-                                Image(systemName: "checkmark.square.fill")
-                                    .font(Font.satoshi(30, weight: .medium))
+            if showsOperators {
+                VStack(spacing: proxy.size.height * 0.035) {
+                    ForEach(calculatorRows, id: \.self) { row in
+                        HStack(spacing: proxy.size.width * 0.035) {
+                            ForEach(row, id: \.self) { key in
+                                CalculatorKeyButton(key: key, size: proxy.size)
                             }
                         }
-                        .frame(width: proxy.size.width * 0.3, height: proxy.size.height * 0.22)
-                        .foregroundColor(Color.LightIcon)
-                        .background(Color.DarkBackground, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     }
-                    .buttonStyle(NumPadButton())
                 }
+                .frame(width: proxy.size.width, height: proxy.size.height)
+            } else {
+                VStack(spacing: proxy.size.height * 0.04) {
+                    ForEach(numPadNumbers, id: \.self) { array in
+                        HStack(spacing: proxy.size.width * 0.05) {
+                            ForEach(array, id: \.self) { singleNumber in
+                                NumberButton(number: singleNumber, size: proxy.size)
+                            }
+                        }
+                    }
+                    HStack(spacing: proxy.size.width * 0.05) {
+                        if numberEntryType == 1 {
+                            Button {
+                                deleteLastDigit()
+                            } label: {
+                                Image("tag-cross")
+                                    .resizable()
+                                    .frame(width: 32, height: 32)
+                                    .frame(width: proxy.size.width * 0.3, height: proxy.size.height * 0.22)
+                                    .background(Color.DarkBackground)
+                                    .foregroundColor(Color.LightIcon)
+                                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            }
+                            .buttonStyle(NumPadButton())
+                        } else {
+                            Button {
+                                isEditingDecimal = true
+                            } label: {
+                                Text(".")
+                                    .font(Font.satoshi(34, weight: .regular))
+                                    .frame(width: proxy.size.width * 0.3, height: proxy.size.height * 0.22)
+                                    .background(Color.SecondaryBackground)
+                                    .foregroundColor(Color.PrimaryText)
+                                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            }
+                            .buttonStyle(NumPadButton())
+                        }
+
+                        NumberButton(number: 0, size: proxy.size)
+
+                        if showsSubmitButton {
+                            Button {
+                                submit()
+                            } label: {
+                                Group {
+                                    if let submitLabel {
+                                        Text(submitLabel)
+                                            .font(Font.satoshi(.body, weight: .semibold))
+                                            .lineLimit(1)
+                                            .minimumScaleFactor(0.75)
+                                    } else if #available(iOS 17.0, *) {
+                                        Image(systemName: "checkmark.square.fill")
+                                            .font(Font.satoshi(30, weight: .medium))
+                                            .symbolEffect(.bounce.up.byLayer, value: price != 0 && category != nil)
+                                    } else {
+                                        Image(systemName: "checkmark.square.fill")
+                                            .font(Font.satoshi(30, weight: .medium))
+                                    }
+                                }
+                                .frame(width: proxy.size.width * 0.3, height: proxy.size.height * 0.22)
+                                .foregroundColor(Color.LightIcon)
+                                .background(Color.DarkBackground, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            }
+                            .buttonStyle(NumPadButton())
+                        }
+                    }
+                }
+                .frame(width: proxy.size.width, height: proxy.size.height)
             }
-            .frame(width: proxy.size.width, height: proxy.size.height)
         }
         .padding(.bottom, 15)
         .keyboardAwareHeight(showToolbar: showingNotePicker)
-        .onAppear(perform: prepareHaptics)
+        .onAppear {
+            prepareHaptics()
+            syncCurrentInput()
+        }
+        .onChange(of: resetID) { _ in
+            resetCalculatorState()
+        }
+        .onChange(of: commitID) { _ in
+            commitCalculatorResult()
+        }
+    }
+
+    private var calculatorRows: [[CalculatorKey]] {
+        [
+            [.digit(7), .digit(8), .digit(9), .operation(.divide)],
+            [.digit(4), .digit(5), .digit(6), .operation(.multiply)],
+            [.digit(1), .digit(2), .digit(3), .operation(.subtract)],
+            [.decimal, .digit(0), .empty, .operation(.add)]
+        ]
+    }
+
+    @ViewBuilder
+    private func CalculatorKeyButton(key: CalculatorKey, size: CGSize) -> some View {
+        Button {
+            handleCalculatorKey(key)
+        } label: {
+            Group {
+                switch key {
+                case let .digit(number):
+                    Text("\(number)")
+                case .decimal:
+                    Text(".")
+                case .delete:
+                    Image(systemName: "delete.left")
+                case .empty:
+                    Color.clear
+                case let .operation(op):
+                    Text(op.rawValue)
+                }
+            }
+            .font(Font.satoshi(key.isOperation ? 30 : 32, weight: .regular))
+            .frame(width: key.isOperation ? size.width * 0.17 : size.width * 0.245, height: size.height * 0.21)
+            .foregroundColor(key.isOperation ? Color.LightIcon : Color.PrimaryText)
+            .background(
+                key.isEmpty ? Color.clear : (key.isOperation ? Color.DarkBackground : Color.SecondaryBackground),
+                in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+            )
+        }
+        .buttonStyle(NumPadButton())
+        .disabled(key.isEmpty)
+    }
+
+    private func handleCalculatorKey(_ key: CalculatorKey) {
+        switch key {
+        case let .digit(number):
+            appendDigit(number)
+        case .decimal:
+            appendDecimal()
+        case .delete:
+            deleteCalculatorInput()
+        case .empty:
+            break
+        case let .operation(op):
+            applyOperator(op)
+        }
+    }
+
+    private func appendDigit(_ number: Int) {
+        if hapticType == 2 {
+            hapticTap()
+        }
+
+        if currentInput == "0" {
+            currentInput = "\(number)"
+        } else {
+            currentInput += "\(number)"
+        }
+
+        updatePriceFromCurrentInput()
+        syncDecimalDisplayState()
+        updateExpressionPreview()
+    }
+
+    private func appendDecimal() {
+        guard !currentInput.contains(".") else { return }
+        currentInput += "."
+        isEditingDecimal = true
+        decimalValuesAssigned = .none
+        updateExpressionPreview()
+    }
+
+    private func deleteCalculatorInput() {
+        if currentInput.count <= 1 {
+            currentInput = "0"
+        } else {
+            currentInput.removeLast()
+            if currentInput == "-" || currentInput.isEmpty {
+                currentInput = "0"
+            }
+        }
+
+        updatePriceFromCurrentInput()
+        syncDecimalDisplayState()
+        updateExpressionPreview()
+    }
+
+    private func applyOperator(_ op: CalculatorOperator) {
+        let rhs = Decimal(string: sanitizedCurrentInput) ?? 0
+
+        if let lhs = storedValue, let pendingOperator {
+            guard let result = pendingOperator.apply(lhs, rhs) else {
+                expressionPreview = "Cannot divide by zero"
+                return
+            }
+            storedValue = result
+            currentInput = formatDecimal(result)
+            price = max(0, NSDecimalNumber(decimal: result).doubleValue)
+            syncDecimalDisplayState()
+        } else {
+            storedValue = rhs
+        }
+
+        pendingOperator = op
+        currentInput = "0"
+        updateExpressionPreview()
+    }
+
+    private var sanitizedCurrentInput: String {
+        currentInput.hasSuffix(".") ? String(currentInput.dropLast()) : currentInput
+    }
+
+    private func updatePriceFromCurrentInput() {
+        let value = Decimal(string: sanitizedCurrentInput) ?? 0
+        if let storedValue, let pendingOperator, let result = pendingOperator.apply(storedValue, value) {
+            price = max(0, NSDecimalNumber(decimal: result).doubleValue)
+        } else {
+            price = max(0, NSDecimalNumber(decimal: value).doubleValue)
+        }
+    }
+
+    private func updateExpressionPreview() {
+        guard let storedValue, let pendingOperator else {
+            expressionPreview = ""
+            return
+        }
+
+        let lhs = formatDecimal(storedValue)
+        let rhs = currentInput == "0" ? "" : " \(currentInput)"
+        expressionPreview = "\(lhs) \(pendingOperator.rawValue)\(rhs)"
+    }
+
+    private func syncCurrentInput() {
+        guard price > 0 else { return }
+        currentInput = formatDecimal(Decimal(price))
+    }
+
+    private func resetCalculatorState() {
+        storedValue = nil
+        pendingOperator = nil
+        currentInput = "0"
+        expressionPreview = ""
+    }
+
+    private func commitCalculatorResult() {
+        guard let storedValue, let pendingOperator else {
+            expressionPreview = ""
+            currentInput = price > 0 ? formatDecimal(Decimal(price)) : "0"
+            return
+        }
+
+        let result: Decimal
+        if currentInput == "0" {
+            result = storedValue
+        } else {
+            let rhs = Decimal(string: sanitizedCurrentInput) ?? 0
+            guard let calculatedResult = pendingOperator.apply(storedValue, rhs) else {
+                expressionPreview = "Cannot divide by zero"
+                return
+            }
+            result = calculatedResult
+        }
+
+        let committed = max(0, NSDecimalNumber(decimal: result).doubleValue)
+        price = committed
+        self.storedValue = nil
+        self.pendingOperator = nil
+        currentInput = committed > 0 ? formatDecimal(Decimal(committed)) : "0"
+        syncDecimalDisplayState()
+        expressionPreview = ""
+    }
+
+    private func syncDecimalDisplayState() {
+        guard currentInput.contains(".") else {
+            isEditingDecimal = false
+            decimalValuesAssigned = .none
+            return
+        }
+
+        isEditingDecimal = true
+        let decimalCount = currentInput
+            .split(separator: ".", omittingEmptySubsequences: false)
+            .dropFirst()
+            .first?
+            .count ?? 0
+
+        switch decimalCount {
+        case 0:
+            decimalValuesAssigned = .none
+        case 1:
+            decimalValuesAssigned = .first
+        default:
+            decimalValuesAssigned = .second
+        }
+    }
+
+    private func formatDecimal(_ value: Decimal) -> String {
+        let number = NSDecimalNumber(decimal: value)
+        let formatter = NumberFormatter()
+        formatter.minimumFractionDigits = 0
+        formatter.maximumFractionDigits = 2
+        formatter.numberStyle = .decimal
+        return formatter.string(from: number) ?? number.stringValue
     }
 
     func prepareHaptics() {
@@ -242,6 +559,9 @@ struct NumberPadTextView: View {
     @Binding var decimalValuesAssigned: AssignedDecimal
     var onCurrencyTap: (() -> Void)? = nil
     var currencyOverride: String? = nil
+    var income: Bool = false
+    var showSign: Bool = false
+    var showCurrency: Bool = true
 
     @AppStorage("currency", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) var globalCurrency: String = Locale.current.currencyCode!
     var effectiveCurrency: String { currencyOverride ?? globalCurrency }
@@ -296,29 +616,33 @@ struct NumberPadTextView: View {
     }
 
     var body: some View {
-        HStack(alignment: .lastTextBaseline, spacing: 0) {
-            if let onCurrencyTap {
+        HStack(alignment: .lastTextBaseline, spacing: 8) {
+            if !showCurrency {
+                Text(amount)
+                    .font(Font.satoshi(largerFontSize, weight: .regular))
+                    .foregroundColor(Color.PrimaryText)
+            } else if let onCurrencyTap {
                 Button(action: onCurrencyTap) {
-                    HStack(alignment: .lastTextBaseline, spacing: 2) {
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(Color.SubtitleText.opacity(0.6))
-                            .offset(y: -6)
-                        Text(currencySymbol)
-                            .font(Font.satoshi(.largeTitle))
+                    HStack(alignment: .lastTextBaseline, spacing: 5) {
+                        Text(effectiveCurrency)
+                            .font(Font.satoshi(.title2, weight: .semibold))
                             .foregroundColor(Color.SubtitleText)
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(Color.SubtitleText.opacity(0.65))
+                            .offset(y: -4)
                     }
                 }
                 .buttonStyle(.plain)
-                Text(amount)
+                Text("\(showSign ? (income ? "+" : "-") : "")\(amount)")
                     .font(Font.satoshi(largerFontSize, weight: .regular))
                     .foregroundColor(Color.PrimaryText)
             } else {
                 Group {
-                    Text(currencySymbol)
-                        .font(Font.satoshi(.largeTitle))
+                    Text(effectiveCurrency + " ")
+                        .font(Font.satoshi(.title2, weight: .semibold))
                         .foregroundColor(Color.SubtitleText)
-                    + Text(amount)
+                    + Text("\(showSign ? (income ? "+" : "-") : "")\(amount)")
                         .font(Font.satoshi(largerFontSize, weight: .regular))
                         .foregroundColor(Color.PrimaryText)
                 }

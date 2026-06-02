@@ -833,38 +833,29 @@ struct HomeScanReceiptFlowView: View {
     let onComplete: (ScannedReceiptPrefill) -> Void
 
     var body: some View {
-        NavigationView {
-            VStack(spacing: 16) {
-                Spacer()
+        ZStack(alignment: .topLeading) {
+            KiraReceiptLoadingView(
+                title: "Opening scanner",
+                subtitle: "Scan your receipt, then KIRA will fill the expense form.",
+                status: "Ask. Scan. Understand."
+            )
 
-                ProgressView()
-                    .tint(Color(hex: "4A5240"))
-
-                VStack(spacing: 6) {
-                    Text("Opening scanner")
-                        .font(Font.satoshi(.title3, weight: .semibold))
-                        .foregroundColor(Color.PrimaryText)
-                    Text("Scan your receipt, then KIRA will fill the expense form.")
-                        .font(Font.satoshi(.subheadline, weight: .medium))
-                        .foregroundColor(Color.SubtitleText)
-                        .multilineTextAlignment(.center)
-                }
-
-                Spacer()
+            Button { dismiss() } label: {
+                Image(systemName: "xmark")
+                    .font(Font.satoshi(.callout, weight: .bold))
+                    .foregroundColor(.white.opacity(0.86))
+                    .frame(width: 40, height: 40)
+                    .background(.white.opacity(0.12), in: Circle())
+                    .overlay(
+                        Circle()
+                            .stroke(.white.opacity(0.18), lineWidth: 1)
+                    )
             }
-            .padding(.horizontal, 24)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.PrimaryBackground.ignoresSafeArea())
-            .navigationTitle("Scan receipt")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") { dismiss() }
-                        .foregroundColor(Color.PrimaryText)
-                }
-            }
+            .buttonStyle(.plain)
+            .padding(.top, 18)
+            .padding(.leading, 20)
         }
-        .navigationViewStyle(.stack)
+        .background(Color(hex: "4A5240").ignoresSafeArea())
         .onAppear {
             guard !hasOpenedScanner else { return }
             hasOpenedScanner = true
@@ -899,6 +890,118 @@ struct HomeScanReceiptFlowView: View {
                 )
                 onComplete(prefill)
                 dismiss()
+            }
+        }
+    }
+}
+
+struct KiraReceiptLoadingView: View {
+    let title: String
+    let subtitle: String
+    let status: String
+
+    @State private var animate = false
+
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    Color(hex: "313B2D"),
+                    Color(hex: "4A5240"),
+                    Color(hex: "5B6B4F")
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+
+            VStack(spacing: 28) {
+                Spacer(minLength: 80)
+
+                ZStack {
+                    ForEach(0..<3, id: \.self) { index in
+                        Circle()
+                            .stroke(.white.opacity(0.10), lineWidth: 1.5)
+                            .frame(width: 118 + CGFloat(index * 34), height: 118 + CGFloat(index * 34))
+                            .scaleEffect(animate ? 1.08 : 0.92)
+                            .opacity(animate ? 0.20 : 0.70)
+                            .animation(
+                                .easeInOut(duration: 1.7)
+                                    .repeatForever(autoreverses: true)
+                                    .delay(Double(index) * 0.16),
+                                value: animate
+                            )
+                    }
+
+                    RoundedRectangle(cornerRadius: 34, style: .continuous)
+                        .fill(.white.opacity(0.13))
+                        .frame(width: 118, height: 118)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 34, style: .continuous)
+                                .stroke(
+                                    LinearGradient(
+                                        colors: [.white.opacity(0.46), .white.opacity(0.12)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: 1.2
+                                )
+                        )
+                        .shadow(color: .black.opacity(0.20), radius: 28, x: 0, y: 18)
+                        .scaleEffect(animate ? 1.02 : 0.98)
+
+                    Image("kira-ai")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 72, height: 72)
+                        .shadow(color: .black.opacity(0.18), radius: 10, x: 0, y: 6)
+                }
+
+                VStack(spacing: 10) {
+                    Text(title)
+                        .font(Font.satoshi(.title2, weight: .bold))
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+
+                    Text(subtitle)
+                        .font(Font.satoshi(.body, weight: .medium))
+                        .foregroundColor(.white.opacity(0.68))
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(2)
+                        .padding(.horizontal, 26)
+                }
+
+                HStack(spacing: 8) {
+                    ForEach(0..<3, id: \.self) { index in
+                        Circle()
+                            .fill(.white.opacity(0.78))
+                            .frame(width: 6, height: 6)
+                            .scaleEffect(animate ? 1.0 : 0.55)
+                            .opacity(animate ? 1 : 0.35)
+                            .animation(
+                                .easeInOut(duration: 0.72)
+                                    .repeatForever(autoreverses: true)
+                                    .delay(Double(index) * 0.18),
+                                value: animate
+                            )
+                    }
+                }
+
+                Text(status)
+                    .font(Font.satoshi(.footnote, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.56))
+                    .padding(.horizontal, 14)
+                    .frame(height: 32)
+                    .background(.white.opacity(0.10), in: Capsule())
+                    .overlay(Capsule().stroke(.white.opacity(0.14), lineWidth: 1))
+
+                Spacer(minLength: 90)
+            }
+            .padding(.horizontal, 24)
+        }
+        .onAppear {
+            withAnimation {
+                animate = true
             }
         }
     }
