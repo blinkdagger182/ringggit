@@ -13,7 +13,7 @@ struct CustomTabBar: View {
     @Binding var currentTab: String
     var topEdge: CGFloat
     var bottomEdge: CGFloat
-    @State var addTransaction: Bool = false
+    @State private var showAddMenu: Bool = false
 
     @State var checkingFace: Bool = false
 
@@ -23,6 +23,10 @@ struct CustomTabBar: View {
     @Binding var counter: Int
 
     var launchAdd: Bool
+    var onAddExpense: () -> Void = {}
+    var onAddIncome: () -> Void = {}
+    var onScanReceipt: () -> Void = {}
+    var onAskKIRA: () -> Void = {}
 
     @AppStorage("confetti", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) var confetti: Bool = false
     @AppStorage("firstTransactionViewLaunch", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) var firstLaunch: Bool = true
@@ -35,9 +39,9 @@ struct CustomTabBar: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            TabButton(image: "Log", zoomed: isZoomed, currentTab: $currentTab)
+            TabButton(image: "Home", zoomed: isZoomed, currentTab: $currentTab)
 
-            TabButton(image: "Budget", zoomed: isZoomed, currentTab: $currentTab)
+            TabButton(image: "Plan", zoomed: isZoomed, currentTab: $currentTab)
 
             ZStack {
                 RoundedRectangle(cornerRadius: 28, style: .continuous).fill(Color.DarkBackground.opacity(0.6))
@@ -53,7 +57,7 @@ struct CustomTabBar: View {
                 Button {
                     let impactMed = UIImpactFeedbackGenerator(style: .light)
                     impactMed.impactOccurred()
-                    addTransaction = true
+                    showAddMenu = true
                 } label: {
                     Image(systemName: "plus")
                 }
@@ -69,9 +73,7 @@ struct CustomTabBar: View {
             }
             .accessibilityLabel("Add New Transaction")
 
-            TabButton(image: "Insights", zoomed: isZoomed, currentTab: $currentTab)
-
-            TabButton(image: "Settings", zoomed: isZoomed, currentTab: $currentTab)
+            TabButton(image: "Activity", zoomed: isZoomed, currentTab: $currentTab)
         }
         .padding(.horizontal, 8)
         .padding(.bottom, max(bottomEdge - 10, 0))
@@ -86,27 +88,22 @@ struct CustomTabBar: View {
                 }
         )
         .frame(maxWidth: .infinity)
-        .fullScreenCover(isPresented: $addTransaction, onDismiss: {
-            if confetti {
-                if count != transactions.count {
-                    counter += 1
-                }
+        .confirmationDialog("Add to KIRA", isPresented: $showAddMenu, titleVisibility: .visible) {
+            Button("Add expense") {
+                prepareTransactionCount()
+                onAddExpense()
             }
-
-            if firstLaunch {
-                firstLaunch = false
+            Button("Add income") {
+                prepareTransactionCount()
+                onAddIncome()
             }
-
-        }, content: {
-            TransactionView(toEdit: nil)
-        })
-        .onChange(of: launchAdd) { _ in
-            addTransaction = true
+            Button("Scan receipt") { onScanReceipt() }
+            Button("Ask KIRA") { onAskKIRA() }
+            Button("Cancel", role: .cancel) {}
         }
-        .onChange(of: addTransaction) { _ in
-            if addTransaction {
-                count = transactions.count
-            }
+        .onChange(of: launchAdd) { _ in
+            prepareTransactionCount()
+            onAddExpense()
         }
         .onChange(of: transactions.count) { _ in
             if !transactions.isEmpty {
@@ -123,7 +120,15 @@ struct CustomTabBar: View {
                 return
             }
 
-            addTransaction = true
+            prepareTransactionCount()
+            onAddExpense()
+        }
+    }
+
+    private func prepareTransactionCount() {
+        count = transactions.count
+        if firstLaunch {
+            firstLaunch = false
         }
     }
 }
@@ -157,10 +162,9 @@ struct TabButton: View {
 
     private var sfSymbol: (inactive: String, active: String) {
         switch image {
-        case "Log":      return ("clock", "clock.fill")
-        case "Insights": return ("chart.bar", "chart.bar.fill")
-        case "Budget":   return ("wallet.pass", "wallet.pass.fill")
-        case "Settings": return ("person.circle", "person.circle.fill")
+        case "Home":     return ("house", "house.fill")
+        case "Plan":     return ("wallet.pass", "wallet.pass.fill")
+        case "Activity": return ("clock", "clock.fill")
         default:         return ("circle", "circle.fill")
         }
     }

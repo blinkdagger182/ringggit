@@ -10,6 +10,318 @@ import Foundation
 import Popovers
 import SwiftUI
 
+private enum PlanSegment: String, CaseIterable {
+    case budgets = "Budgets"
+    case goals = "Goals"
+}
+
+struct PlanView: View {
+    @EnvironmentObject private var dataController: DataController
+    @EnvironmentObject private var tabBarManager: TabBarManager
+
+    @FetchRequest(sortDescriptors: [SortDescriptor(\.dateCreated)]) private var budgets: FetchedResults<Budget>
+    @FetchRequest(sortDescriptors: []) private var mainBudget: FetchedResults<MainBudget>
+    @FetchRequest(sortDescriptors: [SortDescriptor(\.dateCreated)]) private var buckets: FetchedResults<Bucket>
+
+    @State private var selectedSegment: PlanSegment = .budgets
+    @State private var newBudget = false
+    @State private var newGoal = false
+    @State private var budgetToEdit: Budget?
+    @State private var budgetToDelete: Budget?
+    @State private var goalToEdit: Bucket?
+    @State private var goalToDelete: Bucket?
+
+    @AppStorage("budgetViewStyle", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) private var budgetRows: Bool = false
+
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                header
+
+                Picker("Plan", selection: $selectedSegment) {
+                    ForEach(PlanSegment.allCases, id: \.self) { segment in
+                        Text(segment.rawValue).tag(segment)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 14)
+
+                ScrollView(showsIndicators: false) {
+                    Group {
+                        switch selectedSegment {
+                        case .budgets:
+                            budgetsContent
+                        case .goals:
+                            goalsContent
+                        }
+                    }
+                    .padding(.bottom, 96)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .background(Color.PrimaryBackground.ignoresSafeArea())
+            .navigationBarHidden(true)
+            .onAppear {
+                dataController.updateBudgetDates()
+            }
+            .sheet(isPresented: $newBudget) {
+                BrandNewBudgetView(overallBudgetCreated: !mainBudget.isEmpty)
+            }
+            .sheet(item: $budgetToEdit, onDismiss: {
+                budgetToEdit = nil
+            }) { budget in
+                BrandNewBudgetView(overallBudgetCreated: !mainBudget.isEmpty, toEditBudget: budget)
+            }
+            .fullScreenCover(isPresented: $newGoal) {
+                BucketEditorSheet()
+            }
+            .fullScreenCover(item: $goalToEdit, onDismiss: {
+                goalToEdit = nil
+            }) { goal in
+                BucketEditorSheet(bucket: goal)
+            }
+            .fullScreenCover(item: $budgetToDelete, onDismiss: {
+                budgetToDelete = nil
+            }) { budget in
+                DeleteBudgetAlert(toDelete: budget)
+            }
+            .fullScreenCover(item: $goalToDelete, onDismiss: {
+                goalToDelete = nil
+            }) { goal in
+                DeleteBucketAlert(bucket: goal)
+            }
+        }
+        .navigationViewStyle(.stack)
+    }
+
+    private var header: some View {
+        HStack(alignment: .center) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Plan")
+                    .font(Font.satoshi(.largeTitle, weight: .bold))
+                    .foregroundColor(Color.PrimaryText)
+                    .accessibility(addTraits: .isHeader)
+                Text("Budgets and goals in one place.")
+                    .font(Font.satoshi(.subheadline, weight: .medium))
+                    .foregroundColor(Color.SubtitleText)
+            }
+
+            Spacer()
+
+            Button {
+                if selectedSegment == .budgets {
+                    newBudget = true
+                } else {
+                    newGoal = true
+                }
+            } label: {
+                Image(systemName: "plus")
+                    .font(Font.satoshi(16, weight: .semibold))
+                    .foregroundColor(Color.PrimaryText)
+                    .frame(width: 42, height: 42)
+                    .background(Color.SecondaryBackground, in: Circle())
+                    .overlay(Circle().stroke(Color.Outline.opacity(0.7), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 18)
+        .padding(.bottom, 16)
+    }
+
+    private var budgetsContent: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            if mainBudget.isEmpty && budgets.isEmpty {
+                EmptyStateView(
+                    systemImage: "wallet.pass",
+                    title: "Create your first budget.",
+                    message: "Keep spending on track with a simple limit."
+                )
+                .padding(.horizontal, 20)
+
+                primaryPlanButton(title: "Create budget") {
+                    newBudget = true
+                }
+                .padding(.horizontal, 20)
+            } else {
+                if let first = mainBudget.first {
+                    NavigationLink(destination: DetailedMainBudgetView(budget: first)) {
+                        MainBudgetView(budget: first, solo: true)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 20)
+                }
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Category budgets")
+                        .font(Font.satoshi(.body, weight: .semibold))
+                        .foregroundColor(Color.PrimaryText)
+                        .padding(.horizontal, 20)
+
+                    if budgets.isEmpty {
+                        EmptyStateView(
+                            systemImage: "square.grid.2x2",
+                            title: "No category budgets yet.",
+                            message: "Create one for food, shopping, bills, or anything else."
+                        )
+                        .padding(.horizontal, 20)
+                    } else {
+                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
+                            ForEach(budgets, id: \.self) { budget in
+                                NavigationLink(destination: DetailedBudgetView(budget: budget)) {
+                                    SingleBudgetView(
+                                        budget: budget,
+                                        toDelete: $budgetToDelete,
+                                        toEdit: $budgetToEdit,
+                                        budgetRows: budgetRows
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                    }
+                }
+            }
+        }
+    }
+
+    private var goalsContent: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            if buckets.isEmpty {
+                EmptyStateView(
+                    systemImage: "flag",
+                    title: "Create a goal.",
+                    message: "Use goals for trips, savings, or future spending."
+                )
+                .padding(.horizontal, 20)
+
+                primaryPlanButton(title: "Create goal") {
+                    newGoal = true
+                }
+                .padding(.horizontal, 20)
+            } else {
+                VStack(spacing: 10) {
+                    ForEach(buckets, id: \.self) { goal in
+                        NavigationLink(destination: DetailedBucketView(bucket: goal)) {
+                            GoalSummaryRow(goal: goal, onEdit: {
+                                goalToEdit = goal
+                            }, onDelete: {
+                                goalToDelete = goal
+                            })
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 20)
+            }
+        }
+    }
+
+    private func primaryPlanButton(title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(Font.satoshi(.body, weight: .semibold))
+                .foregroundColor(Color.LightIcon)
+                .frame(maxWidth: .infinity)
+                .frame(height: 52)
+                .background(Color.DarkBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+    }
+}
+
+private struct GoalSummaryRow: View {
+    let goal: Bucket
+    let onEdit: () -> Void
+    let onDelete: () -> Void
+
+    @EnvironmentObject private var dataController: DataController
+    @AppStorage("currency", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) private var currency: String = Locale.current.currencyCode!
+
+    private var currencySymbol: String {
+        Locale.current.localizedCurrencySymbol(forCurrencyCode: currency) ?? "RM"
+    }
+
+    private var transactions: [Transaction] {
+        let request: NSFetchRequest<Transaction> = Transaction.fetchRequest()
+        request.predicate = NSPredicate(format: "bucket == %@", goal)
+        request.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
+        return (try? dataController.container.viewContext.fetch(request)) ?? []
+    }
+
+    private var totalAmount: Double {
+        transactions.reduce(0) { $0 + $1.wrappedAmount }
+    }
+
+    private var timeframeSummary: String? {
+        guard let timeframe = goal.timeframe else { return nil }
+
+        switch timeframe {
+        case BucketTimeframeOption.thisMonth.rawValue:
+            return "This month"
+        case BucketTimeframeOption.thisYear.rawValue:
+            return "This year"
+        case BucketTimeframeOption.customRange.rawValue:
+            guard let start = goal.startDate, let end = goal.endDate else { return "Custom range" }
+            let formatter = DateFormatter()
+            formatter.dateFormat = "d MMM"
+            return "\(formatter.string(from: start)) - \(formatter.string(from: end))"
+        default:
+            return nil
+        }
+    }
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 12) {
+            Text(goal.emoji ?? "🏷️")
+                .font(Font.satoshi(24))
+                .frame(width: 44, height: 44)
+                .background(Color(hex: goal.colour ?? "4A5240").opacity(0.15), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(goal.name ?? "Untitled Goal")
+                    .font(Font.satoshi(.body, weight: .semibold))
+                    .foregroundColor(Color.PrimaryText)
+
+                HStack(spacing: 6) {
+                    Text("\(transactions.count) \(transactions.count == 1 ? "transaction" : "transactions")")
+                    if let timeframeSummary {
+                        Text("•")
+                        Text(timeframeSummary)
+                    }
+                }
+                .font(Font.satoshi(.caption, weight: .medium))
+                .foregroundColor(Color.SubtitleText)
+                .lineLimit(1)
+            }
+
+            Spacer()
+
+            Text("\(currencySymbol)\(totalAmount, specifier: "%.2f")")
+                .font(Font.satoshi(.title3, weight: .semibold))
+                .foregroundColor(Color.PrimaryText)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+        .padding(14)
+        .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.Outline.opacity(0.7), lineWidth: 1)
+        )
+        .contextMenu {
+            Button(action: onEdit) {
+                Label("Edit Goal", systemImage: "pencil")
+            }
+
+            Button(role: .destructive, action: onDelete) {
+                Label("Delete Goal", systemImage: "trash")
+            }
+        }
+    }
+}
+
 struct BudgetView: View {
     @FetchRequest(sortDescriptors: []) private var categories: FetchedResults<Category>
     @FetchRequest(sortDescriptors: []) private var budgets: FetchedResults<Budget>
@@ -203,7 +515,7 @@ struct ActualBudgetView: View {
 
                             VStack(alignment: .leading, spacing: 10) {
                                 HStack {
-                                    Text("BUCKETS")
+                                    Text("GOALS")
                                         .font(.system(size: 18, weight: .black))
                                         .tracking(1.2)
                                         .foregroundColor(Color.PrimaryText)
@@ -224,7 +536,7 @@ struct ActualBudgetView: View {
                                 .padding(.top, 8)
 
                                 if buckets.isEmpty {
-                                    Text("Create buckets for trips, claims, projects, and other spending workspaces.")
+                                    Text("Create goals for trips, savings, or future spending.")
                                         .font(Font.satoshi(.subheadline, weight: .medium))
                                         .foregroundColor(Color.SubtitleText)
                                         .padding(.horizontal, 20)
@@ -378,7 +690,7 @@ struct BucketSummaryRow: View {
                 .background(Color(hex: bucket.colour ?? "4A5240").opacity(0.15), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(bucket.name ?? "Untitled Bucket")
+                Text(bucket.name ?? "Untitled Goal")
                     .font(Font.satoshi(.body, weight: .semibold))
                     .foregroundColor(Color.PrimaryText)
 
@@ -415,13 +727,13 @@ struct BucketSummaryRow: View {
             Button {
                 onEdit()
             } label: {
-                Label("Edit Bucket", systemImage: "pencil")
+                Label("Edit Goal", systemImage: "pencil")
             }
 
             Button(role: .destructive) {
                 onDelete()
             } label: {
-                Label("Delete Bucket", systemImage: "trash")
+                Label("Delete Goal", systemImage: "trash")
             }
         }
     }
@@ -631,7 +943,7 @@ struct BucketEditorSheet: View {
                     .font(Font.satoshi(.title2, weight: .semibold))
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                Text(progress == 1 ? "Buckets work best when they feel specific and memorable." : progress == 2 ? "You can leave it open-ended or tie it to a date range." : "Pick a tag color and emoji that will stand out across the app.")
+                Text(progress == 1 ? "Goals work best when they feel specific and memorable." : progress == 2 ? "You can leave it open-ended or tie it to a date range." : "Pick a tag color and emoji that will stand out across the app.")
                     .foregroundColor(.SubtitleText)
                     .font(Font.satoshi(.body, weight: .medium))
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -659,7 +971,7 @@ struct BucketEditorSheet: View {
                     saveBucket()
                 }
             } label: {
-                Text(progress == 3 ? (bucket == nil ? "Create Bucket" : "Save Bucket") : "Continue")
+                Text(progress == 3 ? (bucket == nil ? "Create Goal" : "Save Goal") : "Continue")
                     .font(Font.satoshi(.body, weight: .semibold))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
@@ -720,7 +1032,7 @@ struct BucketEditorSheet: View {
                 }
                 .buttonStyle(.plain)
 
-                TextField("Bucket name", text: $name)
+                TextField("Goal name", text: $name)
                     .font(Font.satoshi(.body, weight: .medium))
                     .padding(12)
                     .frame(maxWidth: .infinity, minHeight: 52)
@@ -842,7 +1154,7 @@ struct BucketEditorSheet: View {
                             )
 
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Bucket color")
+                            Text("Goal color")
                                 .font(Font.satoshi(.subheadline, weight: .semibold))
                                 .foregroundColor(Color.PrimaryText)
 
@@ -891,7 +1203,7 @@ struct BucketEditorSheet: View {
                     .background(selectedColor.opacity(0.18), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Untitled Bucket" : name)
+                    Text(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Untitled Goal" : name)
                         .font(Font.satoshi(.body, weight: .semibold))
                         .foregroundColor(Color.PrimaryText)
 
@@ -1047,7 +1359,7 @@ struct DeleteBucketAlert: View {
                 .onTapGesture { dismiss() }
 
             VStack(alignment: .leading, spacing: 12) {
-                Text("Delete Bucket?")
+                Text("Delete Goal?")
                     .font(Font.satoshi(.title3, weight: .semibold))
                     .foregroundColor(Color.PrimaryText)
 
@@ -1065,7 +1377,7 @@ struct DeleteBucketAlert: View {
                     onDelete()
                     dismiss()
                 } label: {
-                    Text("Delete Bucket")
+                    Text("Delete Goal")
                         .font(Font.satoshi(.body, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -2357,7 +2669,7 @@ struct BucketTransactionsView: View {
                 HStack(spacing: 7.5) {
                     Text(bucket.emoji ?? "🏷️")
                         .font(Font.satoshi(.subheadline))
-                    Text(bucket.name ?? "Untitled Bucket")
+                    Text(bucket.name ?? "Untitled Goal")
                         .font(Font.satoshi(.title3, weight: .medium))
                         .lineLimit(1)
                 }

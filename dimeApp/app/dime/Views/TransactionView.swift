@@ -221,7 +221,7 @@ struct TransactionView: View {
 
     var widthOfBucketButton: CGFloat {
         let fontSize = UIFont.getBodyFontSize(dynamicTypeSize: dynamicTypeSize)
-        return "Bucket".widthOfRoundedString(size: fontSize, weight: .semibold) + 58
+        return "Goal".widthOfRoundedString(size: fontSize, weight: .semibold) + 58
     }
 
     var capsuleWidth: CGFloat {
@@ -1193,7 +1193,7 @@ struct TransactionView: View {
             Button {
                 bucket = nil
             } label: {
-                Label("No Bucket", systemImage: bucket == nil ? "checkmark" : "flag.slash")
+                Label("No Goal", systemImage: bucket == nil ? "checkmark" : "flag.slash")
             }
 
             ForEach(buckets, id: \.self) { item in
@@ -1201,7 +1201,7 @@ struct TransactionView: View {
                     bucket = item
                 } label: {
                     Label {
-                        Text(item.name ?? "Untitled Bucket")
+                        Text(item.name ?? "Untitled Goal")
                     } icon: {
                         Text(item.emoji ?? "🏷️")
                     }
@@ -1214,12 +1214,12 @@ struct TransactionView: View {
                     .foregroundColor(bucket == nil ? Color.SubtitleText : Color(hex: bucket?.colour ?? "4A5240"))
 
                 if let bucket {
-                    Text("\(bucket.emoji ?? "🏷️") \(bucket.name ?? "Bucket")")
+                    Text("\(bucket.emoji ?? "🏷️") \(bucket.name ?? "Goal")")
                         .font(Font.satoshi(.body, weight: .semibold))
                         .lineLimit(1)
                         .foregroundColor(Color.PrimaryText)
                 } else {
-                    Text("Bucket")
+                    Text("Goal")
                         .font(Font.satoshi(.body, weight: .semibold))
                         .lineLimit(1)
                         .foregroundColor(Color.SubtitleText)
@@ -1253,12 +1253,12 @@ struct TransactionView: View {
                     .font(Font.satoshi(.subheadline, weight: .semibold))
                     .foregroundColor(bucket == nil ? Color.SubtitleText : Color(hex: bucket?.colour ?? "4A5240"))
                 if let bucket {
-                    Text("\(bucket.emoji ?? "🏷️") \(bucket.name ?? "Bucket")")
+                    Text("\(bucket.emoji ?? "🏷️") \(bucket.name ?? "Goal")")
                         .font(Font.satoshi(.body, weight: .semibold))
                         .lineLimit(1)
                         .foregroundColor(Color.PrimaryText)
                 } else {
-                    Text("Bucket")
+                    Text("Goal")
                         .font(Font.satoshi(.body, weight: .semibold))
                         .foregroundColor(Color.SubtitleText)
                 }
@@ -2051,7 +2051,7 @@ private struct BucketPickerPopover: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
             HStack {
-                Text("No Bucket")
+                Text("No Goal")
                     .font(Font.satoshi(.body, weight: .medium))
                     .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 Spacer()
@@ -2078,7 +2078,7 @@ private struct BucketPickerPopover: View {
 
             ForEach(buckets, id: \.self) { item in
                 HStack {
-                    Text("\(item.emoji ?? "🏷️") \(item.name ?? "Bucket")")
+                    Text("\(item.emoji ?? "🏷️") \(item.name ?? "Goal")")
                         .font(Font.satoshi(.body, weight: .medium))
                         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                         .lineLimit(1)

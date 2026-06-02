@@ -10,6 +10,54 @@ import Foundation
 import SwiftUI
 import WidgetKit
 
+struct KiraRemoteTransaction: Decodable {
+    let id: String
+    let receiptId: String?
+    let source: String
+    let description: String
+    let amount: Double
+    let currency: String
+    let transactionDate: String
+    let category: String?
+    let updatedAt: String
+}
+
+struct KiraTransactionSyncResponse: Decodable {
+    let transactions: [KiraRemoteTransaction]
+    let nextCursor: String?
+}
+
+enum KiraBackendSyncError: Error {
+    case invalidURL
+    case invalidResponse
+}
+
+struct KiraBackendSyncService {
+    static let baseURL = URL(string: "https://withkira.app")!
+
+    static func fetchTransactions(accessToken: String, since: String?) async throws -> KiraTransactionSyncResponse {
+        var components = URLComponents(url: baseURL.appendingPathComponent("/api/sync/transactions"), resolvingAgainstBaseURL: false)
+
+        if let since, !since.isEmpty {
+            components?.queryItems = [URLQueryItem(name: "since", value: since)]
+        }
+
+        guard let url = components?.url else { throw KiraBackendSyncError.invalidURL }
+
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200 ..< 300).contains(httpResponse.statusCode) else {
+            throw KiraBackendSyncError.invalidResponse
+        }
+
+        return try JSONDecoder().decode(KiraTransactionSyncResponse.self, from: data)
+    }
+}
+
 struct MaybankStatementTransaction: Hashable {
     let date: Date
     let description: String
@@ -335,6 +383,79 @@ class DataController: ObservableObject {
         fixTwoDigitYearTransactions()
 
         return transactions.count
+    }
+
+    @MainActor
+    func importKiraRemoteTransactions(_ remoteTransactions: [KiraRemoteTransaction]) -> Int {
+        guard !remoteTransactions.isEmpty else {
+            return 0
+        }
+
+        let calendar = Calendar(identifier: .gregorian)
+        let dateFormatter = DateFormatter()
+        dateFormatter.calendar = calendar
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+
+        var insertedCount = 0
+
+        remoteTransactions.forEach { remoteTransaction in
+            let remoteReference = "kiraai:\(remoteTransaction.id)"
+            let existingRequest: NSFetchRequest<Transaction> = Transaction.fetchRequest()
+            existingRequest.fetchLimit = 1
+            existingRequest.predicate = NSPredicate(format: "%K == %@", #keyPath(Transaction.reference), remoteReference)
+
+            if let existing = try? container.viewContext.fetch(existingRequest), !existing.isEmpty {
+                return
+            }
+
+            let transactionDate = dateFormatter.date(from: remoteTransaction.transactionDate) ?? Date.now
+            let transaction = Transaction(context: container.viewContext)
+            transaction.note = remoteTransaction.description.trimmingCharacters(in: .whitespacesAndNewlines)
+            transaction.income = remoteTransaction.amount < 0
+            transaction.amount = abs(remoteTransaction.amount)
+            transaction.currency = remoteTransaction.currency
+            transaction.date = transactionDate
+            transaction.id = UUID()
+            transaction.day = calendar.date(bySettingHour: 0, minute: 0, second: 0, of: transactionDate) ?? Date.now
+
+            let dateComponents = calendar.dateComponents([.month, .year], from: transactionDate)
+            transaction.month = calendar.date(from: dateComponents) ?? Date.now
+            transaction.accountSource = "Kira WhatsApp"
+            transaction.reference = remoteReference
+
+            insertedCount += 1
+        }
+
+        if insertedCount > 0 {
+            save()
+            addedTransaction = true
+        }
+
+        return insertedCount
+    }
+
+    @MainActor
+    func syncKiraRemoteTransactionsIfPossible() async {
+        let defaults = UserDefaults(suiteName: "group.com.riskcreatives.duit") ?? UserDefaults.standard
+
+        guard let accessToken = defaults.string(forKey: "kiraSupabaseAccessToken"),
+              !accessToken.isEmpty else {
+            return
+        }
+
+        let since = defaults.string(forKey: "kiraTransactionSyncCursor")
+
+        do {
+            let response = try await KiraBackendSyncService.fetchTransactions(accessToken: accessToken, since: since)
+            _ = importKiraRemoteTransactions(response.transactions)
+
+            if let nextCursor = response.nextCursor {
+                defaults.set(nextCursor, forKey: "kiraTransactionSyncCursor")
+            }
+        } catch {
+            print("Kira transaction sync failed: \(error.localizedDescription)")
+        }
     }
 
     func fixTwoDigitYearTransactions() {
