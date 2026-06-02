@@ -172,37 +172,46 @@ struct HomeDashboardView: View {
         SortDescriptor(\.date, order: .reverse)
     ], predicate: NSPredicate(format: "%K <= %@", #keyPath(Transaction.date), Date.now as CVarArg))
     private var transactions: FetchedResults<Transaction>
+    @FetchRequest(sortDescriptors: []) private var mainBudget: FetchedResults<MainBudget>
+    @FetchRequest(sortDescriptors: [SortDescriptor(\.dateCreated)]) private var budgets: FetchedResults<Budget>
+    @FetchRequest(sortDescriptors: [SortDescriptor(\.dateCreated)]) private var buckets: FetchedResults<Bucket>
 
     @AppStorage("showCents", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) private var showCents: Bool = true
     @AppStorage("currency", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) private var currency: String = Locale.current.currencyCode!
     @AppStorage("showExpenseOrIncomeSign", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) private var showExpenseOrIncomeSign: Bool = true
     @AppStorage("swapTimeLabel", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) private var swapTimeLabel: Bool = false
+    @AppStorage("logInsightsTimeFrame", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) private var timeframe = 3
 
     var bottomEdge: CGFloat
+    var sheetTopInset: CGFloat
     var isScrollLocked: Bool = false
     var onScrollStateChanged: (Bool, Bool) -> Void = { _, _ in }
     var onAskKIRA: () -> Void
     var onScanReceipt: () -> Void
     var onAddTransaction: () -> Void
+    var onOpenPlan: () -> Void
     var onViewActivity: () -> Void
     var onReports: () -> Void
 
     @StateObject private var scrollDelegate = LogScrollViewDelegate()
+    @State private var showTimeMenu = false
+
+    private let periodLabels = ["today", "this week", "this month", "this year", "all time"]
 
     private var currencySymbol: String {
         Locale.current.localizedCurrencySymbol(forCurrencyCode: currency) ?? "RM"
     }
 
     private var available: Double {
-        dataController.getLogViewTotalNet(type: 3).value
+        dataController.getLogViewTotalNet(type: timeframe).value
     }
 
     private var spentThisMonth: Double {
-        dataController.getLogViewTotalSpent(type: 3)
+        dataController.getLogViewTotalSpent(type: timeframe)
     }
 
     private var incomeThisMonth: Double {
-        dataController.getLogViewTotalIncome(type: 3)
+        dataController.getLogViewTotalIncome(type: timeframe)
     }
 
     private var recentTransactions: [Transaction] {
@@ -219,6 +228,7 @@ struct HomeDashboardView: View {
                     available: available,
                     spent: spentThisMonth,
                     income: incomeThisMonth,
+                    status: summaryStatusText,
                     currencySymbol: currencySymbol,
                     showCents: showCents
                 )
@@ -231,10 +241,16 @@ struct HomeDashboardView: View {
                     onAction: onReports
                 )
 
+                PlanPreviewCard(
+                    primarySummary: planPrimarySummary,
+                    secondarySummary: planSecondarySummary,
+                    onOpenPlan: onOpenPlan
+                )
+
                 recentTransactionsSection
             }
             .padding(.horizontal, 20)
-            .padding(.bottom, 92 + bottomEdge)
+            .padding(.bottom, 136 + bottomEdge + sheetTopInset)
             .background(
                 LogScrollViewResolver { scrollView in
                     scrollDelegate.attach(to: scrollView)
@@ -261,18 +277,46 @@ struct HomeDashboardView: View {
             Text("Here's your money statement for")
                 .font(Font.satoshi(24, weight: .semibold))
                 .foregroundColor(Color.PrimaryText)
-            Text("this month.")
-                .font(Font.satoshi(24, weight: .semibold))
-                .foregroundColor(Color(hex: "C75538"))
+
+            Button {
+                showTimeMenu = true
+            } label: {
+                HStack(spacing: 4) {
+                    Text(periodLabels[max(0, min(timeframe - 1, periodLabels.count - 1))] + ".")
+                        .font(Font.satoshi(24, weight: .semibold))
+                        .foregroundColor(Color(hex: "C75538"))
+                    Image(systemName: "chevron.down")
+                        .font(Font.satoshi(12, weight: .bold))
+                        .foregroundColor(Color(hex: "C75538").opacity(0.65))
+                }
+            }
+            .buttonStyle(.plain)
+            .popover(present: $showTimeMenu, attributes: {
+                $0.position = .absolute(originAnchor: .bottomLeft, popoverAnchor: .topLeft)
+                $0.rubberBandingMode = .none
+                $0.sourceFrameInset = UIEdgeInsets(top: 0, left: 0, bottom: -10, right: 0)
+                $0.presentation.animation = .easeInOut(duration: 0.2)
+                $0.dismissal.animation = .easeInOut(duration: 0.3)
+            }) {
+                TimePickerView(showMenu: $showTimeMenu, timeframe: $timeframe)
+            } background: {
+                ZStack {
+                    Color.black.opacity(0.18)
+                    Color.PrimaryBackground.opacity(0.42)
+                    Rectangle()
+                        .fill(.ultraThinMaterial)
+                        .opacity(0.35)
+                }
+            }
         }
         .accessibility(addTraits: .isHeader)
     }
 
     private var quickActions: some View {
         HStack(spacing: 10) {
-            HomeQuickActionButton(title: "Ask KIRA", systemImage: "sparkles", action: onAskKIRA)
-            HomeQuickActionButton(title: "Scan receipt", systemImage: "viewfinder", action: onScanReceipt)
-            HomeQuickActionButton(title: "Add transaction", systemImage: "plus", action: onAddTransaction)
+            HomeQuickActionButton(title: "Ask KIRA", subtitle: "Get answers", systemImage: "sparkles", action: onAskKIRA)
+            HomeQuickActionButton(title: "Scan receipt", subtitle: "Auto-sort", systemImage: "viewfinder", action: onScanReceipt)
+            HomeQuickActionButton(title: "Add expense", subtitle: "Log quickly", systemImage: "plus.circle", action: onAddTransaction)
         }
     }
 
@@ -304,13 +348,11 @@ struct HomeDashboardView: View {
             } else {
                 VStack(spacing: 0) {
                     ForEach(recentTransactions, id: \.id) { transaction in
-                        SingleTransactionView(
+                        HomeRecentTransactionRow(
                             transaction: transaction,
                             showCents: showCents,
                             currencySymbol: currencySymbol,
                             currency: currency,
-                            swapTimeLabel: swapTimeLabel,
-                            future: false,
                             showExpenseOrIncomeSign: showExpenseOrIncomeSign
                         )
                     }
@@ -328,11 +370,11 @@ struct HomeDashboardView: View {
 
     private var insightText: String {
         guard !transactions.isEmpty else {
-            return "Start by scanning a receipt or adding your first expense."
+            return "Scan a receipt or add an expense to unlock your monthly summary."
         }
 
         if spentThisMonth == 0 {
-            return "You have not logged any spending this month."
+            return "KIRA will explain your month once you add spending."
         }
 
         if let top = topExpenseCategory() {
@@ -342,8 +384,50 @@ struct HomeDashboardView: View {
         return "You spent \(currencySymbol)\(formatMoney(spentThisMonth)) this month."
     }
 
+    private var summaryStatusText: String {
+        guard !transactions.isEmpty else {
+            return "No spending logged yet"
+        }
+
+        if let first = mainBudget.first {
+            let leftover = dataController.getBudgetLeftover(overallBudget: first)
+            return leftover >= 0 ? "You're on track this month" : "Spending is higher than usual"
+        }
+
+        if let top = topExpenseCategory() {
+            return "\(top.name) is your biggest spend"
+        }
+
+        if incomeThisMonth > 0 && spentThisMonth > incomeThisMonth {
+            return "Spending is higher than usual"
+        }
+
+        return "KIRA is tracking this month"
+    }
+
+    private var planPrimarySummary: String {
+        if let first = mainBudget.first {
+            let leftover = dataController.getBudgetLeftover(overallBudget: first)
+            return "\(currencySymbol)\(formatMoney(abs(leftover))) \(leftover >= 0 ? "left this month" : "over budget")"
+        }
+
+        if budgets.isEmpty {
+            return "No budgets yet"
+        }
+
+        return "\(budgets.count) \(budgets.count == 1 ? "budget" : "budgets") active"
+    }
+
+    private var planSecondarySummary: String {
+        if buckets.isEmpty {
+            return "No goals yet"
+        }
+
+        return "\(buckets.count) \(buckets.count == 1 ? "goal" : "goals") active"
+    }
+
     private func topExpenseCategory() -> (name: String, amount: Double)? {
-        let request = dataController.fetchRequestForLogView(type: 3, optionalIncome: false)
+        let request = dataController.fetchRequestForLogView(type: timeframe, optionalIncome: false)
         let monthTransactions = dataController.results(for: request)
         let grouped = Dictionary(grouping: monthTransactions) { transaction in
             transaction.category?.wrappedName.isEmpty == false ? transaction.category?.wrappedName ?? "Uncategorized" : "Uncategorized"
@@ -363,14 +447,32 @@ private struct MoneySummaryCard: View {
     let available: Double
     let spent: Double
     let income: Double
+    let status: String
     let currencySymbol: String
     let showCents: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Available")
-                .font(Font.satoshi(.caption, weight: .semibold))
-                .foregroundColor(Color.white.opacity(0.58))
+            HStack(alignment: .center, spacing: 8) {
+                Text("Available")
+                    .font(Font.satoshi(.caption, weight: .semibold))
+                    .foregroundColor(Color.white.opacity(0.58))
+
+                Spacer()
+
+                HStack(spacing: 5) {
+                    Image(systemName: "sparkles")
+                        .font(Font.satoshi(9, weight: .bold))
+                    Text(status)
+                        .font(Font.satoshi(.caption2, weight: .semibold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+                }
+                .foregroundColor(Color.white.opacity(0.78))
+                .padding(.horizontal, 9)
+                .frame(height: 26)
+                .background(Color.white.opacity(0.10), in: Capsule())
+            }
 
             HStack(alignment: .firstTextBaseline, spacing: 3) {
                 Text(currencySymbol)
@@ -427,26 +529,35 @@ private struct MoneySummaryCard: View {
 
 private struct HomeQuickActionButton: View {
     let title: String
+    let subtitle: String
     let systemImage: String
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 8) {
+            VStack(spacing: 7) {
                 Image(systemName: systemImage)
                     .font(Font.satoshi(17, weight: .semibold))
                     .foregroundColor(Color(hex: "4A5240"))
                     .frame(width: 34, height: 34)
                     .background(Color(hex: "4A5240").opacity(0.10), in: Circle())
-                Text(title)
-                    .font(Font.satoshi(.caption, weight: .semibold))
-                    .foregroundColor(Color.PrimaryText)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.78)
+
+                VStack(spacing: 1) {
+                    Text(title)
+                        .font(Font.satoshi(.caption, weight: .semibold))
+                        .foregroundColor(Color.PrimaryText)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+                    Text(subtitle)
+                        .font(Font.satoshi(10, weight: .medium))
+                        .foregroundColor(Color.SubtitleText)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+                }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 92)
+            .frame(height: 98)
             .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -454,6 +565,128 @@ private struct HomeQuickActionButton: View {
             )
         }
         .buttonStyle(BouncyButton(duration: 0.22, scale: 0.96))
+    }
+}
+
+private struct PlanPreviewCard: View {
+    let primarySummary: String
+    let secondarySummary: String
+    let onOpenPlan: () -> Void
+
+    var body: some View {
+        Button(action: onOpenPlan) {
+            HStack(alignment: .center, spacing: 14) {
+                VStack(alignment: .leading, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Plan")
+                            .font(Font.satoshi(.body, weight: .semibold))
+                            .foregroundColor(Color.PrimaryText)
+                        Text("Budgets and goals")
+                            .font(Font.satoshi(.caption, weight: .medium))
+                            .foregroundColor(Color.SubtitleText)
+                    }
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(primarySummary)
+                            .font(Font.satoshi(.subheadline, weight: .semibold))
+                            .foregroundColor(Color.PrimaryText)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                        Text(secondarySummary)
+                            .font(Font.satoshi(.caption, weight: .medium))
+                            .foregroundColor(Color.SubtitleText)
+                            .lineLimit(1)
+                    }
+                }
+
+                Spacer()
+
+                HStack(spacing: 4) {
+                    Text("View plan")
+                        .font(Font.satoshi(.caption, weight: .semibold))
+                    Image(systemName: "chevron.right")
+                        .font(Font.satoshi(10, weight: .semibold))
+                }
+                .foregroundColor(Color.SubtitleText)
+            }
+            .padding(16)
+            .background(Color.SecondaryBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(Color.Outline.opacity(0.7), lineWidth: 1)
+            )
+        }
+        .buttonStyle(BouncyButton(duration: 0.22, scale: 0.98))
+    }
+}
+
+private struct HomeRecentTransactionRow: View {
+    let transaction: Transaction
+    let showCents: Bool
+    let currencySymbol: String
+    let currency: String
+    let showExpenseOrIncomeSign: Bool
+
+    @EnvironmentObject private var transactionManager: OverallTransactionManager
+
+    private var transactionAmountString: String {
+        let numberFormatter = NumberFormatter()
+        numberFormatter.numberStyle = .currency
+        numberFormatter.currencyCode = transaction.currency ?? currency
+        numberFormatter.maximumFractionDigits = showCents ? 2 : 0
+        return numberFormatter.string(from: NSNumber(value: transaction.amount)) ?? "\(currencySymbol)0"
+    }
+
+    private var metadata: String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = Calendar.current.isDateInToday(transaction.wrappedDate) ? "h:mm a" : "d MMM, h:mm a"
+        let category = transaction.wrappedCategoryName.isEmpty ? "Uncategorized" : transaction.wrappedCategoryName
+        return "\(category) · \(dateFormatter.string(from: transaction.wrappedDate))"
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            EmojiLogView(
+                emoji: transaction.category?.wrappedEmoji ?? "",
+                colour: transaction.category?.wrappedColour ?? "#FFFFFF",
+                future: false
+            )
+            .fixedSize(horizontal: true, vertical: true)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(transaction.wrappedNote.isEmpty ? "Untitled expense" : transaction.wrappedNote)
+                    .font(Font.satoshi(.body, weight: .semibold))
+                    .foregroundColor(Color.PrimaryText)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+
+                Text(metadata)
+                    .font(Font.satoshi(.caption, weight: .medium))
+                    .foregroundColor(Color.SubtitleText)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Text(amountText)
+                .font(Font.satoshi(.body, weight: .semibold))
+                .monospacedDigit()
+                .foregroundColor(transaction.income ? Color.IncomeGreen : Color.PrimaryText)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+                .frame(minWidth: 96, alignment: .trailing)
+        }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 10)
+        .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .onTapGesture {
+            transactionManager.toEdit = transaction
+        }
+    }
+
+    private var amountText: String {
+        guard showExpenseOrIncomeSign else { return transactionAmountString }
+        return "\(transaction.income ? "+" : "-")\(transactionAmountString)"
     }
 }
 

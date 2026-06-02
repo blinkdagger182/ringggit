@@ -24,7 +24,6 @@ struct CustomTabBar: View {
 
     var launchAdd: Bool
     var onAddExpense: () -> Void = {}
-    var onAddIncome: () -> Void = {}
     var onScanReceipt: () -> Void = {}
     var onAskKIRA: () -> Void = {}
 
@@ -38,68 +37,66 @@ struct CustomTabBar: View {
     }
 
     var body: some View {
-        HStack(spacing: 0) {
-            TabButton(image: "Home", zoomed: isZoomed, currentTab: $currentTab)
-
-            TabButton(image: "Plan", zoomed: isZoomed, currentTab: $currentTab)
-
-            ZStack {
-                RoundedRectangle(cornerRadius: 28, style: .continuous).fill(Color.DarkBackground.opacity(0.6))
-                    .frame(width: 95, height: 68)
-                    .opacity(self.animate ? 0 : 1)
-                    .scaleEffect(self.animate ? 1 : 0.4)
-
-                RoundedRectangle(cornerRadius: 20.5, style: .continuous).fill(Color.DarkBackground.opacity(0.8))
-                    .frame(width: 80, height: 53)
-                    .opacity(self.animate ? 0 : 1)
-                    .scaleEffect(self.animate ? 1 : 0.6)
-
-                Button {
-                    let impactMed = UIImpactFeedbackGenerator(style: .light)
-                    impactMed.impactOccurred()
-                    showAddMenu = true
-                } label: {
-                    Image(systemName: "plus")
-                }
-                .buttonStyle(MyButtonStyle())
-                .padding(15)
-            }
-            .onAppear {
-                if transactions.isEmpty {
-                    withAnimation(.easeInOut(duration: 1.9).repeatForever(autoreverses: false)) {
-                        self.animate.toggle()
-                    }
-                }
-            }
-            .accessibilityLabel("Add New Transaction")
-
-            TabButton(image: "Activity", zoomed: isZoomed, currentTab: $currentTab)
-        }
-        .padding(.horizontal, 8)
-        .padding(.bottom, max(bottomEdge - 10, 0))
-        .padding(.top, 10)
-        .background(
-            Color.PrimaryBackground
-                .ignoresSafeArea(edges: .bottom)
-                .overlay(alignment: .top) {
+        ZStack(alignment: .bottom) {
+            if showAddMenu {
+                ZStack {
+                    Color.black.opacity(0.20)
                     Rectangle()
-                        .fill(Color.Outline)
-                        .frame(height: 0.5)
+                        .fill(.ultraThinMaterial)
+                        .opacity(0.45)
                 }
-        )
-        .frame(maxWidth: .infinity)
-        .confirmationDialog("Add to KIRA", isPresented: $showAddMenu, titleVisibility: .visible) {
-            Button("Add expense") {
-                prepareTransactionCount()
-                onAddExpense()
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        withAnimation(.spring(response: 0.28, dampingFraction: 0.9)) {
+                            showAddMenu = false
+                        }
+                    }
+                    .transition(.opacity)
+
+                FloatingActionMenu(
+                    onScanReceipt: {
+                        closeMenu()
+                        onScanReceipt()
+                    },
+                    onAddExpense: {
+                        prepareTransactionCount()
+                        closeMenu()
+                        onAddExpense()
+                    },
+                    onAskKIRA: {
+                        closeMenu()
+                        onAskKIRA()
+                    }
+                )
+                .padding(.bottom, 82 + max(bottomEdge - 10, 0))
+                .transition(.move(edge: .bottom).combined(with: .opacity).combined(with: .scale(scale: 0.96, anchor: .bottom)))
             }
-            Button("Add income") {
-                prepareTransactionCount()
-                onAddIncome()
+
+            HStack(spacing: 0) {
+                TabButton(image: "Home", zoomed: isZoomed, currentTab: $currentTab)
+
+                Spacer()
+                    .frame(width: 96)
+
+                TabButton(image: "Activity", zoomed: isZoomed, currentTab: $currentTab)
             }
-            Button("Scan receipt") { onScanReceipt() }
-            Button("Ask KIRA") { onAskKIRA() }
-            Button("Cancel", role: .cancel) {}
+            .padding(.horizontal, 34)
+            .padding(.bottom, max(bottomEdge - 10, 0))
+            .padding(.top, 14)
+            .background(
+                Color.PrimaryBackground
+                    .ignoresSafeArea(edges: .bottom)
+                    .overlay(alignment: .top) {
+                        Rectangle()
+                            .fill(Color.Outline)
+                            .frame(height: 0.5)
+                    }
+            )
+            .overlay(alignment: .top) {
+                floatingAddButton
+                    .offset(y: -22)
+            }
+            .frame(maxWidth: .infinity)
         }
         .onChange(of: launchAdd) { _ in
             prepareTransactionCount()
@@ -125,11 +122,95 @@ struct CustomTabBar: View {
         }
     }
 
+    private var floatingAddButton: some View {
+        Button {
+            let impactMed = UIImpactFeedbackGenerator(style: .light)
+            impactMed.impactOccurred()
+            withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) {
+                showAddMenu.toggle()
+            }
+        } label: {
+            Image(systemName: "plus")
+                .font(Font.satoshi(28, weight: .semibold))
+                .foregroundColor(Color.LightIcon)
+                .frame(width: 60, height: 60)
+                .background(Color.DarkBackground, in: Circle())
+                .overlay(Circle().stroke(Color.white.opacity(0.14), lineWidth: 1))
+                .shadow(color: Color.black.opacity(0.18), radius: 16, x: 0, y: 8)
+                .rotationEffect(.degrees(showAddMenu ? 45 : 0))
+        }
+        .buttonStyle(BouncyButton(duration: 0.24, scale: 0.92))
+        .accessibilityLabel("Open quick actions")
+        .onAppear {
+            if transactions.isEmpty {
+                withAnimation(.easeInOut(duration: 1.9).repeatForever(autoreverses: false)) {
+                    self.animate.toggle()
+                }
+            }
+        }
+    }
+
+    private func closeMenu() {
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.9)) {
+            showAddMenu = false
+        }
+    }
+
     private func prepareTransactionCount() {
         count = transactions.count
         if firstLaunch {
             firstLaunch = false
         }
+    }
+}
+
+private struct FloatingActionMenu: View {
+    let onScanReceipt: () -> Void
+    let onAddExpense: () -> Void
+    let onAskKIRA: () -> Void
+
+    var body: some View {
+        VStack(spacing: 2) {
+            actionRow(title: "Scan receipt", subtitle: "Auto-sort", systemImage: "viewfinder", action: onScanReceipt)
+            actionRow(title: "Add expense", subtitle: "Log quickly", systemImage: "plus.circle", action: onAddExpense)
+            actionRow(title: "Ask KIRA", subtitle: "Get answers", systemImage: "sparkles", action: onAskKIRA)
+        }
+        .padding(8)
+        .frame(width: 238)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .background(Color.PrimaryBackground.opacity(0.86), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(Color.Outline.opacity(0.75), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.14), radius: 22, x: 0, y: 12)
+    }
+
+    private func actionRow(title: String, subtitle: String, systemImage: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: systemImage)
+                    .font(Font.satoshi(16, weight: .semibold))
+                    .foregroundColor(Color(hex: "4A5240"))
+                    .frame(width: 34, height: 34)
+                    .background(Color(hex: "4A5240").opacity(0.10), in: Circle())
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(title)
+                        .font(Font.satoshi(.subheadline, weight: .semibold))
+                        .foregroundColor(Color.PrimaryText)
+                    Text(subtitle)
+                        .font(Font.satoshi(.caption2, weight: .medium))
+                        .foregroundColor(Color.SubtitleText)
+                }
+
+                Spacer()
+            }
+            .padding(.horizontal, 10)
+            .frame(height: 50)
+            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .buttonStyle(BouncyButton(duration: 0.2, scale: 0.98))
     }
 }
 
@@ -163,8 +244,7 @@ struct TabButton: View {
     private var sfSymbol: (inactive: String, active: String) {
         switch image {
         case "Home":     return ("house", "house.fill")
-        case "Plan":     return ("wallet.pass", "wallet.pass.fill")
-        case "Activity": return ("clock", "clock.fill")
+        case "Activity": return ("receipt", "receipt.fill")
         default:         return ("circle", "circle.fill")
         }
     }
@@ -177,12 +257,17 @@ struct TabButton: View {
         } label: {
             VStack(spacing: 4) {
                 Image(systemName: currentTab == image ? sfSymbol.active : sfSymbol.inactive)
-                    .font(Font.satoshi(22, weight: currentTab == image ? .medium : .regular))
+                    .font(Font.satoshi(21, weight: currentTab == image ? .semibold : .regular))
                     .foregroundColor(currentTab == image ? Color.DarkIcon : Color.GreyIcon)
                     .animation(.easeInOut(duration: 0.2), value: currentTab)
+
+                Text(image)
+                    .font(Font.satoshi(11, weight: currentTab == image ? .semibold : .medium))
+                    .foregroundColor(currentTab == image ? Color.DarkIcon : Color.GreyIcon)
+                    .lineLimit(1)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 44)
+            .frame(height: 56)
         }
         .buttonStyle(BouncyButton(duration: 0.3, scale: 0.75))
         .accessibilityLabel("\(image) tab")

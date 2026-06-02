@@ -23,6 +23,7 @@ enum HomeSheet: Identifiable {
     case notifications
     case reports
     case scanReceipt
+    case plan
 
     var id: String {
         switch self {
@@ -30,6 +31,7 @@ enum HomeSheet: Identifiable {
         case .notifications: return "notifications"
         case .reports: return "reports"
         case .scanReceipt: return "scanReceipt"
+        case .plan: return "plan"
         }
     }
 }
@@ -78,12 +80,21 @@ struct HomeView: View {
     @State private var activeSheet: HomeSheet?
     @State private var showAddTransaction = false
     @State private var transactionCountBeforeAdd = 0
+    @State private var aiCaptionIndex = 0
 
     @State var counter = 0
 
     @EnvironmentObject var tabBarManager: TabBarManager
 
     @State var showPopup = false
+
+    private let aiCaptions = [
+        "Ask KIRA",
+        "Where did my money go?",
+        "Split a receipt",
+        "Can I afford this?",
+        "Summarize this month"
+    ]
 
     init(topEdge: CGFloat, bottomEdge: CGFloat) {
         UITabBar.appearance().isHidden = true
@@ -172,7 +183,6 @@ struct HomeView: View {
                     counter: $counter,
                     launchAdd: launchAdd,
                     onAddExpense: { presentAddTransaction() },
-                    onAddIncome: { presentAddTransaction() },
                     onScanReceipt: { activeSheet = .scanReceipt },
                     onAskKIRA: { revealAskKIRA() }
                 )
@@ -192,6 +202,9 @@ struct HomeView: View {
                     .padding(.top, max(topEdge, proxy.safeAreaInsets.top) + 10)
                     .opacity(max(0, 1.0 - liveProgress * 1.35))
                     .allowsHitTesting(liveProgress < 0.05)
+                    .onAppear {
+                        startAICaptionRotation()
+                    }
                 }
 
                 // Popups above everything
@@ -255,6 +268,8 @@ struct HomeView: View {
                         revealAskKIRA()
                     }
                 })
+            case .plan:
+                PlanView()
             }
         }
         .fullScreenCover(isPresented: $showAddTransaction, onDismiss: {
@@ -282,12 +297,12 @@ struct HomeView: View {
                 fromURL2 = false
             }
             if appLockVM.isAppLockEnabled && fromURL3 { activeSheet = .reports }
-            if appLockVM.isAppLockEnabled && fromURL4 { currentTab = "Plan" }
+            if appLockVM.isAppLockEnabled && fromURL4 { activeSheet = .plan }
         }
         .onOpenURL { url in
             if url.host == "search" { currentTab = "Activity" }
             else if url.host == "insights" { activeSheet = .reports }
-            else if url.host == "budget" { currentTab = "Plan" }
+            else if url.host == "budget" { activeSheet = .plan }
             else if url.host == "aioverlay" {
                 currentTab = "Home"
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -304,20 +319,18 @@ struct HomeView: View {
             TabView(selection: $currentTab) {
                 HomeDashboardView(
                     bottomEdge: bottomEdge,
+                    sheetTopInset: collapsedTopInset,
                     isScrollLocked: liveProgress > 0.01,
                     onScrollStateChanged: { isAtTop, _ in isLogAtTop = isAtTop },
                     onAskKIRA: { revealAskKIRA() },
                     onScanReceipt: { activeSheet = .scanReceipt },
                     onAddTransaction: { presentAddTransaction() },
+                    onOpenPlan: { activeSheet = .plan },
                     onViewActivity: { currentTab = "Activity" },
                     onReports: { activeSheet = .reports }
                 )
                 .ignoresSafeArea(.all)
                 .tag("Home")
-
-                PlanView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .tag("Plan")
 
                 ActivityView(
                     bottomEdge: bottomEdge,
@@ -441,6 +454,16 @@ struct HomeView: View {
         }
     }
 
+    private func startAICaptionRotation() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.8) {
+            guard currentTab == "Home", !homeAIAssistantViewModel.isPresented else { return }
+            withAnimation(.easeInOut(duration: 0.32)) {
+                aiCaptionIndex = (aiCaptionIndex + 1) % aiCaptions.count
+            }
+            startAICaptionRotation()
+        }
+    }
+
     // MARK: - UI
 
     private var aiBackdrop: some View {
@@ -471,12 +494,20 @@ struct HomeView: View {
                         .scaledToFill()
                         .frame(width: 22, height: 22)
                         .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
-                    Text("Ask KIRA")
-                        .font(Font.satoshi(17, weight: .semibold))
+                    Text(aiCaptions[aiCaptionIndex])
+                        .id(aiCaptionIndex)
+                        .font(Font.satoshi(16, weight: .semibold))
                         .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .bottom).combined(with: .opacity),
+                            removal: .move(edge: .top).combined(with: .opacity)
+                        ))
                 }
-                .padding(.horizontal, 18)
+                .padding(.horizontal, 16)
                 .frame(height: 46)
+                .frame(maxWidth: 218)
                 .background(Capsule().fill(Color.white.opacity(0.10)))
                 .background(Capsule().fill(
                     LinearGradient(
@@ -503,7 +534,7 @@ struct HomeView: View {
                 .shadow(color: Color(hex: "C8B94A").opacity(0.20), radius: 16, x: 0, y: 6)
                 .contentShape(Capsule())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(BouncyButton(duration: 0.22, scale: 0.96))
 
             Spacer(minLength: 0)
 
@@ -850,8 +881,25 @@ struct ScanReceiptSheetView: View {
 }
 
 struct ProfileView: View {
+    @Environment(\.dismiss) private var dismiss
+    @AppStorage("currency", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) private var currency: String = Locale.current.currencyCode!
+    @AppStorage("colourScheme", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) private var colourScheme: Int = 0
+    @AppStorage("numberEntryType", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) private var numberEntryType: Int = 2
+    @AppStorage("showNotifications", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) private var showNotifications: Bool = false
+
     private let background = Color(hex: "4B5545")
     private let foreground = Color.white.opacity(0.86)
+    private let muted = Color.white.opacity(0.58)
+
+    private var appearanceValue: String {
+        if colourScheme == 1 { return "Light" }
+        if colourScheme == 2 { return "Dark" }
+        return "System"
+    }
+
+    private var defaultEntryValue: String {
+        numberEntryType == 1 ? "Type 1" : "Expense"
+    }
 
     var body: some View {
         NavigationView {
@@ -859,74 +907,87 @@ struct ProfileView: View {
                 background
                     .ignoresSafeArea()
 
-                VStack(spacing: 0) {
-                    header
-                        .padding(.top, 18)
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 26) {
+                        header
+                            .padding(.top, 18)
 
-                    profileSummary
-                        .padding(.top, 18)
+                        profileSummary
+
+                        KIRAProCard()
+
+                        ProfileSettingsSection(title: "Account") {
+                            ProfileSettingsRow(icon: "person", title: "Personal details", destination: ProfilePlaceholderDetail(title: "Personal details"))
+                            ProfileSettingsRow(icon: "lock.shield", title: "Security & privacy", destination: ProfilePlaceholderDetail(title: "Security & privacy"))
+                            ProfileSettingsRow(icon: "sparkles", title: "Subscription", value: "KIRA Pro", destination: ProfilePlaceholderDetail(title: "Subscription"))
+                        }
+
+                        ProfileSettingsSection(title: "Manage") {
+                            ProfileSettingsRow(icon: "square.grid.2x2", title: "Categories", destination: SettingsCategoryView())
+                            ProfileSettingsRow(icon: "target", title: "Budgets", destination: PlanView())
+                            ProfileSettingsRow(icon: "flag", title: "Goals", destination: PlanView())
+                            ProfileSettingsRow(icon: "arrow.clockwise", title: "Recurring expenses", destination: ProfilePlaceholderDetail(title: "Recurring expenses"))
+                            ProfileSettingsRow(icon: "wand.and.stars", title: "Receipt rules", destination: ProfilePlaceholderDetail(title: "Receipt rules"))
+                        }
+
+                        ProfileSettingsSection(title: "AI & Automation") {
+                            ProfileSettingsRow(icon: "brain.head.profile", title: "Ask KIRA memory", destination: ProfilePlaceholderDetail(title: "Ask KIRA memory"))
+                            ProfileSettingsRow(icon: "tag", title: "Auto-categorization", destination: ProfilePlaceholderDetail(title: "Auto-categorization"))
+                            ProfileSettingsRow(icon: "doc.text.magnifyingglass", title: "Monthly summaries", destination: ProfilePlaceholderDetail(title: "Monthly summaries"))
+                            ProfileSettingsRow(icon: "lightbulb", title: "Smart suggestions", destination: ProfilePlaceholderDetail(title: "Smart suggestions"))
+                        }
+
+                        ProfileSettingsSection(title: "App") {
+                            ProfileSettingsRow(icon: "bell", title: "Notifications", value: showNotifications ? "On" : "Off", destination: SettingsNotificationsView())
+                            ProfileSettingsRow(icon: "coloncurrencysign.square", title: "Currency", value: currency, destination: SettingsCurrencyView())
+                            ProfileSettingsRow(icon: "circle.righthalf.filled", title: "Appearance", value: appearanceValue, destination: SettingsAppearanceView())
+                            ProfileSettingsRow(icon: "keyboard", title: "Default entry type", value: defaultEntryValue, destination: SettingsNumberEntryView())
+                        }
+
+                        ProfileSettingsSection(title: "Data") {
+                            ProfileSettingsRow(icon: "icloud", title: "Backup & sync", destination: SettingsCloudView())
+                            ProfileSettingsRow(icon: "square.and.arrow.up", title: "Export data", destination: SettingsExportPlaceholderView())
+                            ProfileSettingsRow(icon: "trash", title: "Erase data", isDestructive: true, destination: SettingsEraseView())
+                        }
+
+                        ProfileSettingsSection(title: "Support") {
+                            ProfileSettingsRow(icon: "questionmark.circle", title: "Help & support", destination: ProfilePlaceholderDetail(title: "Help & support"))
+                            ProfileSettingsRow(icon: "bubble.left.and.text.bubble.right", title: "Feature request", destination: ProfilePlaceholderDetail(title: "Feature request"))
+                            ProfileSettingsRow(icon: "exclamationmark.bubble", title: "Report a bug", destination: ProfilePlaceholderDetail(title: "Report a bug"))
+                            ProfileSettingsRow(icon: "star", title: "Rate KIRA", destination: ProfilePlaceholderDetail(title: "Rate KIRA"))
+                            ProfileSettingsRow(icon: "square.and.arrow.up", title: "Share with friends", destination: ProfilePlaceholderDetail(title: "Share with friends"))
+                        }
+
+                        ProfileSettingsSection(title: "About") {
+                            ProfileSettingsRow(icon: "info.circle", title: "About KIRA", destination: ProfilePlaceholderDetail(title: "About KIRA"))
+                            ProfileSettingsRow(icon: "hand.raised", title: "Privacy policy", destination: ProfilePlaceholderDetail(title: "Privacy policy"))
+                            ProfileSettingsRow(icon: "doc.plaintext", title: "Terms of use", destination: ProfilePlaceholderDetail(title: "Terms of use"))
+                            ProfileSettingsRow(icon: "number", title: "Version", value: UIApplication.appVersion ?? "1.0", destination: ProfilePlaceholderDetail(title: "Version"))
+                        }
+
+                        Text("Made by Risk Creatives")
+                            .font(Font.satoshi(.caption, weight: .medium))
+                            .foregroundColor(muted)
+                            .padding(.top, 2)
+
+                        Button {
+                        } label: {
+                            Text("Log out")
+                                .font(Font.satoshi(.body, weight: .semibold))
+                                .foregroundColor(Color(hex: "FFB29F"))
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 52)
+                                .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                                )
+                        }
+                        .buttonStyle(.plain)
                         .padding(.bottom, 28)
-
-                    VStack(spacing: 0) {
-                        ProfileNavigationRow(
-                            icon: "person",
-                            title: "Personal Details",
-                            destination: SettingsView()
-                        )
-
-                        ProfileNavigationRow(
-                            icon: "shield",
-                            title: "Security & Privacy",
-                            destination: SettingsView()
-                        )
-
-                        ProfileNavigationRow(
-                            icon: "bell",
-                            title: "Notifications",
-                            destination: SettingsNotificationsView()
-                        )
-
-                        ProfileNavigationRow(
-                            icon: "gearshape",
-                            title: "Preferences",
-                            destination: SettingsView()
-                        )
-
-                        ProfileNavigationRow(
-                            icon: "questionmark.circle",
-                            title: "Help & Support",
-                            destination: SettingsView()
-                        )
-
-                        ProfileNavigationRow(
-                            icon: "info.circle",
-                            title: "About KIRA",
-                            destination: SettingsView(),
-                            showsDivider: false
-                        )
                     }
-                    .padding(.horizontal, 14)
-
-                    Button {
-                    } label: {
-                        Text("Log out")
-                            .font(Font.satoshi(.caption, weight: .semibold))
-                            .foregroundColor(Color(hex: "FFB29F"))
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 50)
-                            .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .stroke(Color.white.opacity(0.10), lineWidth: 1)
-                            )
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal, 14)
-                    .padding(.top, 34)
-
-                    Spacer(minLength: 0)
+                    .padding(.horizontal, 18)
                 }
-                .padding(.horizontal, 0)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
             .navigationBarHidden(true)
@@ -938,6 +999,7 @@ struct ProfileView: View {
     private var header: some View {
         HStack {
             Button {
+                dismiss()
             } label: {
                 Image(systemName: "chevron.left")
                     .font(Font.satoshi(.footnote, weight: .semibold))
@@ -949,7 +1011,7 @@ struct ProfileView: View {
 
             Spacer()
 
-            NavigationLink(destination: SettingsView()) {
+            NavigationLink(destination: SettingsAppearanceView()) {
                 Image(systemName: "gearshape")
                     .font(Font.satoshi(.footnote, weight: .semibold))
                     .foregroundColor(foreground)
@@ -962,7 +1024,7 @@ struct ProfileView: View {
     }
 
     private var profileSummary: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 10) {
             Image("kira-ai")
                 .resizable()
                 .scaledToFill()
@@ -983,19 +1045,80 @@ struct ProfileView: View {
                     Text("Premium Member")
                         .font(Font.satoshi(.caption2, weight: .semibold))
                         .foregroundColor(Color(hex: "FFD85C"))
-
-                    Image(systemName: "chevron.down")
-                        .font(Font.satoshi(7, weight: .bold))
-                        .foregroundColor(Color(hex: "FFD85C").opacity(0.8))
                 }
             }
         }
     }
 }
 
-private struct ProfileNavigationRow<Destination: View>: View {
+private struct KIRAProCard: View {
+    var body: some View {
+        HStack(alignment: .center, spacing: 14) {
+            Image(systemName: "sparkles")
+                .font(Font.satoshi(18, weight: .bold))
+                .foregroundColor(Color(hex: "FFD85C"))
+                .frame(width: 42, height: 42)
+                .background(Color.white.opacity(0.10), in: Circle())
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text("KIRA Pro")
+                    .font(Font.satoshi(.headline, weight: .semibold))
+                    .foregroundColor(.white)
+                Text("Unlock AI reports, receipt scans, and smart budgets")
+                    .font(Font.satoshi(.caption, weight: .medium))
+                    .foregroundColor(Color.white.opacity(0.62))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 8)
+
+            NavigationLink(destination: ProfilePlaceholderDetail(title: "KIRA Pro")) {
+                Text("Upgrade")
+                    .font(Font.satoshi(.caption, weight: .semibold))
+                    .foregroundColor(Color(hex: "3E4933"))
+                    .padding(.horizontal, 14)
+                    .frame(height: 34)
+                    .background(Color(hex: "F2E7B8"), in: Capsule())
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(16)
+        .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+        )
+    }
+}
+
+private struct ProfileSettingsSection<Content: View>: View {
+    let title: String
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            Text(title)
+                .font(Font.satoshi(.caption, weight: .semibold))
+                .foregroundColor(Color.white.opacity(0.48))
+                .padding(.horizontal, 6)
+
+            VStack(spacing: 0) {
+                content
+            }
+            .background(Color.white.opacity(0.075), in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    .stroke(Color.white.opacity(0.10), lineWidth: 1)
+            )
+        }
+    }
+}
+
+private struct ProfileSettingsRow<Destination: View>: View {
     let icon: String
     let title: String
+    var value: String? = nil
+    var isDestructive: Bool = false
     let destination: Destination
     var showsDivider: Bool = true
 
@@ -1008,31 +1131,72 @@ private struct ProfileNavigationRow<Destination: View>: View {
             VStack(spacing: 0) {
                 HStack(spacing: 12) {
                     Image(systemName: icon)
-                        .font(Font.satoshi(.caption, weight: .medium))
-                        .foregroundColor(muted)
-                        .frame(width: 16, height: 16)
+                        .font(Font.satoshi(18, weight: .medium))
+                        .foregroundColor(isDestructive ? Color(hex: "FFB29F") : muted)
+                        .frame(width: 34, height: 34)
+                        .background(Color.white.opacity(0.07), in: Circle())
 
                     Text(title)
-                        .font(Font.satoshi(.caption, weight: .medium))
-                        .foregroundColor(foreground)
+                        .font(Font.satoshi(.subheadline, weight: .medium))
+                        .foregroundColor(isDestructive ? Color(hex: "FFB29F") : foreground)
 
                     Spacer()
+
+                    if let value {
+                        Text(value)
+                            .font(Font.satoshi(.caption, weight: .medium))
+                            .foregroundColor(muted)
+                            .lineLimit(1)
+                    }
 
                     Image(systemName: "chevron.right")
                         .font(Font.satoshi(9, weight: .bold))
                         .foregroundColor(muted)
                 }
-                .frame(height: 48)
+                .frame(height: 66)
+                .padding(.horizontal, 14)
 
                 if showsDivider {
                     Rectangle()
                         .fill(divider)
                         .frame(height: 1)
-                        .padding(.leading, 28)
+                        .padding(.leading, 62)
                 }
             }
         }
         .buttonStyle(.plain)
+    }
+}
+
+private struct ProfilePlaceholderDetail: View {
+    let title: String
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "sparkles")
+                .font(Font.satoshi(28, weight: .semibold))
+                .foregroundColor(Color(hex: "4B5545"))
+                .frame(width: 64, height: 64)
+                .background(Color.SecondaryBackground, in: Circle())
+            Text(title)
+                .font(Font.satoshi(.title3, weight: .semibold))
+                .foregroundColor(Color.PrimaryText)
+            Text("This setting will be connected to KIRA's full account experience.")
+                .font(Font.satoshi(.subheadline, weight: .medium))
+                .foregroundColor(Color.SubtitleText)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 26)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.PrimaryBackground.ignoresSafeArea())
+        .navigationTitle(title)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private struct SettingsExportPlaceholderView: View {
+    var body: some View {
+        ProfilePlaceholderDetail(title: "Export data")
     }
 }
 
