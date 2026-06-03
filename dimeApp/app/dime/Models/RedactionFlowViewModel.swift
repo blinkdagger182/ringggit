@@ -83,6 +83,10 @@ final class RedactionFlowViewModel: ObservableObject {
         manualBoxes.removeAll { $0.id == id }
     }
 
+    func removeAutoRedaction(_ id: UUID) {
+        redactionItems.removeAll { $0.id == id }
+    }
+
     func removeLastManualBox() {
         _ = manualBoxes.popLast()
     }

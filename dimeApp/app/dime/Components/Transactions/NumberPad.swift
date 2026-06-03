@@ -576,6 +576,8 @@ struct NumberPadTextView: View {
     @AppStorage("numberEntryType", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) var numberEntryType: Int = 1
 
     public var amount: String {
+        let hasFractionalCents = abs(price.truncatingRemainder(dividingBy: 1)) > 0.0001
+
         if numberEntryType == 1 {
             return String(format: "%.2f", price)
         }
@@ -588,6 +590,9 @@ struct NumberPadTextView: View {
                 case .second:
                     return String(format: "%.2f", price)
             }
+        }
+        if hasFractionalCents {
+            return String(format: "%.2f", price)
         }
         return String(format: "%.0f", price)
     }
@@ -618,9 +623,16 @@ struct NumberPadTextView: View {
     var body: some View {
         HStack(alignment: .lastTextBaseline, spacing: 8) {
             if !showCurrency {
-                Text(amount)
-                    .font(Font.satoshi(largerFontSize, weight: .regular))
-                    .foregroundColor(Color.PrimaryText)
+                HStack(alignment: .lastTextBaseline, spacing: 0) {
+                    Text(currencySymbol)
+                        .font(Font.satoshi(largerFontSize, weight: .regular))
+                        .foregroundColor(income ? Color.IncomeGreen.opacity(0.78) : Color.SubtitleText)
+
+                    Text(amount)
+                        .font(Font.satoshi(largerFontSize, weight: .regular))
+                        .foregroundColor(income ? Color.IncomeGreen : Color.PrimaryText)
+                }
+                .frame(maxWidth: .infinity, alignment: .center)
             } else if let onCurrencyTap {
                 Button(action: onCurrencyTap) {
                     HStack(alignment: .lastTextBaseline, spacing: 5) {
@@ -650,8 +662,8 @@ struct NumberPadTextView: View {
         }
         .minimumScaleFactor(0.5)
         .lineLimit(1)
-        .padding(.trailing, numberEntryType == 2 ? 40 : 0)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.trailing, showCurrency && numberEntryType == 2 ? 40 : 0)
+        .frame(maxWidth: .infinity, alignment: showCurrency ? .leading : .center)
         .overlay(alignment: .trailing) {
             if numberEntryType == 2 {
                 DeleteButton()

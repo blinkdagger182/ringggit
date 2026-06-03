@@ -277,16 +277,22 @@ struct RedactionPreviewView: View {
                             // Auto-detected PII boxes (header zone only)
                             ForEach(autoItems) { item in
                                 let b = item.boundingBox
-                                Rectangle()
-                                    .fill(Color.black)
-                                    .frame(
-                                        width:  max(b.width  * geo.size.width,  24),
-                                        height: max(b.height * geo.size.height, 10)
-                                    )
-                                    .position(
-                                        x: b.midX * geo.size.width,
-                                        y: b.midY * geo.size.height
-                                    )
+                                let w = max(b.width  * geo.size.width,  24)
+                                let h = max(b.height * geo.size.height, 14)
+                                ZStack(alignment: .topTrailing) {
+                                    Rectangle().fill(Color.black)
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.system(size: 13, weight: .medium))
+                                        .foregroundStyle(.white.opacity(0.86))
+                                        .padding(2)
+                                }
+                                .frame(width: w, height: h)
+                                .position(
+                                    x: b.midX * geo.size.width,
+                                    y: b.midY * geo.size.height
+                                )
+                                .contentShape(Rectangle())
+                                .onTapGesture { viewModel.removeAutoRedaction(item.id) }
                             }
 
                             // Manually drawn boxes — tap × to remove

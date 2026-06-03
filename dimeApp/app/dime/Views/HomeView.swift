@@ -41,6 +41,13 @@ struct ScannedReceiptPrefill {
     let date: Date?
     let attachmentReference: TransactionAttachmentReference?
     let sourceText: String?
+    let lineItems: [ScannedReceiptLineItem]
+}
+
+struct ScannedReceiptLineItem: Identifiable {
+    let id = UUID()
+    let note: String
+    let amount: Double
 }
 
 class OverallTransactionManager: ObservableObject {
@@ -1019,13 +1026,28 @@ struct KiraReceiptLoadingView: View {
 private enum ReceiptPrefillParser {
     static func makePrefill(sourceText: String?, attachmentReference: TransactionAttachmentReference?) -> ScannedReceiptPrefill {
         let text = sourceText ?? ""
+        let amount = extractAmount(from: text)
+        let detectedLineItems = extractLineItems(from: text, receiptTotal: amount)
+        let lineItems = validatedLineItems(detectedLineItems, receiptTotal: amount)
         return ScannedReceiptPrefill(
-            amount: extractAmount(from: text),
+            amount: amount,
             note: extractMerchant(from: text) ?? "Scanned receipt",
             date: extractDate(from: text),
             attachmentReference: attachmentReference,
-            sourceText: sourceText
+            sourceText: sourceText,
+            lineItems: lineItems
         )
+    }
+
+    private static func validatedLineItems(_ lineItems: [ScannedReceiptLineItem], receiptTotal: Double?) -> [ScannedReceiptLineItem] {
+        guard lineItems.count >= 2 else { return [] }
+        guard let receiptTotal, receiptTotal > 0 else { return lineItems }
+
+        let lineTotal = lineItems.reduce(0) { $0 + $1.amount }
+        let difference = abs(receiptTotal - lineTotal)
+        let tolerance = max(1.0, receiptTotal * 0.20)
+
+        return difference <= tolerance ? lineItems : []
     }
 
     private static func extractAmount(from text: String) -> Double? {
@@ -1043,15 +1065,129 @@ private enum ReceiptPrefillParser {
     }
 
     private static func amounts(in text: String) -> [Double] {
-        let pattern = #"(?i)(?:rm|myr)?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2})|[0-9]+(?:\.[0-9]{2}))"#
+        let pattern = #"(?i)(?:rm|myr)?\s*([0-9]{1,3}(?:\s*,\s*[0-9]{3})*(?:\s*\.\s*[0-9]{2})|[0-9]+(?:\s*\.\s*[0-9]{2}))"#
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
         let range = NSRange(text.startIndex..<text.endIndex, in: text)
 
         return regex.matches(in: text, range: range).compactMap { match in
             guard let amountRange = Range(match.range(at: 1), in: text) else { return nil }
-            let value = text[amountRange].replacingOccurrences(of: ",", with: "")
+            let value = text[amountRange]
+                .replacingOccurrences(of: ",", with: "")
+                .replacingOccurrences(of: " ", with: "")
             return Double(value)
         }
+    }
+
+    private static func extractLineItems(from text: String, receiptTotal: Double?) -> [ScannedReceiptLineItem] {
+        let lines = normalizedLines(from: text)
+        var candidates: [ScannedReceiptLineItem] = []
+        var pendingItemLines: [String] = []
+
+        for line in lines {
+            let lineAmounts = amounts(in: line)
+            let amount = lineAmounts.last
+            let hasLetters = line.rangeOfCharacter(from: .letters) != nil
+
+            if shouldResetReceiptItemContext(line) {
+                pendingItemLines = []
+                continue
+            }
+
+            if isTaxOrChargeLine(line) {
+                pendingItemLines = []
+                continue
+            }
+
+            if let amount, amount > 0 {
+                guard receiptTotal.map({ amount < $0 }) ?? true else {
+                    pendingItemLines = []
+                    continue
+                }
+
+                let sameLineName = cleanedLineItemName(from: line)
+                let note: String
+                if hasLetters, sameLineName.count >= 2 {
+                    note = sameLineName
+                } else {
+                    note = pendingItemLines.joined(separator: " ")
+                }
+
+                if note.count >= 2, !isTaxOrChargeLine(note) {
+                    candidates.append(ScannedReceiptLineItem(note: note, amount: amount))
+                }
+
+                pendingItemLines = []
+                continue
+            }
+
+            if hasLetters, isPossibleItemDescriptionLine(line) {
+                pendingItemLines.append(cleanedLineItemName(from: line))
+                pendingItemLines = Array(pendingItemLines.suffix(4))
+            }
+        }
+
+        var seen = Set<String>()
+        let unique = candidates.filter { item in
+            let key = "\(item.note.lowercased())-\(String(format: "%.2f", item.amount))"
+            guard !seen.contains(key) else { return false }
+            seen.insert(key)
+            return true
+        }
+
+        return unique.count >= 2 ? Array(unique.prefix(12)) : []
+    }
+
+    private static func shouldResetReceiptItemContext(_ line: String) -> Bool {
+        let lowercased = line.lowercased()
+        let resetFragments = [
+            "subtotal", "sub total", "total", "grand", "amount", "amount due",
+            "balance", "paid", "change", "cash", "card", "visa", "master",
+            "thank", "powered", "invoice", "receipt", "date", "time",
+            "order no", "patron", "phone"
+        ]
+        return resetFragments.contains { lowercased.contains($0) }
+            || line.allSatisfy { $0 == "-" || $0 == "=" || $0 == " " }
+    }
+
+    private static func isTaxOrChargeLine(_ line: String) -> Bool {
+        let lowercased = line.lowercased()
+        let normalized = lowercased.replacingOccurrences(of: " ", with: "")
+        let taxFragments = [
+            "tax", "sst", "gst", "vat", "servicetax", "servicecharge",
+            "servicecahrge", "service charge", "service cahrge",
+            "charge", "st6", "st 6"
+        ]
+        return taxFragments.contains { lowercased.contains($0) || normalized.contains($0.replacingOccurrences(of: " ", with: "")) }
+    }
+
+    private static func isPossibleItemDescriptionLine(_ line: String) -> Bool {
+        let cleaned = cleanedLineItemName(from: line)
+        guard cleaned.count >= 2, cleaned.count <= 60 else { return false }
+        guard !isTaxOrChargeLine(cleaned), !shouldResetReceiptItemContext(cleaned) else { return false }
+        guard cleaned.rangeOfCharacter(from: .letters) != nil else { return false }
+
+        let lowercased = cleaned.lowercased()
+        let ignoredFragments = ["kopenhagen", "phone", "jalan", "table", "pax", "cashier"]
+        return !ignoredFragments.contains { lowercased.contains($0) }
+    }
+
+    private static func cleanedLineItemName(from line: String) -> String {
+        var output = line
+        let patterns = [
+            #"(?i)\b(?:rm|myr)?\s*[0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2})\b"#,
+            #"(?i)\b(?:rm|myr)?\s*[0-9]+(?:\.[0-9]{2})\b"#,
+            #"(?i)\b[x×]\s*\d+\b"#,
+            #"(?i)\b\d+\s*[x×]\b"#
+        ]
+
+        for pattern in patterns {
+            output = output.replacingOccurrences(of: pattern, with: "", options: .regularExpression)
+        }
+
+        return output
+            .replacingOccurrences(of: #"[\-\:\|]+$"#, with: "", options: .regularExpression)
+            .replacingOccurrences(of: #"^\d+\s+"#, with: "", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private static func extractMerchant(from text: String) -> String? {
