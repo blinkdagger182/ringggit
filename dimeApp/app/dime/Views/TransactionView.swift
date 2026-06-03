@@ -1720,7 +1720,7 @@ struct TransactionView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "square.grid.2x2")
                         .font(Font.satoshi(.callout, weight: .semibold))
-                    Text(isBatchMode ? "Select category" : (category?.wrappedName ?? "Select category"))
+                    Text(category?.wrappedName ?? "Select category")
                         .font(Font.satoshi(.callout, weight: .semibold))
                         .lineLimit(1)
                 }
@@ -1774,12 +1774,11 @@ struct TransactionView: View {
     @ViewBuilder
     private var batchModeToggleButton: some View {
         Button {
+            guard !isBatchMode else { return }
             withAnimation(.easeInOut(duration: 0.18)) {
-                isBatchMode.toggle()
-                if isBatchMode {
-                    income = false
-                    swipingOffset = 0
-                }
+                isBatchMode = true
+                income = false
+                swipingOffset = 0
             }
         } label: {
             HStack(spacing: isBatchMode ? 7 : 0) {
