@@ -8,6 +8,19 @@
 import SwiftUI
 import CoreHaptics
 
+struct NumericTextTransition: ViewModifier {
+    let value: String
+    func body(content: Content) -> some View {
+        if #available(iOS 16.0, *) {
+            content
+                .contentTransition(.numericText())
+                .animation(.spring(response: 0.25, dampingFraction: 0.82), value: value)
+        } else {
+            content
+        }
+    }
+}
+
 enum AssignedDecimal {
     case none, first, second
 }
@@ -60,6 +73,7 @@ struct NumberPad: View {
     var submitLabel: String?
     var showsSubmitButton: Bool = true
     var showsOperators: Bool = false
+    var compactOperators: Bool = false
     @Binding var expressionPreview: String
     var resetID: Int = 0
     var commitID: Int = 0
@@ -85,6 +99,7 @@ struct NumberPad: View {
         submitLabel: String? = nil,
         showsSubmitButton: Bool = true,
         showsOperators: Bool = false,
+        compactOperators: Bool = false,
         expressionPreview: Binding<String> = .constant(""),
         resetID: Int = 0,
         commitID: Int = 0,
@@ -98,6 +113,7 @@ struct NumberPad: View {
         self.submitLabel = submitLabel
         self.showsSubmitButton = showsSubmitButton
         self.showsOperators = showsOperators
+        self.compactOperators = compactOperators
         _expressionPreview = expressionPreview
         self.resetID = resetID
         self.commitID = commitID
@@ -105,11 +121,20 @@ struct NumberPad: View {
     }
 
     var body: some View {
+        if compactOperators {
+            keypadContent
+        } else {
+            keypadContent
+                .keyboardAwareHeight(showToolbar: showingNotePicker)
+        }
+    }
+
+    private var keypadContent: some View {
         GeometryReader { proxy in
             if showsOperators {
-                VStack(spacing: proxy.size.height * 0.035) {
+                VStack(spacing: proxy.size.height * (compactOperators ? 0.022 : 0.028)) {
                     ForEach(calculatorRows, id: \.self) { row in
-                        HStack(spacing: proxy.size.width * 0.035) {
+                        HStack(spacing: proxy.size.width * (compactOperators ? 0.026 : 0.03)) {
                             ForEach(row, id: \.self) { key in
                                 CalculatorKeyButton(key: key, size: proxy.size)
                             }
@@ -186,8 +211,7 @@ struct NumberPad: View {
                 .frame(width: proxy.size.width, height: proxy.size.height)
             }
         }
-        .padding(.bottom, 15)
-        .keyboardAwareHeight(showToolbar: showingNotePicker)
+        .padding(.bottom, compactOperators ? 4 : 15)
         .onAppear {
             prepareHaptics()
             syncCurrentInput()
@@ -205,7 +229,7 @@ struct NumberPad: View {
             [.digit(7), .digit(8), .digit(9), .operation(.divide)],
             [.digit(4), .digit(5), .digit(6), .operation(.multiply)],
             [.digit(1), .digit(2), .digit(3), .operation(.subtract)],
-            [.decimal, .digit(0), .empty, .operation(.add)]
+            [.decimal, .digit(0), .delete, .operation(.add)]
         ]
     }
 
@@ -228,13 +252,18 @@ struct NumberPad: View {
                     Text(op.rawValue)
                 }
             }
-            .font(Font.satoshi(key.isOperation ? 30 : 32, weight: .regular))
-            .frame(width: key.isOperation ? size.width * 0.17 : size.width * 0.245, height: size.height * 0.21)
+            .font(Font.satoshi(key.isOperation ? (compactOperators ? 23 : 26) : (compactOperators ? 28 : 31), weight: .regular))
+            .frame(width: key.isOperation ? size.width * 0.17 : size.width * 0.25, height: size.height * (compactOperators ? 0.205 : 0.22))
             .foregroundColor(key.isOperation ? Color.LightIcon : Color.PrimaryText)
             .background(
-                key.isEmpty ? Color.clear : (key.isOperation ? Color.DarkBackground : Color.SecondaryBackground),
-                in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+                key.isEmpty ? Color.clear : (key.isOperation ? Color.DarkBackground.opacity(0.96) : Color.LightIcon.opacity(0.92)),
+                in: RoundedRectangle(cornerRadius: 14, style: .continuous)
             )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(key.isOperation || key.isEmpty ? Color.clear : Color.Outline.opacity(0.5), lineWidth: 1)
+            )
+            .shadow(color: key.isOperation || key.isEmpty ? Color.clear : Color.black.opacity(0.045), radius: 7, x: 0, y: 4)
         }
         .buttonStyle(NumPadButton())
         .disabled(key.isEmpty)
@@ -272,6 +301,9 @@ struct NumberPad: View {
     }
 
     private func appendDecimal() {
+        if hapticType == 2 {
+            hapticTap()
+        }
         guard !currentInput.contains(".") else { return }
         currentInput += "."
         isEditingDecimal = true
@@ -280,6 +312,9 @@ struct NumberPad: View {
     }
 
     private func deleteCalculatorInput() {
+        if hapticType == 2 {
+            hapticTap()
+        }
         if currentInput.count <= 1 {
             currentInput = "0"
         } else {
@@ -295,6 +330,9 @@ struct NumberPad: View {
     }
 
     private func applyOperator(_ op: CalculatorOperator) {
+        if hapticType == 2 {
+            hapticTap()
+        }
         let rhs = Decimal(string: sanitizedCurrentInput) ?? 0
 
         if let lhs = storedValue, let pendingOperator {
@@ -631,6 +669,7 @@ struct NumberPadTextView: View {
                     Text(amount)
                         .font(Font.satoshi(largerFontSize, weight: .regular))
                         .foregroundColor(income ? Color.IncomeGreen : Color.PrimaryText)
+                        .modifier(NumericTextTransition(value: amount))
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
             } else if let onCurrencyTap {
@@ -649,14 +688,16 @@ struct NumberPadTextView: View {
                 Text("\(showSign ? (income ? "+" : "-") : "")\(amount)")
                     .font(Font.satoshi(largerFontSize, weight: .regular))
                     .foregroundColor(Color.PrimaryText)
+                    .modifier(NumericTextTransition(value: amount))
             } else {
-                Group {
+                HStack(alignment: .lastTextBaseline, spacing: 0) {
                     Text(effectiveCurrency + " ")
                         .font(Font.satoshi(.title2, weight: .semibold))
                         .foregroundColor(Color.SubtitleText)
-                    + Text("\(showSign ? (income ? "+" : "-") : "")\(amount)")
+                    Text("\(showSign ? (income ? "+" : "-") : "")\(amount)")
                         .font(Font.satoshi(largerFontSize, weight: .regular))
                         .foregroundColor(Color.PrimaryText)
+                        .modifier(NumericTextTransition(value: amount))
                 }
             }
         }

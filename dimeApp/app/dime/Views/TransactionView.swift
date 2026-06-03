@@ -62,6 +62,8 @@ struct TransactionView: View {
     @State private var isBatchMode = false
     @State private var lineDrafts: [TransactionLineDraft] = []
     @State private var showExpandedBatchLines = false
+    @State private var attemptedBatchAddWithoutCategory = false
+    @Namespace private var batchBasketAnimation
 
     var transactionTypeString: String {
         if income {
@@ -87,8 +89,16 @@ struct TransactionView: View {
         !lineDrafts.isEmpty && lineDrafts.allSatisfy { $0.category != nil }
     }
 
+    private var shouldShowBatchCategoryError: Bool {
+        isBatchMode && attemptedBatchAddWithoutCategory && price > 0 && category == nil
+    }
+
     private var hasAttachmentDetails: Bool {
         attachmentReference != nil || legacyReferenceText != nil
+    }
+
+    private var batchAmountFontSize: CGFloat {
+        UIScreen.main.bounds.height < 820 ? 30 : 36
     }
 
     @State var showCategoryPicker = false
@@ -283,9 +293,15 @@ struct TransactionView: View {
 
     var body: some View {
         GeometryReader { proxy in
-            VStack(spacing: 8) {
+            VStack(spacing: isBatchMode ? 10 : 8) {
                 transactionHeaderBar
-                .padding(.top, 8)
+                .padding(.top, isBatchMode ? 2 : 8)
+
+                HStack(alignment: .center) {
+                    if isBatchMode { batchAccountChip } else { accountChip }
+                    Spacer()
+                    if isBatchMode { batchCurrencyChip } else { currencyChip }
+                }
 
                 ZStack {
                     // swipe to change between income and expense
@@ -349,14 +365,6 @@ struct TransactionView: View {
                                 Text("Amount")
                                     .font(Font.satoshi(.headline, weight: .medium))
                                     .foregroundColor(Color.SubtitleText)
-
-                                HStack(alignment: .center) {
-                                    accountChip
-
-                                    Spacer()
-
-                                    currencyChip
-                                }
 
                                 calculationBubble
 
@@ -449,13 +457,14 @@ struct TransactionView: View {
                             submitLabel: nil,
                             showsSubmitButton: false,
                             showsOperators: true,
+                            compactOperators: isBatchMode,
                             expressionPreview: $calculatorExpression,
                             resetID: calculatorResetID,
                             commitID: calculatorCommitID
                         ) {
                             attemptSubmit()
                         }
-                        .frame(height: isBatchMode ? min(286, max(256, proxy.size.height * 0.32)) : nil)
+                        .frame(height: isBatchMode ? min(220, max(204, proxy.size.height * 0.25)) : nil)
                         .transition(AnyTransition.move(edge: .leading).combined(with: .opacity))
 
                         bottomActionBar
@@ -464,9 +473,9 @@ struct TransactionView: View {
                 }
 
             }
-            .padding(.horizontal, 17)
-            .padding(.top, 12)
-            .padding(.bottom, 12)
+            .padding(.horizontal, 16)
+            .padding(.top, isBatchMode ? 8 : 12)
+            .padding(.bottom, isBatchMode ? 8 : 12)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(Color.PrimaryBackground.ignoresSafeArea())
             .onTapGesture {
@@ -623,6 +632,7 @@ struct TransactionView: View {
         .onChange(of: income) { _ in
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             category = nil
+            attemptedBatchAddWithoutCategory = false
             detectRecurring(for: note)
         }
         .onChange(of: isDragging) { _ in
@@ -716,12 +726,21 @@ struct TransactionView: View {
             TransactionNoteSheet(note: $note)
                 .compactNoteSheet()
         }
-        .fullScreenCover(isPresented: $showExpandedBatchLines) {
-            BatchTransactionsExpandedView(
-                lineDrafts: $lineDrafts,
-                transactionCurrency: transactionCurrency,
-                batchTotal: batchTotal
-            )
+        .overlay {
+            if showExpandedBatchLines {
+                BatchTransactionsExpandedView(
+                    lineDrafts: $lineDrafts,
+                    transactionCurrency: transactionCurrency,
+                    batchTotal: batchTotal,
+                    namespace: batchBasketAnimation
+                ) {
+                    withAnimation(.spring(response: 0.42, dampingFraction: 0.88)) {
+                        showExpandedBatchLines = false
+                    }
+                }
+                .transition(.identity)
+                .zIndex(20)
+            }
         }
     }
 
@@ -815,23 +834,29 @@ struct TransactionView: View {
             toastImage = "tray"
             toastTitle = "Missing Category"
             showToast = true
+            attemptedBatchAddWithoutCategory = true
             toggleFieldColors()
             generator.notificationOccurred(.error)
             return
         }
 
-        lineDrafts.append(
-            TransactionLineDraft(
-                amount: price,
-                category: category,
-                note: note.trimmingCharacters(in: .whitespacesAndNewlines),
-                date: date,
-                income: income
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+            lineDrafts.append(
+                TransactionLineDraft(
+                    amount: price,
+                    category: category,
+                    note: note.trimmingCharacters(in: .whitespacesAndNewlines),
+                    date: date,
+                    income: income
+                )
             )
-        )
+        }
 
+        attemptedBatchAddWithoutCategory = false
         generator.notificationOccurred(.success)
-        resetCurrentLine(keepCategory: false)
+        withAnimation(.easeOut(duration: 0.2)) {
+            resetCurrentLine(keepCategory: false)
+        }
     }
 
     private func saveBatchTransactions() {
@@ -1212,7 +1237,7 @@ struct TransactionView: View {
                     .foregroundColor(Color.PrimaryText)
                     .lineLimit(1)
                 Text("\(currencySymbol)0")
-                    .font(Font.satoshi(.footnote, weight: .medium))
+                    .font(Font.satoshi(.callout, weight: .medium))
                     .foregroundColor(Color.SubtitleText)
                     .lineLimit(1)
             }
@@ -1240,6 +1265,61 @@ struct TransactionView: View {
             .padding(.horizontal, 14)
             .background(Color.SecondaryBackground, in: Capsule())
             .overlay(Capsule().stroke(Color.Outline.opacity(0.75), lineWidth: 1.2))
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var batchAccountChip: some View {
+        HStack(spacing: 8) {
+            Text("R")
+                .font(Font.satoshi(.callout, weight: .bold))
+                .foregroundColor(.white)
+                .frame(width: 30, height: 30)
+                .background(Color(hex: "4A5240"), in: Circle())
+
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Personal")
+                    .font(Font.satoshi(.callout, weight: .semibold))
+                    .foregroundColor(Color.PrimaryText)
+                    .lineLimit(1)
+                Text("\(currencySymbol)0")
+                    .font(Font.satoshi(.footnote, weight: .medium))
+                    .foregroundColor(Color.SubtitleText)
+                    .lineLimit(1)
+            }
+
+            Image(systemName: "chevron.down")
+                .font(Font.satoshi(10, weight: .bold))
+                .foregroundColor(Color.SubtitleText)
+                .padding(.leading, 4)
+        }
+        .padding(.vertical, 6)
+        .padding(.leading, 7)
+        .padding(.trailing, 12)
+        .background(Color.SecondaryBackground, in: Capsule())
+        .overlay(Capsule().stroke(Color.Outline.opacity(0.68), lineWidth: 1.1))
+    }
+
+    @ViewBuilder
+    private var batchCurrencyChip: some View {
+        Button {
+            showCurrencyPicker = true
+        } label: {
+            HStack(spacing: 7) {
+                Text(flagEmoji(for: transactionCurrency))
+                    .font(Font.satoshi(.callout, weight: .semibold))
+                Text(transactionCurrency)
+                    .font(Font.satoshi(.callout, weight: .bold))
+                    .foregroundColor(Color.PrimaryText)
+                Image(systemName: "chevron.down")
+                    .font(Font.satoshi(10, weight: .bold))
+                    .foregroundColor(Color.SubtitleText)
+            }
+            .padding(.vertical, 9)
+            .padding(.horizontal, 13)
+            .background(Color.SecondaryBackground, in: Capsule())
+            .overlay(Capsule().stroke(Color.Outline.opacity(0.68), lineWidth: 1.1))
         }
         .buttonStyle(.plain)
     }
@@ -1277,147 +1357,156 @@ struct TransactionView: View {
 
     @ViewBuilder
     private var transactionHeaderBar: some View {
-        if isBatchMode {
+        ZStack {
             HStack(spacing: 10) {
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(Font.satoshi(.body, weight: .semibold))
-                        .foregroundColor(Color.PrimaryText)
-                        .frame(width: 42, height: 42)
-                        .background(Color.LightIcon.opacity(0.84), in: Circle())
-                        .overlay(Circle().stroke(Color.Outline.opacity(0.65), lineWidth: 1))
-                }
-                .buttonStyle(.plain)
+                headerCloseButton
+                    .frame(width: 56, alignment: .leading)
 
-                Spacer(minLength: 8)
+                Spacer(minLength: 4)
 
+                headerTrailingActions
+                    .frame(width: 56, alignment: .trailing)
+            }
+            .frame(maxWidth: .infinity)
+
+            if showToast && !isBatchMode {
+                headerToast
+            } else {
                 transactionModeSegment
-
-                Spacer(minLength: 8)
-
-                Button {
-                    saveBatchTransactions()
-                } label: {
-                    Text("Save")
-                        .font(Font.satoshi(.callout, weight: .bold))
-                        .foregroundColor(canSaveBatch ? Color(hex: "4A5240") : Color.SubtitleText.opacity(0.55))
-                        .frame(width: 42, height: 42, alignment: .trailing)
-                }
-                .buttonStyle(.plain)
-                .disabled(!canSaveBatch)
-            }
-            .frame(maxWidth: .infinity)
-        } else {
-            VStack {
-                if showToast {
-                    HStack(spacing: 6.5) {
-                        Image(systemName: toastImage)
-                            .font(Font.satoshi(.subheadline, weight: .semibold))
-                            .foregroundColor(Color.AlertRed)
-
-                        Text(toastTitle)
-                            .font(Font.satoshi(.body, weight: .semibold))
-                            .lineLimit(1)
-                            .foregroundColor(Color.AlertRed)
-                    }
-                    .padding(8)
-                    .background(
-                        Color.AlertRed.opacity(0.23),
-                        in: RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    )
-                    .transition(AnyTransition.opacity.combined(with: .move(edge: .top)))
-                    .frame(maxWidth: dynamicTypeSize > .xLarge ? 250 : 200)
-                } else {
-                    transactionModeSegment
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .overlay {
-                HStack {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(Font.satoshi(.subheadline, weight: .semibold))
-                            .dynamicTypeSize(...DynamicTypeSize.xxLarge)
-                            .foregroundColor(Color.SubtitleText)
-                            .padding(7)
-                            .background(Color.SecondaryBackground, in: Circle())
-                            .contentShape(Circle())
-                    }
-
-                    Spacer()
-
-                    Button {
-                        showRecurring = true
-                    } label: {
-                        if repeatType > 0 {
-                            Image(systemName: "repeat")
-                                .font(Font.satoshi(.subheadline, weight: .semibold))
-                                .dynamicTypeSize(...DynamicTypeSize.xxLarge)
-                                .overlay(alignment: .topTrailing) {
-                                    Text(repeatOverlays[repeatType - 1])
-                                        .font(Font.satoshi(6, weight: .black))
-                                        .foregroundColor(Color.IncomeGreen)
-                                        .frame(width: 10, alignment: .leading)
-                                        .offset(x: 5.7, y: 1.5)
-                                }
-                                .foregroundColor(Color.IncomeGreen)
-                                .padding(7)
-                                .background(Color.IncomeGreen.opacity(0.23), in: Circle())
-                                .contentShape(Circle())
-                        } else {
-                            Image(systemName: "repeat")
-                                .font(Font.satoshi(16, weight: .semibold))
-                                .foregroundColor(Color.SubtitleText)
-                                .padding(7)
-                                .background(Color.SecondaryBackground, in: Circle())
-                                .contentShape(Circle())
-                        }
-                    }
-                    .accessibilityRemoveTraits(.isButton)
-                    .accessibilityLabel(repeatButtonAccessibility)
-                    .popover(
-                        present: $showRecurring,
-                        attributes: {
-                            $0.position = .absolute(
-                                originAnchor: .bottom,
-                                popoverAnchor: .top
-                            )
-                            $0.rubberBandingMode = .none
-                            $0.sourceFrameInset = UIEdgeInsets(top: 0, left: 0, bottom: -10, right: 0)
-                            $0.presentation.animation = .easeInOut(duration: 0.2)
-                            $0.dismissal.animation = .easeInOut(duration: 0.3)
-                        }
-                    ) {
-                        RecurringPickerView(
-                            repeatType: $repeatType, repeatCoefficient: $repeatCoefficient,
-                            showMenu: $showRecurring, showPicker: $showPicker)
-                    } background: {
-                        backgroundColor.opacity(0.6)
-                    }
-
-                    if toEdit != nil {
-                        Button {
-                            toDelete = toEdit
-                            deleteMode = true
-                        } label: {
-                            Image(systemName: "trash.fill")
-                                .font(Font.satoshi(.subheadline, weight: .semibold))
-                                .dynamicTypeSize(...DynamicTypeSize.xxLarge)
-                                .foregroundColor(Color.AlertRed)
-                                .padding(7)
-                                .background(Color.AlertRed.opacity(0.23), in: Circle())
-                                .contentShape(Circle())
-                        }
-                        .accessibilityLabel("delete transaction")
-                    }
-                }
-                .frame(maxWidth: .infinity)
             }
         }
+        .frame(maxWidth: .infinity)
+        .frame(height: 46)
+    }
+
+    @ViewBuilder
+    private var headerCloseButton: some View {
+        Button {
+            dismiss()
+        } label: {
+            Image(systemName: "xmark")
+                .font(Font.satoshi(.subheadline, weight: .semibold))
+                .dynamicTypeSize(...DynamicTypeSize.xxLarge)
+                .foregroundColor(Color.SubtitleText)
+                .frame(width: 40, height: 40)
+                .background(Color.SecondaryBackground, in: Circle())
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var headerTrailingActions: some View {
+        if isBatchMode {
+            Button {
+                saveBatchTransactions()
+            } label: {
+                Text("Save")
+                    .font(Font.satoshi(.callout, weight: .bold))
+                    .foregroundColor(canSaveBatch ? Color(hex: "4A5240") : Color.SubtitleText.opacity(0.58))
+                    .frame(height: 40, alignment: .trailing)
+            }
+            .buttonStyle(.plain)
+            .disabled(!canSaveBatch)
+        } else {
+            HStack(spacing: 8) {
+                headerRecurringButton
+
+                if toEdit != nil {
+                    headerDeleteButton
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var headerRecurringButton: some View {
+        Button {
+            showRecurring = true
+        } label: {
+            if repeatType > 0 {
+                Image(systemName: "repeat")
+                    .font(Font.satoshi(.subheadline, weight: .semibold))
+                    .dynamicTypeSize(...DynamicTypeSize.xxLarge)
+                    .overlay(alignment: .topTrailing) {
+                        Text(repeatOverlays[repeatType - 1])
+                            .font(Font.satoshi(6, weight: .black))
+                            .foregroundColor(Color.IncomeGreen)
+                            .frame(width: 10, alignment: .leading)
+                            .offset(x: 5.7, y: 1.5)
+                    }
+                    .foregroundColor(Color.IncomeGreen)
+                    .frame(width: 34, height: 34)
+                    .background(Color.IncomeGreen.opacity(0.23), in: Circle())
+                    .contentShape(Circle())
+            } else {
+                Image(systemName: "repeat")
+                    .font(Font.satoshi(16, weight: .semibold))
+                    .foregroundColor(Color.SubtitleText)
+                    .frame(width: 34, height: 34)
+                    .background(Color.SecondaryBackground, in: Circle())
+                    .contentShape(Circle())
+            }
+        }
+        .accessibilityRemoveTraits(.isButton)
+        .accessibilityLabel(repeatButtonAccessibility)
+        .popover(
+            present: $showRecurring,
+            attributes: {
+                $0.position = .absolute(
+                    originAnchor: .bottom,
+                    popoverAnchor: .top
+                )
+                $0.rubberBandingMode = .none
+                $0.sourceFrameInset = UIEdgeInsets(top: 0, left: 0, bottom: -10, right: 0)
+                $0.presentation.animation = .easeInOut(duration: 0.2)
+                $0.dismissal.animation = .easeInOut(duration: 0.3)
+            }
+        ) {
+            RecurringPickerView(
+                repeatType: $repeatType, repeatCoefficient: $repeatCoefficient,
+                showMenu: $showRecurring, showPicker: $showPicker)
+        } background: {
+            backgroundColor.opacity(0.6)
+        }
+    }
+
+    @ViewBuilder
+    private var headerDeleteButton: some View {
+        Button {
+            toDelete = toEdit
+            deleteMode = true
+        } label: {
+            Image(systemName: "trash.fill")
+                .font(Font.satoshi(.subheadline, weight: .semibold))
+                .dynamicTypeSize(...DynamicTypeSize.xxLarge)
+                .foregroundColor(Color.AlertRed)
+                .frame(width: 34, height: 34)
+                .background(Color.AlertRed.opacity(0.23), in: Circle())
+                .contentShape(Circle())
+        }
+        .accessibilityLabel("delete transaction")
+    }
+
+    @ViewBuilder
+    private var headerToast: some View {
+        HStack(spacing: 6.5) {
+            Image(systemName: toastImage)
+                .font(Font.satoshi(.subheadline, weight: .semibold))
+                .foregroundColor(Color.AlertRed)
+
+            Text(toastTitle)
+                .font(Font.satoshi(.body, weight: .semibold))
+                .lineLimit(1)
+                .foregroundColor(Color.AlertRed)
+        }
+        .padding(8)
+        .background(
+            Color.AlertRed.opacity(0.23),
+            in: RoundedRectangle(cornerRadius: 9, style: .continuous)
+        )
+        .transition(AnyTransition.opacity.combined(with: .move(edge: .top)))
+        .frame(maxWidth: dynamicTypeSize > .xLarge ? 250 : 200)
     }
 
     @ViewBuilder
@@ -1459,25 +1548,8 @@ struct TransactionView: View {
     @ViewBuilder
     private var batchModeMainContent: some View {
         VStack(spacing: 7) {
-            HStack(alignment: .center) {
-                accountChip
-
-                Spacer()
-
-                currencyChip
-            }
-
-            HStack(spacing: 8) {
-                Image(systemName: "square.stack.3d.up")
-                    .font(Font.satoshi(.footnote, weight: .semibold))
-                    .foregroundColor(Color(hex: "4A5240"))
-                    .frame(width: 24, height: 24)
-                    .background(Color.SecondaryBackground, in: Circle())
-
-                Text("\(lineDrafts.count) \(lineDrafts.count == 1 ? "transaction" : "transactions") · \(transactionCurrency) \(formatMoney(batchTotal))")
-                    .font(Font.satoshi(.callout, weight: .semibold))
-                    .foregroundColor(Color.SubtitleText)
-            }
+            batchPinnedTopControls
+                .layoutPriority(2)
 
             currentLineComposerCard
 
@@ -1486,16 +1558,34 @@ struct TransactionView: View {
     }
 
     @ViewBuilder
+    private var batchPinnedTopControls: some View {
+        VStack(spacing: 4) {
+            HStack(spacing: 8) {
+                Image(systemName: "square.stack.3d.up")
+                    .font(Font.satoshi(.footnote, weight: .semibold))
+                    .foregroundColor(Color(hex: "4A5240"))
+                    .frame(width: 22, height: 22)
+                    .background(Color.SecondaryBackground, in: Circle())
+
+                Text("\(lineDrafts.count) \(lineDrafts.count == 1 ? "transaction" : "transactions") · \(transactionCurrency) \(formatMoneyFixed(batchTotal))")
+                    .font(Font.satoshi(.footnote, weight: .semibold))
+                    .foregroundColor(Color.SubtitleText)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .top)
+    }
+
+    @ViewBuilder
     private var currentLineComposerCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("Current line")
-                .font(Font.satoshi(.callout, weight: .semibold))
+                .font(Font.satoshi(.footnote, weight: .semibold))
                 .foregroundColor(Color(hex: "4A5240"))
 
-            VStack(spacing: 4) {
+            VStack(spacing: 2) {
                 if !calculatorExpression.isEmpty {
                     Text(calculatorExpression)
-                        .font(Font.satoshi(.footnote, weight: .semibold))
+                        .font(Font.satoshi(11, weight: .semibold))
                         .foregroundColor(Color.SubtitleText)
                         .lineLimit(1)
                 }
@@ -1505,17 +1595,17 @@ struct TransactionView: View {
 
                     HStack(alignment: .firstTextBaseline, spacing: 7) {
                         Text(transactionCurrency)
-                            .font(Font.satoshi(.title3, weight: .bold))
+                            .font(Font.satoshi(max(17, batchAmountFontSize - 18), weight: .bold))
                             .foregroundColor(Color(hex: "4A5240"))
 
                         Text(formatMoneyFixed(price))
-                            .font(Font.satoshi(40, weight: .medium))
+                            .font(Font.satoshi(batchAmountFontSize, weight: .medium))
                             .foregroundColor(Color.PrimaryText)
                             .lineLimit(1)
                             .minimumScaleFactor(0.72)
+                            .modifier(NumericTextTransition(value: formatMoneyFixed(price)))
                     }
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .animation(.easeOut(duration: 0.18), value: price)
 
                     Button {
                         price = 0
@@ -1525,10 +1615,11 @@ struct TransactionView: View {
                         calculatorResetID += 1
                     } label: {
                         Image(systemName: "delete.left")
-                            .font(Font.satoshi(.callout, weight: .semibold))
+                            .font(Font.satoshi(.footnote, weight: .semibold))
                             .foregroundColor(Color.PrimaryText)
-                            .frame(width: 42, height: 42)
+                            .frame(width: 36, height: 36)
                             .background(Color.SecondaryBackground, in: Circle())
+                            .overlay(Circle().stroke(Color.Outline.opacity(0.45), lineWidth: 1))
                     }
                     .buttonStyle(.plain)
                 }
@@ -1536,44 +1627,7 @@ struct TransactionView: View {
 
             Divider().overlay(Color.Outline.opacity(0.65))
 
-            Button {
-                if expenseCategories.isEmpty {
-                    showCategorySheet = true
-                } else {
-                    withAnimation(.easeInOut) {
-                        showCategoryPicker = true
-                    }
-                }
-            } label: {
-                HStack(spacing: 9) {
-                    Group {
-                        if let category {
-                            Text(category.wrappedEmoji)
-                        } else {
-                            Image(systemName: "fork.knife")
-                        }
-                    }
-                    .font(Font.satoshi(.subheadline, weight: .semibold))
-
-                    Text(category?.wrappedName ?? "Category required")
-                        .font(Font.satoshi(.body, weight: .semibold))
-                        .foregroundColor(category == nil ? Color.AlertRed.opacity(0.82) : Color.PrimaryText)
-                        .lineLimit(1)
-
-                    Image(systemName: "chevron.down")
-                        .font(Font.satoshi(10, weight: .bold))
-                        .foregroundColor(Color.SubtitleText)
-                }
-                .foregroundColor(category.map { Color(hex: $0.wrappedColour) } ?? Color.SubtitleText)
-                .padding(.horizontal, 11)
-                .frame(height: 38)
-                .background(category.map { Color(hex: $0.wrappedColour).opacity(0.12) } ?? Color.SecondaryBackground, in: Capsule())
-            }
-            .buttonStyle(.plain)
-
-            Divider().overlay(Color.Outline.opacity(0.65))
-
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 Button {
                     showNoteSheet = true
                 } label: {
@@ -1603,7 +1657,7 @@ struct TransactionView: View {
                 }
             }
         }
-        .padding(12)
+        .padding(9)
         .background(Color.LightIcon.opacity(0.78), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -1613,7 +1667,7 @@ struct TransactionView: View {
     }
 
     private func lineDetailChip(icon: String, text: String) -> some View {
-        HStack(spacing: 7) {
+        HStack(spacing: 6) {
             Image(systemName: icon)
                 .font(Font.satoshi(.footnote, weight: .semibold))
                 .foregroundColor(Color.SubtitleText)
@@ -1623,6 +1677,7 @@ struct TransactionView: View {
                 .foregroundColor(Color.SubtitleText)
                 .lineLimit(1)
         }
+        .frame(minHeight: 22)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
@@ -1652,7 +1707,7 @@ struct TransactionView: View {
 
     @ViewBuilder
     private var bottomActionBar: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             Button {
                 if (expenseCategories.count == 0 && !income) || (incomeCategories.count == 0 && income) {
                     showCategorySheet = true
@@ -1664,19 +1719,20 @@ struct TransactionView: View {
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "square.grid.2x2")
-                        .font(Font.satoshi(.body, weight: .semibold))
-                    Text(category?.wrappedName ?? "Select category")
-                        .font(Font.satoshi(.body, weight: .semibold))
+                        .font(Font.satoshi(.callout, weight: .semibold))
+                    Text(isBatchMode ? "Select category" : (category?.wrappedName ?? "Select category"))
+                        .font(Font.satoshi(.callout, weight: .semibold))
                         .lineLimit(1)
                 }
                 .foregroundColor(category.map { Color(hex: $0.wrappedColour) } ?? Color.PrimaryText)
-                .padding(.horizontal, 16)
-                .frame(height: 52)
+                .padding(.horizontal, isBatchMode ? 14 : 16)
+                .frame(height: isBatchMode ? 48 : 52)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Color.SecondaryBackground, in: Capsule())
                 .overlay(Capsule().stroke(Color.Outline.opacity(0.85), lineWidth: 1.2))
             }
             .buttonStyle(.plain)
+            .frame(width: isBatchMode ? 190 : nil)
 
             Button {
                 if isBatchMode {
@@ -1687,21 +1743,32 @@ struct TransactionView: View {
             } label: {
                 Text(isBatchMode ? batchAddLineLabel : (toEdit == nil ? "Add" : "Save"))
                     .font(Font.satoshi(.body, weight: .bold))
-                    .foregroundColor((isBatchMode ? canAddBatchLine : canSaveTransaction) ? Color.LightIcon : Color.SubtitleText)
+                    .foregroundColor((isBatchMode ? canAddBatchLine : canSaveTransaction) ? Color.LightIcon : Color.SubtitleText.opacity(0.86))
                     .lineLimit(1)
                     .minimumScaleFactor(0.78)
-                    .frame(width: isBatchMode ? 190 : 96, height: 52)
+                    .frame(maxWidth: isBatchMode ? .infinity : nil)
+                    .frame(width: isBatchMode ? nil : 96, height: isBatchMode ? 48 : 52)
                     .background((isBatchMode ? canAddBatchLine : canSaveTransaction) ? Color.DarkBackground : Color.SecondaryBackground, in: Capsule())
                     .overlay(Capsule().stroke(Color.Outline.opacity((isBatchMode ? canAddBatchLine : canSaveTransaction) ? 0 : 0.85), lineWidth: 1.2))
+                    .animation(.easeInOut(duration: 0.18), value: isBatchMode ? canAddBatchLine : canSaveTransaction)
             }
             .buttonStyle(.plain)
             .disabled(isBatchMode ? !canAddBatchLine : !canSaveTransaction)
         }
-        .padding(.bottom, 2)
+        .padding(.top, isBatchMode ? 8 : 0)
+        .padding(.bottom, isBatchMode ? 10 : 2)
     }
 
     private var batchAddLineLabel: String {
-        canAddBatchLine ? "Add \(transactionCurrency) \(formatMoneyFixed(price))" : "Add line"
+        if price <= 0 {
+            return "Enter amount"
+        }
+
+        if category == nil {
+            return "Choose category first"
+        }
+
+        return "Add \(transactionCurrency) \(formatMoneyFixed(price))"
     }
 
     @ViewBuilder
@@ -1715,81 +1782,121 @@ struct TransactionView: View {
                 }
             }
         } label: {
-            Text("Batch")
-                .font(Font.satoshi(.callout, weight: .semibold))
-                .foregroundColor(isBatchMode ? Color.PrimaryText : Color.SubtitleText)
-                .lineLimit(1)
-                .padding(.horizontal, 14)
-                .frame(height: 40)
-                .background(isBatchMode ? Color.LightIcon.opacity(0.88) : Color.clear, in: Capsule())
+            HStack(spacing: isBatchMode ? 7 : 0) {
+                Image(systemName: "square.stack.3d.up")
+                    .font(Font.satoshi(.footnote, weight: .bold))
+                    .frame(width: 22, height: 22)
+                    .background(isBatchMode ? Color.LightIcon : Color.SubtitleText.opacity(0.22), in: Circle())
+                    .foregroundColor(isBatchMode ? Color.DarkBackground : Color.SubtitleText)
+
+                if isBatchMode {
+                    Text("Batch")
+                        .font(Font.satoshi(.callout, weight: .semibold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.82)
+                        .transition(.opacity.combined(with: .move(edge: .trailing)))
+                }
+            }
+            .foregroundColor(isBatchMode ? Color.PrimaryText : Color.SubtitleText)
+            .padding(.horizontal, isBatchMode ? 10 : 8)
+            .frame(width: isBatchMode ? 126 : 50, height: 40)
+            .background(isBatchMode ? Color.LightIcon.opacity(0.88) : Color.clear, in: Capsule())
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
 
     @ViewBuilder
     private var batchLinesCard: some View {
-        VStack(alignment: .leading, spacing: 9) {
+        VStack(alignment: .leading, spacing: lineDrafts.isEmpty ? 6 : 7) {
             HStack {
                 Text("Added transactions")
-                    .font(Font.satoshi(.body, weight: .semibold))
+                    .font(Font.satoshi(.callout, weight: .semibold))
                     .foregroundColor(Color.PrimaryText)
 
                 Spacer()
 
-                if lineDrafts.count > 3 {
-                    Button {
-                        showExpandedBatchLines = true
-                    } label: {
+                HStack(spacing: 6) {
+                    if lineDrafts.count > 3 {
                         Text("View all (\(lineDrafts.count))")
                             .font(Font.satoshi(.footnote, weight: .bold))
                             .foregroundColor(Color(hex: "4A5240"))
                             .padding(.horizontal, 10)
-                            .frame(height: 30)
+                            .frame(height: 28)
+                            .background(Color(hex: "4A5240").opacity(0.08), in: Capsule())
+                    } else {
+                        Text("\(lineDrafts.count) \(lineDrafts.count == 1 ? "item" : "items")")
+                            .font(Font.satoshi(.footnote, weight: .bold))
+                            .foregroundColor(Color.SubtitleText)
+                            .padding(.horizontal, 10)
+                            .frame(height: 28)
                             .background(Color(hex: "4A5240").opacity(0.10), in: Capsule())
                     }
+
+                    Button {
+                        guard !lineDrafts.isEmpty else { return }
+                        withAnimation(.spring(response: 0.42, dampingFraction: 0.88)) {
+                            showExpandedBatchLines = true
+                        }
+                    } label: {
+                        Image(systemName: "arrow.up.left.and.arrow.down.right")
+                            .font(Font.satoshi(11, weight: .bold))
+                            .foregroundColor(lineDrafts.isEmpty ? Color.SubtitleText.opacity(0.45) : Color(hex: "4A5240"))
+                            .frame(width: 28, height: 28)
+                            .background(Color(hex: "4A5240").opacity(lineDrafts.isEmpty ? 0.05 : 0.10), in: Circle())
+                    }
                     .buttonStyle(.plain)
-                } else {
-                    Text("\(lineDrafts.count) \(lineDrafts.count == 1 ? "item" : "items")")
-                        .font(Font.satoshi(.footnote, weight: .bold))
-                        .foregroundColor(Color.SubtitleText)
-                        .padding(.horizontal, 10)
-                        .frame(height: 30)
-                        .background(Color(hex: "4A5240").opacity(0.10), in: Capsule())
+                    .disabled(lineDrafts.isEmpty)
                 }
             }
 
             if lineDrafts.isEmpty {
-                HStack(spacing: 10) {
-                    Image(systemName: "receipt")
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Choose a category, then add this amount.")
                         .font(Font.satoshi(.callout, weight: .semibold))
                         .foregroundColor(Color.SubtitleText)
-                        .frame(width: 34, height: 34)
-                        .background(Color.SecondaryBackground, in: Circle())
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.86)
 
-                    Text("Add each receipt item as a line, then save them together.")
+                    Text("Batch total · \(transactionCurrency) 0.00")
                         .font(Font.satoshi(.footnote, weight: .semibold))
-                        .foregroundColor(Color.SubtitleText)
-                        .lineLimit(2)
+                        .foregroundColor(Color.SubtitleText.opacity(0.82))
+                        .lineLimit(1)
                 }
             } else {
-                ScrollView {
-                    VStack(spacing: 0) {
-                        ForEach(lineDrafts) { draft in
-                            batchLineRow(draft)
-
-                            if draft.id != lineDrafts.last?.id {
-                                Divider()
-                                    .overlay(Color.Outline.opacity(0.65))
-                                    .padding(.leading, 46)
-                            }
-                        }
+                if lineDrafts.count <= 3 {
+                    batchLineRows(lineDrafts)
+                } else {
+                    ScrollView(showsIndicators: true) {
+                        batchLineRows(lineDrafts)
                     }
+                    .frame(maxHeight: 126)
                 }
-                .frame(maxHeight: lineDrafts.count > 2 ? 118 : nil)
+
+                Divider().overlay(Color.Outline.opacity(0.65))
+
+                HStack {
+                    Text("Batch total")
+                        .font(Font.satoshi(.callout, weight: .semibold))
+                        .foregroundColor(Color.PrimaryText)
+
+                    Spacer()
+
+                    Text("\(transactionCurrency) \(formatMoney(batchTotal))")
+                        .font(Font.satoshi(.callout, weight: .semibold))
+                        .foregroundColor(Color(hex: "4A5240"))
+                        .animation(.easeOut(duration: 0.18), value: batchTotal)
+                }
+                .padding(.top, 2)
             }
         }
-        .padding(12)
-        .background(Color.LightIcon.opacity(0.72), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .padding(lineDrafts.isEmpty ? 10 : 11)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.LightIcon.opacity(0.72))
+                .matchedGeometryEffect(id: "batchBasketCard", in: batchBasketAnimation)
+        )
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(Color.Outline.opacity(0.65), lineWidth: 1)
@@ -1798,11 +1905,26 @@ struct TransactionView: View {
     }
 
     @ViewBuilder
+    private func batchLineRows(_ drafts: [TransactionLineDraft]) -> some View {
+        VStack(spacing: 0) {
+            ForEach(drafts) { draft in
+                batchLineRow(draft)
+
+                if draft.id != drafts.last?.id {
+                    Divider()
+                        .overlay(Color.Outline.opacity(0.65))
+                        .padding(.leading, 46)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
     private func batchLineRow(_ draft: TransactionLineDraft) -> some View {
         HStack(spacing: 10) {
             Text(draft.category?.wrappedEmoji ?? "•")
-                .font(Font.satoshi(.body, weight: .semibold))
-                .frame(width: 36, height: 36)
+                .font(Font.satoshi(.callout, weight: .semibold))
+                .frame(width: 32, height: 32)
                 .background((draft.category.map { Color(hex: $0.wrappedColour).opacity(0.16) } ?? Color.SecondaryBackground), in: Circle())
 
             VStack(alignment: .leading, spacing: 2) {
@@ -1812,7 +1934,7 @@ struct TransactionView: View {
                     .lineLimit(1)
 
                 Text(draft.note.isEmpty ? "No notes" : draft.note)
-                    .font(Font.satoshi(.footnote, weight: .medium))
+                    .font(Font.satoshi(11, weight: .medium))
                     .foregroundColor(Color.SubtitleText)
                     .lineLimit(1)
             }
@@ -1831,19 +1953,18 @@ struct TransactionView: View {
             } label: {
                 Image(systemName: "xmark")
                     .font(Font.satoshi(10, weight: .bold))
-                    .foregroundColor(Color.SubtitleText)
+                    .foregroundColor(Color.SubtitleText.opacity(0.8))
                     .frame(width: 28, height: 28)
-                    .background(Color.SecondaryBackground.opacity(0.9), in: Circle())
+                    .background(Color.SecondaryBackground.opacity(0.72), in: Circle())
             }
             .buttonStyle(.plain)
         }
-        .padding(.vertical, 7)
+        .padding(.vertical, 5)
         .contentShape(Rectangle())
         .onTapGesture {
             editBatchLine(draft)
         }
     }
-
     @ViewBuilder
     private var batchSaveButton: some View {
         Button {
@@ -2867,83 +2988,105 @@ private struct BatchTransactionsExpandedView: View {
     @Binding var lineDrafts: [TransactionLineDraft]
     let transactionCurrency: String
     let batchTotal: Double
-    @Environment(\.dismiss) private var dismiss
+    let namespace: Namespace.ID
+    let onClose: () -> Void
+    private let basketCornerRadius: CGFloat = 18
 
     var body: some View {
-        NavigationView {
-            ZStack {
-                Color.PrimaryBackground.ignoresSafeArea()
+        ZStack {
+            Color.PrimaryBackground
+                .ignoresSafeArea()
 
-                VStack(spacing: 14) {
+            VStack(spacing: 0) {
+                VStack(spacing: 12) {
                     HStack {
                         VStack(alignment: .leading, spacing: 3) {
                             Text("Added transactions")
-                                .font(Font.satoshi(.title3, weight: .bold))
+                                .font(Font.satoshi(.body, weight: .semibold))
                                 .foregroundColor(Color.PrimaryText)
 
                             Text("\(lineDrafts.count) \(lineDrafts.count == 1 ? "item" : "items") · \(transactionCurrency) \(formatMoney(batchTotal))")
-                                .font(Font.satoshi(.body, weight: .semibold))
+                                .font(Font.satoshi(.footnote, weight: .semibold))
                                 .foregroundColor(Color.SubtitleText)
                         }
 
                         Spacer()
 
                         Button {
-                            dismiss()
+                            onClose()
                         } label: {
                             Image(systemName: "xmark")
-                                .font(Font.satoshi(.callout, weight: .bold))
+                                .font(Font.satoshi(11, weight: .bold))
                                 .foregroundColor(Color.SubtitleText)
-                                .frame(width: 42, height: 42)
+                                .frame(width: 32, height: 32)
                                 .background(Color.SecondaryBackground, in: Circle())
                         }
                         .buttonStyle(.plain)
                     }
-                    .padding(.horizontal, 18)
-                    .padding(.top, 12)
+                    .padding(.horizontal, 14)
+                    .padding(.top, 13)
 
                     ScrollView(showsIndicators: true) {
-                        LazyVStack(spacing: 10) {
+                        LazyVStack(spacing: 0) {
                             ForEach(lineDrafts) { draft in
                                 expandedBatchLineRow(draft)
+
+                                if draft.id != lineDrafts.last?.id {
+                                    Divider()
+                                        .overlay(Color.Outline.opacity(0.65))
+                                        .padding(.leading, 48)
+                                }
                             }
                         }
-                        .padding(.horizontal, 18)
-                        .padding(.bottom, 18)
+                        .padding(.horizontal, 14)
+                        .padding(.bottom, 4)
                     }
 
+                    Divider().overlay(Color.Outline.opacity(0.65))
+
                     HStack {
-                        Text("Total")
-                            .font(Font.satoshi(.body, weight: .bold))
+                        Text("Batch total")
+                            .font(Font.satoshi(.callout, weight: .semibold))
                             .foregroundColor(Color.PrimaryText)
 
                         Spacer()
 
                         Text("\(transactionCurrency) \(formatMoney(batchTotal))")
-                            .font(Font.satoshi(.title3, weight: .bold))
-                            .foregroundColor(Color.PrimaryText)
+                            .font(Font.satoshi(.callout, weight: .semibold))
+                            .foregroundColor(Color(hex: "4A5240"))
                     }
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 14)
-                    .background(Color.SecondaryBackground.opacity(0.70))
+                    .padding(.horizontal, 14)
+                    .padding(.bottom, 13)
                 }
+                .background(
+                    RoundedRectangle(cornerRadius: basketCornerRadius, style: .continuous)
+                        .fill(Color.LightIcon)
+                        .matchedGeometryEffect(id: "batchBasketCard", in: namespace)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: basketCornerRadius, style: .continuous)
+                        .stroke(Color.Outline.opacity(0.65), lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(0.06), radius: 10, x: 0, y: 6)
+                .padding(.horizontal, 16)
+                .padding(.top, 10)
+                .padding(.bottom, 10)
             }
-            .navigationBarHidden(true)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
-        .navigationViewStyle(.stack)
     }
 
     @ViewBuilder
     private func expandedBatchLineRow(_ draft: TransactionLineDraft) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             Text(draft.category?.wrappedEmoji ?? "•")
-                .font(Font.satoshi(.title2, weight: .semibold))
-                .frame(width: 46, height: 46)
+                .font(Font.satoshi(.callout, weight: .semibold))
+                .frame(width: 32, height: 32)
                 .background((draft.category.map { Color(hex: $0.wrappedColour).opacity(0.16) } ?? Color.SecondaryBackground), in: Circle())
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(draft.category?.wrappedName ?? "Uncategorized")
-                    .font(Font.satoshi(.body, weight: .bold))
+                    .font(Font.satoshi(.callout, weight: .semibold))
                     .foregroundColor(Color.PrimaryText)
                     .lineLimit(1)
 
@@ -2955,31 +3098,24 @@ private struct BatchTransactionsExpandedView: View {
 
             Spacer()
 
-            VStack(alignment: .trailing, spacing: 6) {
-                Text("\(transactionCurrency) \(formatMoney(draft.amount))")
-                    .font(Font.satoshi(.body, weight: .bold))
-                    .foregroundColor(Color.PrimaryText)
+            Text("\(transactionCurrency) \(formatMoney(draft.amount))")
+                .font(Font.satoshi(.callout, weight: .semibold))
+                .foregroundColor(Color.PrimaryText)
 
-                Button {
-                    withAnimation(.easeInOut(duration: 0.18)) {
-                        lineDrafts.removeAll { $0.id == draft.id }
-                    }
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(Font.satoshi(10, weight: .bold))
-                        .foregroundColor(Color.SubtitleText)
-                        .frame(width: 28, height: 28)
-                        .background(Color.PrimaryBackground.opacity(0.86), in: Circle())
+            Button {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    lineDrafts.removeAll { $0.id == draft.id }
                 }
-                .buttonStyle(.plain)
+            } label: {
+                Image(systemName: "xmark")
+                    .font(Font.satoshi(10, weight: .bold))
+                    .foregroundColor(Color.SubtitleText.opacity(0.8))
+                    .frame(width: 28, height: 28)
+                    .background(Color.SecondaryBackground.opacity(0.72), in: Circle())
             }
+            .buttonStyle(.plain)
         }
-        .padding(12)
-        .background(Color.LightIcon.opacity(0.74), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color.Outline.opacity(0.65), lineWidth: 1)
-        )
+        .padding(.vertical, 8)
     }
 
     private func formatMoney(_ value: Double) -> String {
@@ -3192,6 +3328,7 @@ private struct TransactionNoteSheet: View {
     @Binding var note: String
     @Environment(\.dismiss) private var dismiss
     @FocusState private var focused: Bool
+    @State private var didRequestInitialFocus = false
 
     var body: some View {
         NavigationView {
@@ -3256,9 +3393,19 @@ private struct TransactionNoteSheet: View {
         }
         .navigationViewStyle(.stack)
         .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                focused = true
+            guard !didRequestInitialFocus else { return }
+            didRequestInitialFocus = true
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
+                var focusTransaction = SwiftUI.Transaction(animation: nil)
+                focusTransaction.disablesAnimations = true
+                withTransaction(focusTransaction) {
+                    focused = true
+                }
             }
+        }
+        .onDisappear {
+            focused = false
         }
     }
 }
