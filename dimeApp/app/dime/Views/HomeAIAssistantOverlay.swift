@@ -147,14 +147,6 @@ struct HomeAIAssistantOverlay: View {
             }
 
             Spacer()
-
-            Button { } label: {
-                Image(systemName: "square.grid.2x2")
-                    .font(Font.satoshi(18, weight: .medium))
-                    .foregroundStyle(Color.white.opacity(0.60))
-                    .frame(width: 36, height: 36)
-            }
-            .buttonStyle(.plain)
         }
         .frame(height: 40)
     }

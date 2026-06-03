@@ -551,11 +551,20 @@ struct HomeView: View {
 
             Button { onNotifications() } label: {
                 Image(systemName: "bell")
-                    .font(Font.satoshi(20, weight: .medium))
-                    .foregroundStyle(Color(hex: "4A5240"))
+                    .font(Font.satoshi(19, weight: .semibold))
+                    .foregroundStyle(Color.LightIcon)
                     .frame(width: 48, height: 48)
+                    .background(Color(hex: "4A5240"), in: Circle())
+                    .overlay(
+                        Circle()
+                            .stroke(Color.white.opacity(0.32), lineWidth: 1)
+                    )
                     .overlay(alignment: .topTrailing) {
-                        Circle().fill(Color.AlertRed).frame(width: 8, height: 8).offset(x: 1, y: 4)
+                        Circle()
+                            .fill(Color.AlertRed)
+                            .frame(width: 9, height: 9)
+                            .overlay(Circle().stroke(Color.LightIcon, lineWidth: 1.5))
+                            .offset(x: -5, y: 6)
                     }
             }
             .buttonStyle(.plain)
@@ -1234,15 +1243,6 @@ struct ProfileView: View {
             .buttonStyle(.plain)
 
             Spacer()
-
-            NavigationLink(destination: SettingsAppearanceView()) {
-                Image(systemName: "gearshape")
-                    .font(Font.satoshi(.footnote, weight: .semibold))
-                    .foregroundColor(foreground)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
         }
         .padding(.horizontal, 10)
     }
