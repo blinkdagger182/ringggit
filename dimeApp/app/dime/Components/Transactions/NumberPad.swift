@@ -216,6 +216,11 @@ struct NumberPad: View {
             prepareHaptics()
             syncCurrentInput()
         }
+        .onChange(of: price) { newPrice in
+            if currentInput == "0" && newPrice > 0 {
+                syncCurrentInput()
+            }
+        }
         .onChange(of: resetID) { _ in
             resetCalculatorState()
         }

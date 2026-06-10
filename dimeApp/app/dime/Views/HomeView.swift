@@ -469,7 +469,9 @@ struct HomeView: View {
         if currentCount != transactionCountBeforeAdd {
             counter += 1
         }
-        pendingReceiptPrefill = nil
+        // Don't nil out pendingReceiptPrefill here — presentAddTransaction always sets it
+        // correctly, and nulling it here can race against the cover's onDismiss firing
+        // prematurely, causing the view to re-render with a nil prefill before onAppear fires.
     }
 
     private func startAICaptionRotation() {
@@ -1024,8 +1026,12 @@ struct KiraReceiptLoadingView: View {
 }
 
 private enum ReceiptPrefillParser {
+
     static func makePrefill(sourceText: String?, attachmentReference: TransactionAttachmentReference?) -> ScannedReceiptPrefill {
-        let text = sourceText ?? ""
+        // strip "Page N:" section headers added by the OCR pipeline
+        let rawText = sourceText ?? ""
+        let text = rawText.replacingOccurrences(of: #"(?m)^Page \d+:\s*$"#, with: "", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
         let amount = extractAmount(from: text)
         let detectedLineItems = extractLineItems(from: text, receiptTotal: amount)
         let lineItems = validatedLineItems(detectedLineItems, receiptTotal: amount)
@@ -1052,30 +1058,50 @@ private enum ReceiptPrefillParser {
 
     private static func extractAmount(from text: String) -> Double? {
         let lines = normalizedLines(from: text)
-        let priorityKeywords = ["grand total", "total", "amount due", "balance due", "paid"]
-        let priorityLines = lines.filter { line in
-            priorityKeywords.contains { line.lowercased().contains($0) }
+        // Try each keyword in priority order — stop at first hit
+        let orderedKeywords = [
+            "grand total", "jumlah besar", "total", "jumlah",
+            "amount due", "amaun", "balance due", "bayar", "paid"
+        ]
+        for keyword in orderedKeywords {
+            let matching = lines.filter { $0.lowercased().contains(keyword) }
+            if let found = matching.compactMap({ amounts(in: $0).last }).last {
+                return found
+            }
         }
-
-        if let priorityAmount = priorityLines.compactMap({ amounts(in: $0).last }).last {
-            return priorityAmount
-        }
-
         return lines.flatMap { amounts(in: $0) }.max()
     }
 
     private static func amounts(in text: String) -> [Double] {
-        let pattern = #"(?i)(?:rm|myr)?\s*([0-9]{1,3}(?:\s*,\s*[0-9]{3})*(?:\s*\.\s*[0-9]{2})|[0-9]+(?:\s*\.\s*[0-9]{2}))"#
-        guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
-        let range = NSRange(text.startIndex..<text.endIndex, in: text)
+        var results: [Double] = []
 
-        return regex.matches(in: text, range: range).compactMap { match in
-            guard let amountRange = Range(match.range(at: 1), in: text) else { return nil }
-            let value = text[amountRange]
-                .replacingOccurrences(of: ",", with: "")
-                .replacingOccurrences(of: " ", with: "")
-            return Double(value)
+        // Pattern 1: explicit RM/MYR prefix — captures the number after the symbol
+        let currencyPattern = #"(?i)(?:rm|myr)\s*([0-9]+(?:\.[0-9]{1,2})?)"#
+        if let rx = try? NSRegularExpression(pattern: currencyPattern) {
+            let ns = NSRange(text.startIndex..., in: text)
+            for m in rx.matches(in: text, range: ns) {
+                if let r = Range(m.range(at: 1), in: text),
+                   let n = Double(text[r].replacingOccurrences(of: ",", with: "")), n > 0 {
+                    results.append(n)
+                }
+            }
         }
+
+        // Pattern 2: plain decimal numbers not preceded/followed by another digit
+        let decimalPattern = #"(?<![0-9,\.])([0-9]{1,3}(?:,[0-9]{3})*\.[0-9]{1,2}|[1-9][0-9]*\.[0-9]{1,2})(?![0-9])"#
+        if let rx = try? NSRegularExpression(pattern: decimalPattern) {
+            let ns = NSRange(text.startIndex..., in: text)
+            for m in rx.matches(in: text, range: ns) {
+                if let r = Range(m.range(at: 1), in: text),
+                   let n = Double(text[r].replacingOccurrences(of: ",", with: "")), n > 0 {
+                    results.append(n)
+                }
+            }
+        }
+
+        // deduplicate, preserve order
+        var seen = Set<Double>()
+        return results.filter { seen.insert($0).inserted }
     }
 
     private static func extractLineItems(from text: String, receiptTotal: Double?) -> [ScannedReceiptLineItem] {

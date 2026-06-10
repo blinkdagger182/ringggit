@@ -12,6 +12,7 @@ struct RedactionPreviewView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var currentPage  = 0
     @State private var isGenerating = false
+    @State private var showDebugOCR = false
 
     // Draw-to-redact
     @State private var isDrawMode  = false
@@ -64,7 +65,9 @@ struct RedactionPreviewView: View {
             }
             Button("Cancel", role: .cancel) { pendingBox = nil }
         }
-        .sheet(isPresented: $viewModel.showIntro) {
+        .sheet(isPresented: $viewModel.showIntro, onDismiss: {
+            // swipe-dismiss — detection is already running, nothing to do
+        }) {
             PrivateRedactionIntroSheet(
                 onContinue: { viewModel.markIntroSeen() },
                 onDismiss: {
@@ -136,6 +139,31 @@ struct RedactionPreviewView: View {
 
     private var footerSection: some View {
         VStack(alignment: .leading, spacing: 12) {
+            #if DEBUG
+            VStack(alignment: .leading, spacing: 4) {
+                Button {
+                    showDebugOCR.toggle()
+                } label: {
+                    Text("🐛 OCR text (\(viewModel.ocrText?.count ?? 0) chars)")
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundStyle(.orange)
+                }
+                .buttonStyle(.plain)
+
+                if showDebugOCR {
+                    ScrollView {
+                        Text(viewModel.ocrText ?? "nil")
+                            .font(.system(.caption2, design: .monospaced))
+                            .foregroundStyle(.primary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .frame(maxHeight: 160)
+                    .padding(8)
+                    .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8))
+                }
+            }
+            #endif
+
             VStack(alignment: .leading, spacing: 4) {
                 Text("Private details protected")
                     .font(Font.satoshi(.headline, weight: .semibold))

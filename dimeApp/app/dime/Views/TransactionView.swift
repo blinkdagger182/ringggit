@@ -132,6 +132,12 @@ struct TransactionView: View {
     // edit mode
     let toEdit: Transaction?
 
+    // receipt prefill — applied in onAppear to avoid @State init fragility
+    private let receiptPrefill: ScannedReceiptPrefill?
+    private let receiptPrefillFingerprint: String?
+    private let prefillAmount: Double?
+    @State private var appliedReceiptPrefillFingerprint: String?
+
     // delete mode
 
     @State var toDelete: Transaction?
@@ -290,6 +296,9 @@ struct TransactionView: View {
     @State private var attachmentReference: TransactionAttachmentReference?
     @State private var legacyReferenceText: String?
     @State private var previewAttachmentReference: TransactionAttachmentReference?
+    #if DEBUG
+    private var debugPrefillInfo: String?
+    #endif
 
     var body: some View {
         GeometryReader { proxy in
@@ -372,6 +381,16 @@ struct TransactionView: View {
                                     .scaleEffect(price > 0 ? 1 : 0.98)
                                     .animation(.easeOut(duration: 0.18), value: price)
                             }
+
+                            #if DEBUG
+                            if let dbg = debugPrefillInfo {
+                                Text(dbg)
+                                    .font(.system(.caption2, design: .monospaced))
+                                    .foregroundColor(.orange)
+                                    .padding(6)
+                                    .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+                            }
+                            #endif
 
                             if let detection = recurringDetection, repeatType == 0 {
                                 recurringDetectionBanner(detection)
@@ -665,6 +684,8 @@ struct TransactionView: View {
                     if transaction.wrappedDate > Date.now {
                         animateIcon = true
                     }
+                } else if receiptPrefill != nil {
+                    applyReceiptPrefillIfNeeded()
                 } else if isBatchMode {
                     assignSuggestedCategoriesToBatchLines()
                     if lineDrafts.contains(where: { $0.category == nil }) {
@@ -672,6 +693,9 @@ struct TransactionView: View {
                     }
                 }
             }
+        }
+        .onChange(of: receiptPrefillFingerprint) { _ in
+            applyReceiptPrefillIfNeeded()
         }
         .sheet(isPresented: $showCategorySheet) {
             CategoryView(mode: .transaction, income: income)
@@ -816,6 +840,61 @@ struct TransactionView: View {
 
         DispatchQueue.main.async {
             addBatchLine()
+        }
+    }
+
+    private func applyReceiptPrefillIfNeeded() {
+        guard toEdit == nil,
+              let prefill = receiptPrefill,
+              let fingerprint = receiptPrefillFingerprint,
+              appliedReceiptPrefillFingerprint != fingerprint else {
+            return
+        }
+
+        appliedReceiptPrefillFingerprint = fingerprint
+        income = false
+        swipingOffset = 0
+
+        if let amount = prefill.amount, amount > 0 {
+            price = amount
+            calculatorExpression = ""
+            if amount.truncatingRemainder(dividingBy: 1) > 0 {
+                isEditingDecimal = true
+                decimalValuesAssigned = .second
+            } else {
+                isEditingDecimal = false
+                decimalValuesAssigned = .none
+            }
+        }
+
+        if prefill.lineItems.count >= 2, lineDrafts.isEmpty {
+            let prefillDate = prefill.date ?? Date.now
+            isBatchMode = true
+            lineDrafts = prefill.lineItems.map {
+                TransactionLineDraft(
+                    amount: $0.amount,
+                    category: nil,
+                    note: $0.note,
+                    date: prefillDate,
+                    income: false
+                )
+            }
+            assignSuggestedCategoriesToBatchLines()
+        }
+
+        let trimmedNote = prefill.note.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedNote.isEmpty {
+            note = prefill.note
+            detectRecurring(for: prefill.note)
+        }
+
+        if let prefillDate = prefill.date {
+            date = prefillDate
+        }
+
+        if let reference = prefill.attachmentReference {
+            attachmentReference = reference
+            legacyReferenceText = nil
         }
     }
 
@@ -2501,6 +2580,10 @@ struct TransactionView: View {
         _transactionCurrency = State(initialValue: globalCurrency)
         _income = State(initialValue: false)
 
+        receiptPrefill = prefill
+        receiptPrefillFingerprint = prefill.map(Self.fingerprint(for:))
+        prefillAmount = prefill?.amount
+
         if let prefill {
             if let amount = prefill.amount {
                 _price = State(initialValue: amount)
@@ -2533,6 +2616,14 @@ struct TransactionView: View {
             _attachmentReference = State(initialValue: prefill.attachmentReference)
         }
 
+        #if DEBUG
+        if let prefill {
+            debugPrefillInfo = "prefill: amount=\(prefill.amount.map { String($0) } ?? "nil") note=\(prefill.note) sourceText=\(prefill.sourceText.map { "\($0.prefix(60))…" } ?? "nil")"
+        } else {
+            debugPrefillInfo = "prefill: nil"
+        }
+        #endif
+
         toEdit = nil
     }
 
@@ -2561,6 +2652,9 @@ struct TransactionView: View {
             _transactionCurrency = State(initialValue: globalCurrency)
         }
         self.toEdit = toEdit
+        receiptPrefill = nil
+        receiptPrefillFingerprint = nil
+        prefillAmount = nil
     }
 
     init(category: Category? = nil) {
@@ -2572,6 +2666,19 @@ struct TransactionView: View {
         }
 
         toEdit = nil
+        receiptPrefill = nil
+        receiptPrefillFingerprint = nil
+        prefillAmount = nil
+    }
+
+    private static func fingerprint(for prefill: ScannedReceiptPrefill) -> String {
+        let amount = prefill.amount.map { String(format: "%.2f", $0) } ?? "nil"
+        let date = prefill.date.map { String($0.timeIntervalSince1970) } ?? "nil"
+        let lines = prefill.lineItems
+            .map { "\($0.note):\(String(format: "%.2f", $0.amount))" }
+            .joined(separator: "|")
+        let sourceHash = prefill.sourceText.map { String($0.hashValue) } ?? "nil"
+        return [amount, prefill.note, date, lines, sourceHash].joined(separator: "§")
     }
 }
 

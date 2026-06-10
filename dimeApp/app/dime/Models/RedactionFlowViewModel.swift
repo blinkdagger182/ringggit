@@ -33,9 +33,9 @@ final class RedactionFlowViewModel: ObservableObject {
     @Published private(set) var redactionItems: [RedactionItem] = []
     @Published var manualBoxes: [ManualRedactionBox] = []
 
-    private(set) var sourcePages:  [UIImage] = []
-    private(set) var sourceText:   String?
-    private(set) var ocrText:      String?
+    var sourcePages: [UIImage] = []
+    private(set) var sourceText: String?
+    var ocrText: String?
     private(set) var filename:     String = "Document"
 
     private let service = PIIRedactionService()
@@ -54,14 +54,15 @@ final class RedactionFlowViewModel: ObservableObject {
         self.flowState    = .idle
 
         showFlow = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+        beginDetection()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
             self?.showIntro = true
         }
     }
 
     func markIntroSeen() {
         showIntro = false
-        beginDetection()
+        // detection already running from startRedaction
     }
 
     func cancelFlow() {
