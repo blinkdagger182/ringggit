@@ -1337,6 +1337,8 @@ struct ProfileView: View {
                             ProfileSettingsRow(icon: "coloncurrencysign.square", title: "Currency", value: currency, destination: SettingsCurrencyView())
                             ProfileSettingsRow(icon: "circle.righthalf.filled", title: "Appearance", value: appearanceValue, destination: SettingsAppearanceView())
                             ProfileSettingsRow(icon: "keyboard", title: "Default entry type", value: defaultEntryValue, destination: SettingsNumberEntryView())
+                            ProfileSettingsRow(icon: "hand.tap", title: "Haptics", destination: SettingsHapticsView())
+                            ProfileSettingsRow(icon: "calendar", title: "Time frames", destination: SettingsWeekStartView())
                         }
 
                         ProfileSettingsSection(title: "Data") {
@@ -1556,33 +1558,326 @@ private struct ProfileSettingsRow<Destination: View>: View {
 
 private struct ProfilePlaceholderDetail: View {
     let title: String
+    @AppStorage("kiraMemoryEnabled", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) private var kiraMemoryEnabled: Bool = true
+    @AppStorage("autoCategorizationEnabled", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) private var autoCategorizationEnabled: Bool = true
+    @AppStorage("monthlySummariesEnabled", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) private var monthlySummariesEnabled: Bool = true
+    @AppStorage("smartSuggestionsEnabled", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) private var smartSuggestionsEnabled: Bool = true
+    @AppStorage("receiptAutoCategorize", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) private var receiptAutoCategorize: Bool = true
+    @AppStorage("receiptTaxDetection", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) private var receiptTaxDetection: Bool = true
+    @AppStorage("receiptSplitSuggestions", store: UserDefaults(suiteName: "group.com.riskcreatives.duit")) private var receiptSplitSuggestions: Bool = true
+
+    private var icon: String {
+        switch title {
+        case "Personal details": return "person"
+        case "Security & privacy": return "lock.shield"
+        case "Subscription", "KIRA Pro": return "sparkles"
+        case "Recurring expenses": return "arrow.clockwise"
+        case "Receipt rules": return "wand.and.stars"
+        case "Ask KIRA memory": return "brain.head.profile"
+        case "Auto-categorization": return "tag"
+        case "Monthly summaries": return "doc.text.magnifyingglass"
+        case "Smart suggestions": return "lightbulb"
+        case "Help & support": return "questionmark.circle"
+        case "Feature request": return "bubble.left.and.text.bubble.right"
+        case "Report a bug": return "exclamationmark.bubble"
+        case "Rate KIRA": return "star"
+        case "Share with friends": return "square.and.arrow.up"
+        case "About KIRA": return "info.circle"
+        case "Privacy policy": return "hand.raised"
+        case "Terms of use": return "doc.plaintext"
+        case "Version": return "number"
+        default: return "sparkles"
+        }
+    }
+
+    private var summary: String {
+        switch title {
+        case "Personal details":
+            return "Manage the identity KIRA uses across your account."
+        case "Security & privacy":
+            return "Control privacy, app access, and how receipt data is handled."
+        case "Subscription", "KIRA Pro":
+            return "KIRA Pro keeps AI summaries, receipt scanning, and smart planning available."
+        case "Recurring expenses":
+            return "Track repeating payments so KIRA can warn you before money leaves."
+        case "Receipt rules":
+            return "Tune how scanned receipts become transactions."
+        case "Ask KIRA memory":
+            return "Choose whether KIRA can remember useful context for future answers."
+        case "Auto-categorization":
+            return "Let KIRA suggest categories when you scan, ask, or add expenses."
+        case "Monthly summaries":
+            return "Control the short spending summaries KIRA prepares for you."
+        case "Smart suggestions":
+            return "Choose how proactive KIRA should be about budgets, goals, and spending."
+        case "Help & support":
+            return "Find help for scanning, adding transactions, budgets, and goals."
+        case "Feature request":
+            return "Tell us what would make KIRA faster or more useful for you."
+        case "Report a bug":
+            return "Share what went wrong so it can be fixed."
+        case "Rate KIRA":
+            return "Support KIRA by leaving a rating when the App Store page is available."
+        case "Share with friends":
+            return "Invite someone who wants a simpler way to understand money."
+        case "About KIRA":
+            return "KIRA is built around asking, scanning, adding, and understanding."
+        case "Privacy policy":
+            return "KIRA should be private by default. Receipt and transaction data stay local unless you choose cloud or AI features."
+        case "Terms of use":
+            return "Simple terms for using KIRA responsibly."
+        case "Version":
+            return "Current installed app version and build details."
+        default:
+            return "Configure how KIRA works for your money."
+        }
+    }
 
     var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "sparkles")
-                .font(Font.satoshi(28, weight: .semibold))
-                .foregroundColor(Color(hex: "4B5545"))
-                .frame(width: 64, height: 64)
-                .background(Color.SecondaryBackground, in: Circle())
-            Text(title)
-                .font(Font.satoshi(.title3, weight: .semibold))
-                .foregroundColor(Color.PrimaryText)
-            Text("This setting will be connected to KIRA's full account experience.")
-                .font(Font.satoshi(.subheadline, weight: .medium))
-                .foregroundColor(Color.SubtitleText)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 26)
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 18) {
+                detailHeader
+
+                switch title {
+                case "Personal details":
+                    ProfileDetailSection {
+                        ProfileDetailInfoRow(icon: "person.crop.circle", title: "Display name", value: "Adam")
+                        ProfileDetailInfoRow(icon: "envelope", title: "Email", value: "Not connected")
+                        ProfileDetailInfoRow(icon: "person.text.rectangle", title: "Profile type", value: "Personal")
+                    }
+
+                case "Security & privacy":
+                    ProfileDetailSection {
+                        ProfileDetailInfoRow(icon: "faceid", title: "App lock", value: "Use Authentication setting")
+                        ProfileDetailInfoRow(icon: "doc.viewfinder", title: "Receipt privacy review", value: "Enabled")
+                        ProfileDetailInfoRow(icon: "icloud.slash", title: "Cloud sync", value: "Optional")
+                    }
+
+                case "Subscription", "KIRA Pro":
+                    ProfileDetailSection {
+                        ProfileDetailInfoRow(icon: "sparkles", title: "Plan", value: "KIRA Pro")
+                        ProfileDetailInfoRow(icon: "doc.text.magnifyingglass", title: "AI summaries", value: "Included")
+                        ProfileDetailInfoRow(icon: "camera.viewfinder", title: "Receipt scans", value: "Included")
+                    }
+
+                case "Recurring expenses":
+                    ProfileDetailSection {
+                        ProfileDetailInfoRow(icon: "calendar.badge.clock", title: "Detected from notes", value: "On")
+                        ProfileDetailInfoRow(icon: "bell", title: "Upcoming reminders", value: "Use Notifications")
+                        ProfileDetailInfoRow(icon: "list.bullet.rectangle", title: "Manage upcoming logs", value: "Settings")
+                    }
+
+                case "Receipt rules":
+                    ProfileDetailSection {
+                        ProfileDetailToggleRow(icon: "tag", title: "Auto-categorize items", isOn: $receiptAutoCategorize)
+                        ProfileDetailToggleRow(icon: "percent", title: "Treat SST/GST/VAT as tax", isOn: $receiptTaxDetection)
+                        ProfileDetailToggleRow(icon: "person.2", title: "Suggest split flows", isOn: $receiptSplitSuggestions)
+                    }
+
+                case "Ask KIRA memory":
+                    ProfileDetailSection {
+                        ProfileDetailToggleRow(icon: "brain.head.profile", title: "Remember useful context", isOn: $kiraMemoryEnabled)
+                        ProfileDetailInfoRow(icon: "lock.shield", title: "Private by default", value: "On-device settings")
+                    }
+
+                case "Auto-categorization":
+                    ProfileDetailSection {
+                        ProfileDetailToggleRow(icon: "tag", title: "Suggest categories", isOn: $autoCategorizationEnabled)
+                        ProfileDetailInfoRow(icon: "sparkles", title: "Used for", value: "Receipts and quick add")
+                    }
+
+                case "Monthly summaries":
+                    ProfileDetailSection {
+                        ProfileDetailToggleRow(icon: "doc.text.magnifyingglass", title: "Prepare monthly summaries", isOn: $monthlySummariesEnabled)
+                        ProfileDetailInfoRow(icon: "chart.line.uptrend.xyaxis", title: "Style", value: "Conversational")
+                    }
+
+                case "Smart suggestions":
+                    ProfileDetailSection {
+                        ProfileDetailToggleRow(icon: "lightbulb", title: "Show smart suggestions", isOn: $smartSuggestionsEnabled)
+                        ProfileDetailInfoRow(icon: "target", title: "Focus", value: "What to do next")
+                    }
+
+                case "Version":
+                    ProfileDetailSection {
+                        ProfileDetailInfoRow(icon: "number", title: "Version", value: UIApplication.appVersion ?? "1.0")
+                        ProfileDetailInfoRow(icon: "hammer", title: "Build", value: Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Debug")
+                    }
+
+                default:
+                    ProfileDetailSection {
+                        ForEach(defaultRows, id: \.title) { row in
+                            ProfileDetailInfoRow(icon: row.icon, title: row.title, value: row.value)
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 18)
+            .padding(.bottom, 28)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.PrimaryBackground.ignoresSafeArea())
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var detailHeader: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Image(systemName: icon)
+                .font(Font.satoshi(24, weight: .semibold))
+                .foregroundColor(Color(hex: "4B5545"))
+                .frame(width: 56, height: 56)
+                .background(Color.SecondaryBackground, in: Circle())
+                .overlay(Circle().stroke(Color.Outline.opacity(0.7), lineWidth: 1))
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text(title)
+                    .font(Font.satoshi(.title2, weight: .semibold))
+                    .foregroundColor(Color.PrimaryText)
+
+                Text(summary)
+                    .font(Font.satoshi(.subheadline, weight: .medium))
+                    .foregroundColor(Color.SubtitleText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(18)
+        .background(Color.LightIcon.opacity(0.88), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(Color.Outline.opacity(0.65), lineWidth: 1)
+        )
+    }
+
+    private var defaultRows: [(icon: String, title: String, value: String)] {
+        switch title {
+        case "Help & support":
+            return [
+                ("camera.viewfinder", "Scanning receipts", "Use Scan receipt from Home"),
+                ("plus.circle", "Adding expenses", "Amount, category, done"),
+                ("sparkles", "Ask KIRA", "Ask anything about spending")
+            ]
+        case "Feature request":
+            return [
+                ("lightbulb", "What to include", "Problem, idea, expected result"),
+                ("paperplane", "Send request", "Support channel coming soon")
+            ]
+        case "Report a bug":
+            return [
+                ("exclamationmark.triangle", "Useful details", "Screen, steps, screenshot"),
+                ("ladybug", "Diagnostics", "Logs stay on your device")
+            ]
+        case "Rate KIRA":
+            return [
+                ("star", "App Store rating", "Coming with public release"),
+                ("heart", "Why it helps", "Supports future updates")
+            ]
+        case "Share with friends":
+            return [
+                ("person.2", "Best for", "People who hate spreadsheets"),
+                ("square.and.arrow.up", "Share link", "Coming soon")
+            ]
+        case "About KIRA":
+            return [
+                ("sparkles", "Positioning", "Ask. Scan. Add. Understand."),
+                ("leaf", "Design", "Calm, premium, AI-first"),
+                ("building.2", "Made by", "Risk Creatives")
+            ]
+        case "Privacy policy":
+            return [
+                ("lock.shield", "Local-first", "Manual data stays on device"),
+                ("doc.viewfinder", "Receipt review", "You control redactions"),
+                ("icloud", "Cloud", "Optional sync setting")
+            ]
+        case "Terms of use":
+            return [
+                ("checkmark.seal", "Personal use", "Track your own finances"),
+                ("exclamationmark.circle", "No financial advice", "KIRA explains patterns"),
+                ("doc.text", "Full terms", "Coming with public release")
+            ]
+        default:
+            return [
+                ("sparkles", "Status", "Ready"),
+                ("slider.horizontal.3", "Control", "Managed in settings")
+            ]
+        }
     }
 }
 
 private struct SettingsExportPlaceholderView: View {
     var body: some View {
         ProfilePlaceholderDetail(title: "Export data")
+    }
+}
+
+private struct ProfileDetailSection<Content: View>: View {
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(spacing: 0) {
+            content
+        }
+        .background(Color.LightIcon.opacity(0.88), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(Color.Outline.opacity(0.65), lineWidth: 1)
+        )
+    }
+}
+
+private struct ProfileDetailInfoRow: View {
+    let icon: String
+    let title: String
+    let value: String
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(Font.satoshi(.subheadline, weight: .semibold))
+                .foregroundColor(Color(hex: "4B5545"))
+                .frame(width: 34, height: 34)
+                .background(Color.SecondaryBackground, in: Circle())
+
+            Text(title)
+                .font(Font.satoshi(.subheadline, weight: .semibold))
+                .foregroundColor(Color.PrimaryText)
+
+            Spacer(minLength: 12)
+
+            Text(value)
+                .font(Font.satoshi(.caption, weight: .semibold))
+                .foregroundColor(Color.SubtitleText)
+                .multilineTextAlignment(.trailing)
+                .lineLimit(2)
+        }
+        .padding(.horizontal, 14)
+        .frame(minHeight: 58)
+    }
+}
+
+private struct ProfileDetailToggleRow: View {
+    let icon: String
+    let title: String
+    @Binding var isOn: Bool
+
+    var body: some View {
+        Toggle(isOn: $isOn) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(Font.satoshi(.subheadline, weight: .semibold))
+                    .foregroundColor(Color(hex: "4B5545"))
+                    .frame(width: 34, height: 34)
+                    .background(Color.SecondaryBackground, in: Circle())
+
+                Text(title)
+                    .font(Font.satoshi(.subheadline, weight: .semibold))
+                    .foregroundColor(Color.PrimaryText)
+            }
+        }
+        .tint(Color(hex: "4B5545"))
+        .padding(.horizontal, 14)
+        .frame(minHeight: 58)
     }
 }
 

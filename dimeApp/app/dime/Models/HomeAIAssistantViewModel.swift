@@ -783,7 +783,7 @@ final class HomeAIAssistantViewModel: ObservableObject {
         }
 
         return """
-        You are Renvo AI, a smart financial assistant inside the Dime expense tracking app (Malaysia, currency MYR / RM).
+        You are KIRA, a Malaysian personal finance assistant inside the Dime expense tracking app (currency MYR / RM).
 
         Today: \(dateStr)
         \(bucketContext)

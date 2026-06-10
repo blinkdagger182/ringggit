@@ -1,0 +1,82 @@
+curl -X POST "https://graph.facebook.com/v25.0/1135377602991029/register" \
+  -H "Authorization: Bearer EAAL3xZA4WcpsBRmXHAsqSljO6kVTdj95zwWKmsBVUFMEZBoPg4oTmGuJj3rNw4T4SFJZCRUko6NIoSHewXydbMtQeTpUP2iT0fArU8dwSK7LFrVuYuTVLhHffxNCDfR9ZAlOjbFkMoZAOfnr7isxfoZCaczhdYLgVfZAsSo4ZCS6Uyoq9yau6DMM3XjY52pq4eKibabhoqNXVcIHVDbFThnWjZBhaWzZCcAWKBjmz9OXmw6cdtt3GsqgOk4JqRVWpB2XSGDMp0bjZA8CTse1UAyVs8Vh2zUkV3EZCr3nZCtwHUgZDZD" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messaging_product": "whatsapp",
+    "pin": "123456"
+  }'
+  curl -X POST "https://graph.facebook.com/v25.0/1143564865504311/register" \
+  -H "Authorization: Bearer EAAL3xZA4WcpsBRmXHAsqSljO6kVTdj95zwWKmsBVUFMEZBoPg4oTmGuJj3rNw4T4SFJZCRUko6NIoSHewXydbMtQeTpUP2iT0fArU8dwSK7LFrVuYuTVLhHffxNCDfR9ZAlOjbFkMoZAOfnr7isxfoZCaczhdYLgVfZAsSo4ZCS6Uyoq9yau6DMM3XjY52pq4eKibabhoqNXVcIHVDbFThnWjZBhaWzZCcAWKBjmz9OXmw6cdtt3GsqgOk4JqRVWpB2XSGDMp0bjZA8CTse1UAyVs8Vh2zUkV3EZCr3nZCtwHUgZDZD" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messaging_product": "whatsapp",
+    "pin": "123456"
+  }'
+
+  curl -X POST "https://graph.facebook.com/v25.0/1135377602991029/messages" \
+  -H "Authorization: Bearer EAAL3xZA4WcpsBRmXHAsqSljO6kVTdj95zwWKmsBVUFMEZBoPg4oTmGuJj3rNw4T4SFJZCRUko6NIoSHewXydbMtQeTpUP2iT0fArU8dwSK7LFrVuYuTVLhHffxNCDfR9ZAlOjbFkMoZAOfnr7isxfoZCaczhdYLgVfZAsSo4ZCS6Uyoq9yau6DMM3XjY52pq4eKibabhoqNXVcIHVDbFThnWjZBhaWzZCcAWKBjmz9OXmw6cdtt3GsqgOk4JqRVWpB2XSGDMp0bjZA8CTse1UAyVs8Vh2zUkV3EZCr3nZCtwHUgZDZD" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messaging_product": "whatsapp",
+    "to": "60129070100",
+    "type": "text",
+    "text": {
+      "body": "Hello from Kira AI 👋"
+    }
+  }'
+
+  curl -X POST "https://graph.facebook.com/v25.0/1135377602991029/messages" \
+  -H "Authorization: Bearer EAAL3xZA4WcpsBRmXHAsqSljO6kVTdj95zwWKmsBVUFMEZBoPg4oTmGuJj3rNw4T4SFJZCRUko6NIoSHewXydbMtQeTpUP2iT0fArU8dwSK7LFrVuYuTVLhHffxNCDfR9ZAlOjbFkMoZAOfnr7isxfoZCaczhdYLgVfZAsSo4ZCS6Uyoq9yau6DMM3XjY52pq4eKibabhoqNXVcIHVDbFThnWjZBhaWzZCcAWKBjmz9OXmw6cdtt3GsqgOk4JqRVWpB2XSGDMp0bjZA8CTse1UAyVs8Vh2zUkV3EZCr3nZCtwHUgZDZD" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messaging_product": "whatsapp",
+    "to": "60146094583",
+    "type": "text",
+    "text": {
+      "body": "Hello from Kira AI 👋"
+    }
+  }'
+
+  curl -X POST "https://graph.facebook.com/v25.0/1135377602991029/messages" \
+  -H "Authorization: Bearer EAAL3xZA4WcpsBRmXHAsqSljO6kVTdj95zwWKmsBVUFMEZBoPg4oTmGuJj3rNw4T4SFJZCRUko6NIoSHewXydbMtQeTpUP2iT0fArU8dwSK7LFrVuYuTVLhHffxNCDfR9ZAlOjbFkMoZAOfnr7isxfoZCaczhdYLgVfZAsSo4ZCS6Uyoq9yau6DMM3XjY52pq4eKibabhoqNXVcIHVDbFThnWjZBhaWzZCcAWKBjmz9OXmw6cdtt3GsqgOk4JqRVWpB2XSGDMp0bjZA8CTse1UAyVs8Vh2zUkV3EZCr3nZCtwHUgZDZD" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messaging_product": "whatsapp",
+    "to": "60129070100",
+    "type": "template",
+    "template": {
+      "name": "hello_world",
+      "language": {
+        "code": "en_US"
+      }
+    }
+  }'
+  curl -X POST "https://graph.facebook.com/v25.0/1135377602991029/messages" \
+  -H "Authorization: Bearer EAAL3xZA4WcpsBRmXHAsqSljO6kVTdj95zwWKmsBVUFMEZBoPg4oTmGuJj3rNw4T4SFJZCRUko6NIoSHewXydbMtQeTpUP2iT0fArU8dwSK7LFrVuYuTVLhHffxNCDfR9ZAlOjbFkMoZAOfnr7isxfoZCaczhdYLgVfZAsSo4ZCS6Uyoq9yau6DMM3XjY52pq4eKibabhoqNXVcIHVDbFThnWjZBhaWzZCcAWKBjmz9OXmw6cdtt3GsqgOk4JqRVWpB2XSGDMp0bjZA8CTse1UAyVs8Vh2zUkV3EZCr3nZCtwHUgZDZD" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messaging_product": "whatsapp",
+    "to": "60146094583",
+    "type": "template",
+    "template": {
+      "name": "hello_world",
+      "language": {
+        "code": "en_US"
+      }
+    }
+  }'
+
+  curl -X POST "https://graph.facebook.com/v25.0/1135377602991029/messages" \
+  -H "Authorization: Bearer EAAL3xZA4WcpsBRmXHAsqSljO6kVTdj95zwWKmsBVUFMEZBoPg4oTmGuJj3rNw4T4SFJZCRUko6NIoSHewXydbMtQeTpUP2iT0fArU8dwSK7LFrVuYuTVLhHffxNCDfR9ZAlOjbFkMoZAOfnr7isxfoZCaczhdYLgVfZAsSo4ZCS6Uyoq9yau6DMM3XjY52pq4eKibabhoqNXVcIHVDbFThnWjZBhaWzZCcAWKBjmz9OXmw6cdtt3GsqgOk4JqRVWpB2XSGDMp0bjZA8CTse1UAyVs8Vh2zUkV3EZCr3nZCtwHUgZDZD" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messaging_product": "whatsapp",
+    "to": "60146094583",
+    "type": "template",
+    "template": {
+      "name": "hello_user",
+      "language": {
+        "code": "en_US"
+      }
+    }
+  }'

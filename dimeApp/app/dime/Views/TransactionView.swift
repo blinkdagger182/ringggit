@@ -686,6 +686,12 @@ struct TransactionView: View {
                     }
                 } else if receiptPrefill != nil {
                     applyReceiptPrefillIfNeeded()
+                    if isBatchMode {
+                        assignSuggestedCategoriesToBatchLines()
+                        if lineDrafts.contains(where: { $0.category == nil }) {
+                            collapseBatchToSingleTransaction()
+                        }
+                    }
                 } else if isBatchMode {
                     assignSuggestedCategoriesToBatchLines()
                     if lineDrafts.contains(where: { $0.category == nil }) {
